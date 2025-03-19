@@ -1,0 +1,212 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Define Article %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[xcolor=dvipsnames]{beamer}
+\usetheme{presentation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Using Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[round]{natbib}
+%\usepackage[hidelinks]{hyperref}
+
+%\usepackage[cjk]{kotex}
+%\usepackage{listings}
+%\usepackage{tikz}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Title & Author %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{Ordered Outcome and Bracket-valued Regressor}
+%\subtitle{Subtitle}
+\author{Chanhyuk Park}
+\institute{Washington University in St. Louis}
+\date{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+   \frame{\titlepage}
+
+\begin{frame}{Ordered Outcome and Bracket-valued Regressor}
+    \begin{itemize}[<+->]
+        \item Political science has long been interested in individual's preferences and opinions
+            \begin{itemize}
+                \item Approval ratings {\tiny\citep{Canes-Wrone2002a, Kriner2009a}}
+                \item Redistribution {\tiny\citep{Alt2017a, Magni2021a}}
+                \item Immigration policy {\tiny\citep{Hainmueller2007a}}
+                \item Trade policy {\tiny\citep{Scheve2001r, Mayda2005a, Wu2022a}}
+            \end{itemize}
+        \item Usually measured in ordinal scale \\
+            \hspace{1cm}{\tiny\textit{Strongly Disagree} to \textit{Strongly Agree}}
+        \item Often regressed on covariates measured in brackets, such as income, asset, or education \\
+            \hspace{1cm}{\tiny \textit{Less than \$5,000},  \textit{\$5,000 -- \$10,000}, ..., \textit{More than \$100,000}}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Common Approach}
+    \begin{itemize}[<+->]
+        \item Ordered Probit / Logit
+            \begin{itemize}
+                \item Assume that there is no interpretation problem
+                \item Assume that the distribution follows normal / logistic
+                \item Assume that all measures are precise
+            \end{itemize}
+        \item However, these assumptions are \textbf{\textit{strong}}, and if not met, may lead to biased results, sometimes even \textbf{\textit{flip}} the sign {\tiny\citep{Manski1988a, Greene2010a, Bond2018a}}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Example: Ordered Probit}
+    \begin{itemize}
+        \item Assume $\epsilon \sim F(\cdot)$
+        \item MLE for \textbf{Ordered Probit} model:
+            $$
+            \arg\max_{\beta_{1}, \beta_{2}, \alpha} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( \Phi(\alpha_{j}, \cdot) - \Phi(\alpha_{j-1}, \cdot) \right) \right]
+            $$
+        \item MLE for the \textbf{true} model
+            $$
+                \arg\max_{\beta_{1}, \beta_{2}, \alpha} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( F(\alpha_{j}, \cdot) - F(\alpha_{j-1}, \cdot) \right) \right]
+            $$ 
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Example: Ordered Probit}
+    \begin{itemize}
+        \item Increase in sample size does not make the two distributions closer
+        \item The Ordered Probit estimator is biased, but the size and direction of the bias depend on the shape of $F$
+        \item Imprecise measure of $v$ may lead to another bias, by affecting the log likelihood function. The size and direction of the bias also depend on the shape of $F$
+    \end{itemize}
+\end{frame}
+
+%\begin{frame}{Problem 1: Interpretation}
+%    Q: (Respondent’s country) should limit the import of foreign products in order to protect its national economy.”
+%        \includegraphics[width=0.95\textwidth]{../figures/interpretation1.pdf}
+%\end{frame}
+%
+%\begin{frame}{Problem 1: Interpretation}
+%    Q: (Respondent’s country) should limit the import of foreign products in order to protect its national economy.”
+%        \includegraphics[width=0.95\textwidth]{../figures/interpretation2.pdf}
+%\end{frame}
+%
+%\begin{frame}{Problem 1: Interpretation}
+%    Q: (Respondent’s country) should limit the import of foreign products in order to protect its national economy.”
+%        \includegraphics[width=0.95\textwidth]{../figures/interpretation3.pdf}
+%\end{frame}
+%
+%\begin{frame}{Problem 2: Distribution}
+%        \includegraphics[width=0.95\textwidth]{../figures/distribution0.pdf}
+%\end{frame}
+%
+%\begin{frame}{Problem 2: Distribution}
+%        \includegraphics[width=0.95\textwidth]{../figures/distribution1.pdf}
+%\end{frame}
+%
+%\begin{frame}{Problem 2: Distribution}
+%        \includegraphics[width=0.95\textwidth]{../figures/distribution2.pdf}
+%\end{frame}
+%
+%\begin{frame}{Problem 2: Distribution}
+%        \includegraphics[width=0.95\textwidth]{../figures/distribution3.pdf}
+%\end{frame}
+%
+%\begin{frame}{Problem 2: Distribution}
+%        \includegraphics[width=0.95\textwidth]{../figures/distribution4.pdf}
+%\end{frame}
+%
+%\begin{frame}{Problem 2: Distribution}
+%        \includegraphics[width=0.95\textwidth]{../figures/distribution5.pdf}
+%\end{frame}
+%
+%\begin{frame}{Problem 3: Imprecise Measure}
+%    \begin{itemize}[<+->]
+%        \item Usually, education (years of schooling), income, assets are included in the regression either as independent variables or as control variables
+%        \item For privacy issues these are usually measured in brackets
+%        \item Researchers do not know the exact value, but only observe the lower and the upper bounds
+%            \\ INCOME
+%            \\ \textit{\$5,000 -- \$10,000}
+%    \end{itemize}
+%\end{frame}
+
+
+\begin{frame}{Previous Works}
+        \begin{tabular}{|c|c|c|c|}
+            \hline
+            & Interpretation & Distribution & Imprecise \\ \hline
+            \begin{tabular}[c]{@{}c@{}} Anchored Vignettes \\ {\tiny \citep{King2004a, King2007a}}
+            \end{tabular}  & $\checkmark$ &   &  \\ \hline
+            \begin{tabular}[c]{@{}c@{}}Semiparametric\\ {\tiny \citep{Lewbel2000a, Lee1992a, Liu2024a}}  \\ Sensitivity Analysis \\ {\tiny \citep{Bloem2022a}}\end{tabular} & $\checkmark$     & $\checkmark$   &                     \\ \hline
+        \end{tabular}
+\end{frame}
+
+\begin{frame}{This Paper}
+    \begin{table}[]
+        \begin{tabular}{|c|c|c|c|}
+            \hline
+            & Interpretation & Distribution & Imprecise \\ \hline
+            Anchored Vignettes                                                             & $\checkmark$     &              &                     \\ \hline
+            \begin{tabular}[c]{@{}c@{}}Semiparametric\\ Sensitivity Analysis\end{tabular} & $\checkmark$     & $\checkmark$   &                     \\ \hline
+                \begin{tabular}[c]{@{}c@{}}Semiparametric\\ Partial Identification \\ {\tiny\cite{Manski2002a, Wang2022a}} \end{tabular} & $\checkmark$     & $\checkmark$   & $\checkmark$          \\ \hline
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+\begin{frame}{Problem Setting}
+    True DGP:
+    \begin{equation}
+        Y^{\ast} = X^{T}\beta_{1} + v^{T}\beta_{2} + \epsilon
+    \end{equation}
+    Observation:
+\begin{equation}
+    Y = \begin{cases}
+        0 & Y^{\ast} \le 0 \\
+        1 & 0 \le Y^{\ast} \le \alpha_{1} \\
+        \vdots &  \\
+        k & \alpha_{k-1} \le Y^{\ast} \le \alpha_{k} \\
+    \end{cases}
+\end{equation}
+Also, we do not observe $v$ directly, the lower bound of $v_{0}$ and the upper bound of $v_{1}$ 
+\end{frame}
+
+\begin{frame}{Assumptions}
+    \begin{assumption}[1]
+        $Q_{\tau}(\epsilon \mid X, v) = 0$
+    \end{assumption}
+    
+    \begin{assumption}[2]
+        $\mathbb{P}\left(\epsilon \mid X, v, v_{0}, v_{1}\right) = \mathbb{P}\left(\epsilon \mid X, v\right)$
+    \end{assumption}
+    
+    \begin{assumption}[3]
+        $\beta_{2} > 0$
+    \end{assumption}
+\end{frame}
+
+\begin{frame}{GMMS Estimator}
+    Let $\lambda_{mn}(\cdot) = \mathbb{1}_{\{ \mathbb{P}\left( Y_i > m \mid X_i, V_{1 i}, V_{0 i}\right) > (1 - \tau)\}}$
+\begin{equation*}
+    \begin{aligned}
+        \Theta_n &= \{ b: S_{n}(b) \ge \max_{C \in \mathcal{B}} S_{n}(c) - \varepsilon_{n}\}\\
+    \end{aligned}
+\end{equation*}
+, where
+
+\begin{multline*}
+%\begin{equation}
+    S_n(b^s) = \frac{1}{n} \sum_{i=1}^n \sum_{m=1}^{M-1} \biggl(\mathbb{P}(Y_i > m \mid X_i, V_{0i}, V_{1i}) - (1 - tau)\biggl) \\
+    \biggl[ \lambda_{mn}(X_i, V_{0i}, V_{1i}) \cdot \text{sgn}(\tilde{X}'_i b + V^1_i + b_{1m}) + \\
+    (1 - \lambda_{mn}(X_i, V_{0i}, V_{1i})) \cdot \text{sgn}(\tilde{X}'_i b + V_{0i} + b_{1m}){\biggl]}
+%\end{equation}
+\end{multline*}
+    , for some $\varepsilon_{n} = \frac{\ln(n)}{n} > 0$.
+
+\end{frame}
+
+\begin{frame}{Simulation}
+    \begin{itemize}
+        \item $X \sim \mathbb{N}(1, 4)$
+        \item $V \sim \mathbb{N}(0, 2)$
+        \item $\epsilon \sim Weibull(10, 10)$
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Ordered Probit and Logit}
+    \includegraphics[width=0.95\textwidth]{../figures/bias_ordered.pdf}
+\end{frame}
+   
+\begin{frame}{References}\scriptsize
+\bibliographystyle{apsr}
+\bibliography{/Users/chanhyuk/Documents/MyLibrary}
+\end{frame}
+\end{document}

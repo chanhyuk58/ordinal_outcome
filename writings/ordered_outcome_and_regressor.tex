@@ -1,0 +1,210 @@
+%vim:foldmethod=marker
+%{{{
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Define Article %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass{article}
+%\usepackage{paper}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Using Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{natbib}
+\usepackage{geometry}
+\geometry{
+    letterpaper,
+    % landscape,
+    % margin=1in
+}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\newtheorem{assumption}{Assumption}
+% \usepackage[cjk]{kotex}
+
+% \usepackage{listings}
+% \usepackage{tikz}
+
+\usepackage{setspace}
+\doublespacing
+% }}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Title & Author %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{Partial ID for Ordered Choices with Regressor measured in Bins}
+\author{Chanhyuk Park}
+\date{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+    \maketitle
+
+\begin{abstract}
+    As survey experiments and causal inference frameworks gain importance, individual-level survey data has become increasingly popular. These surveys often measure outcomes using ordered responses, and some control or independent variables are recorded in bins. Statistical analysis of such data requires careful consideration, as failing to account for differences in response interpretation, misspecification of underlying distributions, and uncertainties arising from the imprecise measurement of variables measured in bins can lead to biased and inconsistent results. Research designs focused on causal inference, such as survey experiments or DiD design with observational data, may be harmed more by these challenges, as biases can sometimes be large enough to alter the sign of estimated coefficients. This paper introduces a semiparametric partial identification method that is more robust to model misspecification and the presence of variables measured in bins than standard Orderd Probit or logit models. Monte Carlo simulation results demonstrate that the proposed approach better accounts for heterogeneity, accommodates different distributional forms of outcomes, and effectively addresses biases from variables measured in bins.
+\end{abstract}
+
+\newpage
+\section{Introduction}
+
+Individual-level survey has been used to study micro-level political opinions. As the emphasis on causal inference frameworks increases and survey experiments become more common, survey data continues to gain more popularity. One common situation that researchers regularly encounter is the pair of ordinal outcome variable and at least one of variable that is only measured in bins. This paper shows that the standard method to deal with ordinal outcomes and binned covariates may lead to inconsistent and biased estimation, and introduces a semiparametric partial identification approach.
+
+Ordinal outcomes, although the true values of these opinions would lie on a continuous scale, are typically measured using ordered-choice questions (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}). Political opinons on variable policy areas are great examples of this: politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, and foreign policy preferences \citep{Scheve2001r, Mayda2005a}. These outcomes put two obstacles in statistical analysis. First, respondents may not interpret response scales uniformly. Some individuals may have lower (or higher) thresholds than others, meaning that one person’s strongly agree might be equivalent to another’s agree \citet{King2004a}. Second, the true distribution of the outcome is unobservable, and misspecification of this distribution can lead to inconsistent and biased results \citep{Manski1988a, Greene2010a, Bond2018a}. 
+
+In addition to these two problems, binned variables add potential bias in estimation due to its imprecise measurement. Variables such as income, asset, education (schooling year), or age, are often measured in bins for privacy reasons and researchers usually observe only the lower and upper bounds instead of the exact values. Whether a bracketed variable serves as a primary independent variable or a control, the uncertainty from its imprecise measurement may introduce additional bias in estimation and identification. 
+
+Ordered logit and Orderd Probit models are by far the most popular choices in analyzing data with ordinal outcomes. They effectively incorporate the ordinal character of the outcome variable and also guarantees fast estimation through the maximum likelihood estimation (MLE). However, these strength do not come without costs. Both models rely on strong distributional assumptions (e.g., Orderd Probit assumes a normally distributed outcome), making them vulnerable to bias from distributional misspecification. Additionally, these models are generally not robust to uncertainty introduced by bracketed control or independent variables.
+
+The magnitude of bias arising from these three challenges can be significant enough to alter the sign of estimated coefficients—an especially serious issue given that survey-based research designs, including survey experiments and observational studies using difference-in-differences (DiD) designs, often involve causal interpretation.
+
+To address these issues, this paper introduces a semiparametric partial identification approach based on the Modified Maximum Score (MMS) estimation technique from \citet{Manski2002a}, further developed in \citet{Wang2022a}. 
+%Improvement in survey design \citep{King2004a, King2007a, Chen2024a}, sensitivity analysis \citep{Bloem2022a}, and semiparametric approach \citep{Lee1992a, Lewbel2000a, Klein2002a, Liu2024a} have been proposed to mitigate some of the biases, but most of them only deal with one or two problems.
+\citet{Wang2022a}'s approach offers several advantages over standard Orderd Probit and logit models. Being semiparametric, it avoids strong distributional assumptions and is therefore less prone to biases from model misspecification and response scale heterogeneity. Moreover, by explicitly accounting for bracketed variables -- whether as key independent variables or as controls --this method provides more robust results in most survey analysis settings.
+
+To evaluate the performance of this approach, this paper presents Monte Carlo simulation results. These simulations demonstrate that when the true distribution deviates significantly from normality, standard Orderd Probit and logit models yield biased estimates, whereas the proposed approach remains more robust. Furthermore, the proposed method offers more precise estimation even in the presence of bracketed regressors. 
+
+\section{Statistical Models for Ordered Outcomes}
+
+Political science research frequently relies on outcomes measured in ordered responses, and its popularity continues to grow as causal inference methods and individual-level survey experiments receive increasing attention. Due to privacy concerns, these surveys often include bracketed variables, such as income and assets, where respondents select a range with lower and upper bounds rather than reporting exact values.
+
+The two most commonly used statistical models for analyzing such data are Orderd Probit and Ordered logit. These models require strong distributional assumptions; for example, Orderd Probit assumes that the conditional distribution of outcomes follows a normal distribution. While these assumptions facilitate fast and efficient estimation using maximum likelihood, many researchers have criticized them for failing to account for three key challenges in survey data: (1) variations in individual interpretation of response scales, (2) misspecification of the true outcome distribution, and (3) uncertainty arising from imprecisely measured bracketed variables.
+
+First, respondents may not interpret response scales uniformly. Political opinion questions are typically measured using five-point Likert scales, which are inherently subjective. Some individuals may have lower (or higher) thresholds than others, meaning that one person’s \textit{strongly agree} might be equivalent to another’s \textit{agree} \citet{King2004a}. As shown in Figure \ref{fig:1}, although both A and B have same opinion denoted by the red arrow, they may answer differently because they interpret the scale differently.
+
+\citet{Aldrich1977a} examined interpretability issues when recovering politicians’ ideological positions from ordinal survey responses, though without directly addressing estimation concerns. \citet{King2004a} proposed the “anchored vignettes” approach to mitigate these issues at the survey design stage. This method introduces standardized example questions designed to capture respondents’ interpretations of key concepts, allowing researchers to adjust responses accordingly. \citet{King2007a} further refined the approach by developing methods to evaluate anchoring vignettes. However, a major limitation of this approach is its reliance on the assumption that respondents interpret both vignettes and primary survey questions consistently—an assumption that is difficult to test empirically.
+
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=0.95\textwidth]{../figures/interpretation3.pdf}
+    \end{center}
+    \caption{Different interpretation of the scale}\label{fig:1}
+\end{figure}
+
+
+Second, misspecification of the outcome distribution can lead to inconsistent and biased results \citep{Manski1988a, Greene2010a, Bond2018a}. \citet{Bond2018a} demonstrated that naive estimation using Ordered logit or Orderd Probit—which impose strong distributional assumptions—can sometimes lead to conclusions opposite to the true effect if the actual outcome distribution deviates significantly from the assumed model. Figure \ref{fig:2} shows the biases in coefficients when the true distribution of error term is exponential for the different sample sizes on the x-axis. Both Orderd Probit (light purple line) and Ordered logit (light blue line) models have large biases, and these biases do not decrease as the sample size increases. This issue is difficult to detect because Ordered logit and Orderd Probit models often produce similar results. Although statistical tests for distributional assumptions exist, they do not provide alternative models when those assumptions are violated \citep{Bera1982a, Glewwe1997a, Weiss1997a}.
+
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=0.95\textwidth]{../figures/liu_probit_logit.png}
+    \end{center}
+    \caption{Biases in coefficients when the distribution of the error term is exponential (from \citet{Liu2024a}). Y-axis denotes the size of the bias of the coefficients, and X-axis denotes sample sizes. Light blue lines are biases of the results from Ordered logit models, and light purple lines are biases of the results from Orderd Probit models.}\label{fig:2}
+\end{figure}
+
+
+Recently, \citet{Bloem2022a} introduced a sensitivity analysis for distributional assumptions. Building on \citet{Schroder2017a}, \citet{Bloem2022a} proposed a robustness test for plausible monotonic increasing transformations of the observed ordinal scale’s distribution. This framework is valuable because it allows researchers to assess how robust their findings are to certain distributional changes, such as globally concave and convex transformations or transformations with an inflection point. However, as the author notes, despite covering many theoretically plausible cases, the study remains limited to a restricted set of distributional forms.
+
+On the other hands, semiparametric approaches have been developed to mitigate both response scale interpretation issues and potential distributional misspecification. The literature can be roughly divided in two categories. Kernel-based approaches estimate the error distribution nonparametrically using kernel estimation strategy. \citet{Lewbel2000a} was one of the first to attempt relaxing both assumptions in this approach. \citet{Klein2002a} introduced a shift-restriction-based approach that uses kernel estimation for both cut points and regression coefficients, providing greater flexibility. One downside of this approach is that researchers to decide which kernels to be used, and the performance largely depends on this decision.
+
+Some semiparametric approaches do not require input from researchers. Variants of the maximum score and maximum rank estimation are prime examples \citet{Lee1992a} extended \citet{Manski1985a}’s maximum score estimation model for binary outcomes to ordered choice settings. \citet{Liu2024a} built on \citet{Klein2002a} by applying isotonic regression and maximum rank estimation strategy instead of kernel methods. \citet{Ito2021a} leveraged Monte Carlo resampling to construct likelihoods, enabling estimation without strict distributional assumptions.  %However, these approaches primarily focus on ordered outcomes and largely overlook the challenge of bracketed variables.
+
+Although previously mentioned semiparametric approaches offer greater robustness to both issues of different interpretation among respondents and distributional misspecification, most models care less about the additional complexity introduced by bracketed variables, which are frequently used in survey data. Whether a bracketed variable serves as a key independent variable or a control, its imprecise measurement may further bias the estimation of the parameters. One recent study by \citet{Chan2024a} attempts to address bracketed variables by leveraging multiple survey questions with different discretization schemes. Their findings suggest that access to alternative measures with varying bracket definitions improves distributional approximation, leading to point identification. While the results from their research suggest that researchers can achieve both robust estimation and enhanced respondent privacy by including multiple measures of the same variable, a key limitation is that such alternative measures are rarely available in practice.
+
+Building upon these previous research efforts, this paper introduces a semiparametric partial identification approach developed in \citet{Wang2022a} that offers greater robustness to the three challenges discussed above in individual-level survey data. This approach extends one of the most prominent semiparametric methods -- the Generalized Maximum Score estimator proposed by \citet{Lee1992a} -- to explicitly account for cases in which independent or control variables are measured in brackets. Being another variant of the maximum score estimation, this approach does not require researchers to decide tuning parameters such as bandwidth for kernels.
+
+
+\section{Semiparametric Partial Identification Approach}
+This paper deals with the common setting in political science studies that deals with individual level survey data, where (a) the outcome is observed in ordinal way, (b) at least one of the regressors is measured in brackets. 
+
+Suppose a true or latent value of the outcome is continuous and denote it with $Y^{\ast}$. We further assume that the true data-generating process (DGP) is captured as:
+$$
+    Y^{\ast} = X^{T}\beta_{1} + v^{T}\beta_{2} + \epsilon
+$$ 
+, where $X$ is the vector of regressors and $v$ is the bracket-valued regressor and $\epsilon$ is an error term. 
+
+We do not observe the $Y^{\ast}$ directly, but observe the ordinal choices, $Y$, made based on $Y^{\ast}$. 
+$$
+    Y = \begin{cases}
+        0 & \alpha_{-1} \le Y^{\ast} \le \alpha_{0} \\
+        1 & \alpha_{0} \le Y^{\ast} \le \alpha_{1} \\
+        \vdots &  \\
+        k & \alpha_{k-1} \le Y^{\ast} \le \alpha_{k} \\
+    \end{cases}
+$$ 
+, where $\alpha_{k}$ denotes the cut points for each ordinal category. Conventionally, $-\infty = \alpha_{-1} \le \alpha_{0} \le \ldots \le \alpha_{k} = \infty$. 
+
+Also, we do not observe $v$ directly, but only informed the lower bound of $v_{0}$ and the upper bound of $v_{1}$ for each unit. Usually, some sensitive information such as income, asset and education levels are measured in this manner. 
+
+Ordered probit and logit models estimate the modeling parameters, $\beta$s and cut-points ($\alpha$s) based on distributional assumptions on error terms. However, the estimator from these models are inconsistent and biased if the distributional assumptions cannot be met. For now, let us assume that we observe the true $v$.
+
+For example, Ordered Probit model assume that the error term ($\epsilon$) follows the standard normal distribution. Then the probability of observing $Y = j$ is given by:
+$$
+\begin{aligned}
+    \mathbb{P}\left(Y = j \mid X\right) &= \mathbb{P}\left(Y^\ast \le \alpha_j\right) - \mathbb{P}\left(Y^\ast > \alpha_j-1\right) \\
+    &=\mathbb{P}\left(\epsilon \le \alpha_j - X^\beta_{1} - v^T \beta_{2}\right) - \mathbb{P}\left(\epsilon > \alpha_{j-1} - X^\beta_{1} - v^T \beta_{2}\right)\\
+    &= \Phi(\alpha{j} - X^{T}\beta_{1} - v^{T} \beta_{2}) - \Phi(\alpha{j-1} - X^{T}\beta_{1} - v^{T} \beta_{2})
+\end{aligned}
+$$
+, where $\Phi(\cdot)$ is the standard normal cumulative distribution function (CDF). 
+
+The parameters can be easily estimated. The MLE gives:
+$$
+    (\beta_{1}, \beta_{2}, \alpha) = \arg\max_{\beta_{1}, \beta_{2}, \alpha} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( \Phi(\alpha_{j} - X^{T}\beta_{1} - v^{T}\beta_{2}) - \Phi(\alpha_{j-1} - X^{T}\beta_{1} - v^{T}\beta_{2}) \right) \right]
+$$ 
+
+Suppose that the true distribution of $\epsilon$ is not normal, and denote the CDF as $F(\cdot)$. If the distribution is symmetric, then the MLE under this true distribution would be:
+$$
+    (\beta_{1}, \beta_{2}, \alpha) = \arg\max_{\beta_{1}, \beta_{2}, \alpha} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( F(\alpha_{j} - X^{T}\beta_{1} - v^{T}\beta_{2}) - F(\alpha_{j-1} - X^{T}\beta_{1} - v^{T}\beta_{2}) \right) \right]
+$$ 
+
+Since $F \neq \Phi$, the estimators from Ordered Probit model are inconsistent, because increase in sample size does not make the two distributions closer, and therefore the estimators from two MLE will not converge. Also, the estimators are biased, but the size and direction of the bias depend on the shape of $F$. 
+
+Now we go back to the original setting and only observe $v_{0}$ and $v_{1}$, instead of $v$. It is easy to see that this imprecise measure of $v$ may lead to another bias, by affecting the log likelihood function. The size and direction of the bias also depend on the shape of $F$.
+
+\section{Generalized Maximum Score Estimator}
+Generalized Modified Maximum Score (GMMS) estimator suggested by \citet{Wang2022a} can deal with the inconsistency and the bias caused by distributional misspecification and the bias from binned covariates. The estimator is based on the modified maximum score estimator (MMS) \citep{Manski2002a} and the generalized maximum score (GMS) estimator \citep{Lee1992a}, both of which are based on the maximum score estimator \citep{Manski1975a}.
+
+GMMS imposes below assumptions:
+
+\begin{assumption}
+    $quantile_{\alpha}(\epsilon \mid X, v) = 0$
+\end{assumption}
+
+\begin{assumption}
+    $\mathbb{P}\left(\epsilon \mid X, v, v_{0}, v_{1}\right) = \mathbb{P}\left(\epsilon \mid X, v\right)$
+\end{assumption}
+
+\begin{assumption}
+    $\beta_{2} > 0$
+\end{assumption}
+
+Following \citet{Manski1985a}, \citet{Horowitz1992a}, and \citet{Lee1992a}, the first assumption, that the conditional $\alpha$ quantile of the error term equals $0$,  means that at least at one point, the outcome is fully explained by covariates without error. This is the only restriction on the distribution of the error term, thereby the conditional distribution of the outcome. This semiparametric nature of the estimator mitigates problem of different interpretation among respondents and the bias from misspecification. The second and third assumptions deal with the bias generated by imprecise measurement of some variables in the regression equation. For the rest of the paper, I assume that $median(\epsilon \mid X, v) = 0$. 
+
+The second assumption states that the error term are conditionally independent from $v_{0}$ and $v_{1}$ given both $X$ and $v$. In other words, if the exact value of $v$ is known, then $v_{0}$ and $v_{1}$ carries no further information. The last assumption requires $v$ to have strict monotone relationship with the outcome, and this should be justified by the data, theory or results from previous research. If $v$ is thought to have native relationship, then simple reverse coding will satisfy the assumption.
+
+Before this, need to introduce partial identification.
+For the notational ease define $Y_{mi} = \mathbf{1}\{Y_i > m\}$. Let $P_n(Y_{mi} = m \mid X_i, V^0_i, V^1_i)$ be consistent estimates of $P(Y_{m} = m \mid X, V^0, V^1)$ for $m = 1, \ldots, M - 1$. Furthermore, define $\lambda_{mn}(X_i, V^0_i, V^1_i) = \mathbf{1}\left\{P_n(Y^m_i = m \mid X_i, V^0_i, V^1_i) > \frac{1}{2} \right\}$. 
+
+Then, the finite sample estimation of the identified set $\Theta_{n}$ using GMMS is given as:
+\begin{equation}
+    \begin{aligned}
+        \Theta_n &= \{ b: S_{n}(b) \ge \max_{C \in \mathcal{B}} S_{n}(c) - \varepsilon_{n}\}\\
+    \end{aligned}
+\end{equation}
+, where
+
+\begin{multline}
+    S_n(b^s) = \frac{1}{n} \sum_{i=1}^n \sum_{m=1}^{M-1} \biggl(Y_{mi} - \frac{1}{2}\biggl)  \biggl[ \lambda_{mn}(X_i, V_{0i}, V_{1i}) \cdot \text{sgn}(\tilde{X}'_i b + V^1_i + b_{1m}) Y_{mi} + \\ 
+    (1 - \lambda_{mn}(X_i, V_{0i}, V_{1i})) \cdot \text{sgn}(\tilde{X}'_i b + V_{0i} + b_{1m}){\biggl]}
+\end{multline}
+, for some $\varepsilon_{n} > 0$. 
+The basic intuition here is to maximize the sign consistency for each $Y_{j}$. 
+
+$\varepsilon_{n}$ gives room for partial identification, so it is preferred to be as small as possible, but not to small. \citet{Chernozhukov2007a} proves that when $\varepsilon_{n} \propto \frac{\ln(n)}{n}$, GMMS estimator is $\sqrt{n}$ consistent. To follow their proof, I choose to set $\varepsilon_{n} = \frac{\ln(n)}{n}$. 
+
+The conditional probability $P_n(Y_{mi} = m \mid X_i, V^0_i, V^1_i)$ can be estimated nonparametrically from the data. \citet{Wang2022a} suggested to use kernel based smoothing estimator, but I follow \citet{Hall2004a}, who suggested direct nonparametric estimation of conditional distribution of discrete variable via cross-validation. 
+
+\section{Monte Carlo Simulations}
+I tried several Monte Carlo experiments to test the performance of GMMS, and compare it with those of standard Orderd Probit and Logit models. Here I consider the case where the outcome is a ordinal variable with 5 levels:
+$$
+    Y = \begin{cases}
+        1 &\text{if}\quad \alpha_{-1} \le Y^\ast \le \alpha_0 \\
+        \vdots & \\
+        5 &\text{if}\quad \alpha_{-3} \le Y^\ast \le \alpha_4 \\
+    \end{cases}
+$$ 
+, where $Y^{\ast} = \beta_{0} + X^{T} \beta_{1} + v^{T} \beta_{2}$. $X$ and $v$ are one-dimensional, for simplicity. $X \sim \mathcal{N}(1, 2)$, and $v \sim \mathcal{N}(0, 2)$. $v_{1}$ is derived by round up $v$ to the nearest integer, and $v_{0}$ equals $v_{1} - 1$. The coefficients, $(\beta_{0} , \beta_{1}, \beta_{2})$ are set to $(0.5, -0.5, 0.5)$. 
+
+I tested for two different distribution for the error term, $\epsilon$, the exponential distribution and the student-t distribution. Both distributions have relatively fat tailed and skewed compared to the standard normal distribution and frequently observed in real world settings. I also consider three sample sizes of 200, 500, 1,000. The number of
+Monte Carlo replication is 100, and all estimations are the means of the 100 replication results. 
+
+Table shows the estimation of coefficients for $X$ and $v$ from GMMS, Ordered Probit and Ordered Logit models.
+
+
+
+\bibliographystyle{apsr}
+\bibliography{/Users/chanhyuk/Documents/MyLibrary}
+\end{document}
