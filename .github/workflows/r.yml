@@ -47,7 +47,6 @@ jobs:
       #   shell: Rscript {0}
       - name: run code
         run: Rscript r_scripts/test.R
-        working_directory: ./r_scripts
       - name: Commit
         run: |
           git config --local user.email "chan.hyuk.58@gmail.com"
