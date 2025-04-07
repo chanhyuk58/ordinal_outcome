@@ -39,7 +39,7 @@ jobs:
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
         shell: Rscript {0}
       - name: run code
-        shell: Rscript ./r_scripts/test.R
+        run: Rscript ./r_scripts/test.R
       - name: Commit
         run: |
           git config --local user.email "chan.hyuk.58@gmail.com"
