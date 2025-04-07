@@ -8,4 +8,4 @@ print(msg)
 msg_df <- rbind(msg_df, msg)
 
 write_excel_csv(msg_df, file='msg.csv')
-write_excel_csv(msg_df, file='../data/msg.csv')
+write_excel_csv(msg_df, file='data/msg.csv')
