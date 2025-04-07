@@ -51,7 +51,7 @@ jobs:
       - name: Commit
         run: |
           git config --local user.email "chan.hyuk.58@gmail.com"
-          git add msg.csv
+          git add .
           git add data/msg.csv
           git commit -m "test"
       - name: Push
