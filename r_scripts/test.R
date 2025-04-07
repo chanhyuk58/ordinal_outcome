@@ -5,3 +5,4 @@ msg <- paste0('This is the test ', a)
 print(msg)
 
 write_excel_csv(msg, file='msg.csv')
+write_excel_csv(msg, file='../data/msg.csv')
