@@ -70,6 +70,12 @@ gms <- function(y, x, v, M) {
 }
 # }}}
 
+# KDE inspired method
+kdeord <- function(y, x, v, M) {
+  # estimate p(y | x, v)
+  np.cdencbw(y ~ x + v)
+}
+
 n <- 200
 set.seed(123) 
 # eps <- rnorm(n, 0, 1) # Normal

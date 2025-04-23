@@ -2,13 +2,9 @@
 \documentclass[xcolor=dvipsnames]{beamer}
 \usetheme{presentation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Using Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\usepackage[round]{natbib}
-%\usepackage[hidelinks]{hyperref}
-
 %\usepackage[cjk]{kotex}
 %\usepackage{listings}
 %\usepackage{tikz}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Title & Author %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \title{Ordered Outcome and Bracket-valued Regressor}
 %\subtitle{Subtitle}
@@ -184,7 +180,7 @@ Also, we do not observe $v$ directly, the lower bound of $v_{0}$ and the upper b
 
 \begin{multline*}
 %\begin{equation}
-    S_n(b^s) = \frac{1}{n} \sum_{i=1}^n \sum_{m=1}^{M-1} \biggl(\mathbb{P}(Y_i > m \mid X_i, V_{0i}, V_{1i}) - (1 - tau)\biggl) \\
+    S_n(b^s) = \frac{1}{n} \sum_{i=1}^n \sum_{m=1}^{M-1} \biggl(\mathbb{P}(Y_i > m \mid X_i, V_{0i}, V_{1i}) - (1 - \tau)\biggl) \\
     \biggl[ \lambda_{mn}(X_i, V_{0i}, V_{1i}) \cdot \text{sgn}(\tilde{X}'_i b + V^1_i + b_{1m}) + \\
     (1 - \lambda_{mn}(X_i, V_{0i}, V_{1i})) \cdot \text{sgn}(\tilde{X}'_i b + V_{0i} + b_{1m}){\biggl]}
 %\end{equation}
@@ -205,7 +201,7 @@ Also, we do not observe $v$ directly, the lower bound of $v_{0}$ and the upper b
     \includegraphics[width=0.95\textwidth]{../figures/bias_ordered.pdf}
 \end{frame}
    
-\begin{frame}{References}\scriptsize
+\begin{frame}[allowframebreaks]{References}\scriptsize
 \bibliographystyle{apsr}
 \bibliography{/Users/chanhyuk/Documents/MyLibrary}
 \end{frame}
