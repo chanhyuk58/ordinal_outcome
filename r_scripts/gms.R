@@ -1,8 +1,10 @@
-library('sn')
-library('np')
+# library('sn')
+# library('np')
 library('parallel')
 library('tidyverse')
 library('MASS')
+# library('philentropy')
+library('transport')
 
 
 # GMS function 
@@ -70,56 +72,147 @@ gms <- function(y, x, v, M) {
 }
 # }}}
 
-# KDE inspired method
-kdeord <- function(y, x, v, M) {
-  # estimate p(y | x, v)
-  np.cdencbw(y ~ x + v)
+# Generate the population {{{
+generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist='logistic', 
+                         df=1, seed=63130, negative=FALSE, location=0) {
+  set.seed(seed) 
+  
+  X <- matrix(rnorm(N*xdim), ncol=xdim)
+  colnames(X) <- paste0("x", 1:xdim)
+  e <- switch(dist,
+    logistic = rlogis(N),
+    normal   = rnorm(N),
+    tdis     = rt(N, df=df),
+    chisq    = rchisq(N, df=df) + location,
+    stop("Unknown distribution"))
+  
+  if (negative == TRUE) {
+    e <- -e
+  }
+  y_star <- X %*% beta + e  # Only x1 has true effect
+  thresholds <- c(-1, 0.5)
+  y_ord <- cut(y_star, breaks = c(-Inf, thresholds, Inf),
+    labels = FALSE, ordered_result = TRUE)
+  
+  data <- as.data.frame(cbind(X, e))
+  data$y_ord <- factor(y_ord, ordered = TRUE)
+  return(data)
+}
+# }}}
+
+# Compute biases for one replication {{{
+simulate_bias <- function(n) {
+  # Sample
+  idx = sample(N, n)
+  # Ordered logit
+  fit_logit <- polr(y_ord ~ ., data = data[idx, ], method = "logistic")
+  beta_hat_logit <- coef(fit_logit)[1] # / coef(fit_logit)[xdim]
+  
+  # Ordered probit
+  fit_probit <- polr(y_ord ~ ., data = data[idx,], method = "probit")
+  beta_hat_probit <- coef(fit_probit)[1] # / coef(fit_probit)[5]
+  
+  # OLS
+  fit_ols <- lm(as.numeric(y_ord) ~ ., data=data[idx, ])
+  beta_hat_ols <- coef(fit_ols)[2]
+  
+  c(logit = beta_hat_logit - beta[1],
+    probit = beta_hat_probit - beta[1],
+    ols = beta_hat_ols - beta[1]
+  )
+}
+# }}}
+
+# KL Divergence {{{
+# Discretize the support (only positive part due to Chi-squared)
+x_vals <- seq(0, 10, length.out = 1000)
+
+# Get density values
+pd <- density(rnorm(N))
+p <- pd$y
+qd <- density(-(rchisq(N, df = 1) - 1)) 
+q <- qd$y
+
+# Normalize to get proper probability mass vectors (they must sum to 1)
+p <- p / sum(p)
+q <- q / sum(q)
+
+# Combine into a matrix as required by philentropy (rows = distributions)
+dist_matrix <- rbind(p, q)
+
+# Compute KL divergence from p (normal) to q (chi-squared)
+kl_result <- KL(dist_matrix, unit = "log")
+
+# Display result
+cat("KL divergence D_KL(N(0,1) || Chi^2_1) =", kl_result, "\n")
+# }}}
+
+# Wasserstein Distance {{{
+# Generate samples
+a <- sort(rnorm(10e+5))
+b <- sort(data$e)
+
+# Compute 1D Wasserstein distance (p=1)
+wdist <- wasserstein1d(a, b)
+
+cat("Wasserstein (p=1) distance =", wdist, "\n")
+# }}}
+
+# Settings
+distributions <- c("logistic", "normal", "tdis", "chisq")
+dist <- distributions[4]
+df <- 5
+locations <- seq(-10, -5, 5)
+N <- 10e+5
+all <- data.frame()
+for (loc in locations) {
+  beta <- c(-0.1, 1)
+  loc <- 5
+  neg = TRUE
+  data <- generate_pop(dist=dist, df=df, beta=beta, negative=neg, location=loc)
+  sample_sizes <- seq(500, 4000, 500)
+  
+  hist(as.numeric(data$y_ord), main=paste('n:', n, '| location:', loc))
+  
+  # Run Simulations {{{
+  data <- subset(data, select=-e)
+  simulation_results <- data.frame()
+  for (n in sample_sizes){
+    seed <- 42
+    set.seed(seed)
+    results <- data.frame()
+    for (mc in seq(1, 100, 1)){
+      results <- rbind(results, simulate_bias(n=n))
+    }
+    names(results) <- c('logit', 'probit', 'ols')
+    results_df <- data.frame(
+      n = n,
+      distribution = dist,
+      model = names(results),
+      bias = colMeans(results),
+      location = loc
+    )
+    simulation_results <- rbind(simulation_results, results_df)
+  }
+  # }}}
+  all <- rbind(all, simulation_results)
 }
 
-n <- 200
-set.seed(123) 
-# eps <- rnorm(n, 0, 1) # Normal
-# eps <- runif(n, -1, 1) # Normal
-# eps <- rsn(n, 0, 5, 20) # Skewed right
-eps <- rweibull(n, 1.5, 1) # weibull
-# eps <- rsn(N, 0, 20, -20) # Skewed left
-# eps <- rlnorm(n, 10, 1) # lognormal
-# eps <- rt(N, 1000, 2) # t-distribution
-# es <- list(epssn, epsln, epst)
-eps <- eps - median(eps)
-gamma <- c(2, -1, 1) # True coefficients
-#{{{
-x <- rnorm(n, mean=0, sd=5)  # Covariate 
-v <- rnorm(n, mean=0, sd=3) # Interval valued covariate
-v1 <- ceiling(v)
-v0 <- v1 - 1
-
-y_star <- gamma[1] + gamma[2]*x + gamma[3]*v + eps
-# alpha <- sort(runif(2, 0, quantile(y_star, 0.98)))
-# alpha <- alpha - min(alpha) # Normalize
-alpha <- c(0, 2)
-M <- (length(alpha) + 1)
-y <- cut(y_star, breaks=c(-Inf, alpha, Inf), labels=1:M, right=TRUE)
-y <- as.numeric(as.character(y))  # Convert factor to numeric
-params <- c(gamma, alpha)
+# Plot {{{
+file_name <- paste0('../figures/seed', seed, '_negative', neg, '_', dist, df, '_locations(2).pdf')
+# file_name <- paste0('../figures/seed', seed, '_negative', neg, '_', dist, df, '.pdf')
+cairo_pdf(file=file_name, width=10, height=5)
+  ggplot(all, aes(x = as.numeric(n), y = bias, col = model)) +
+    facet_wrap(~location, scales='free') +
+    geom_line() +
+    geom_point() +
+    labs(title = paste0("Bias of Ordered Logit and Probit (β1 =", beta[1], ")"),
+         x = "Sample Size (n)",
+         y = "Bias (Estimated - True)",
+         fill = "Model") +
+    scale_fill_brewer(palette = "Set2") +
+    theme_minimal(base_size = 14) +
+    geom_hline(yintercept=beta[1], lty=2) +
+    geom_hline(yintercept=-beta[1], lty=2)
+dev.off()
 # }}}
-
-# Ordered Probit {{{
-oprobit <- polr(factor(y) ~ x + rowMeans(cbind(v0, v1)), method='probit')
-# oprobit <- polr(factor(y) ~ x + v, method='probit')
-opro <- coef(summary(oprobit))[1:4, 1:2]
-
-# Ordered Logit
-ologit <- polr(factor(y) ~ x + rowMeans(cbind(v0, v1)), method='logistic')
-# ologit <- polr(factor(y) ~ x + v, method='logistic')
-olo <- coef(summary(ologit))[1:4, 1:2]
-opro
-olo
-# }}}
-
-par(mfrow=c(1, 3))
-plot(density(y_star))
-plot(density(eps))
-hist(y)
-
-gms <- gms(y, x, v, M)
