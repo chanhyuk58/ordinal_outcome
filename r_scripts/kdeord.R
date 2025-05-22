@@ -1,16 +1,12 @@
 # Required Libraries
-library("MASS")  # For multivariate normal data generation
-library("np")    # For Non-parametric KDE
-library("data.table")
+library('MASS')  # For multivariate normal data generation
+library('np')    # For Non-parametric KDE
+library('data.table')
 
-# Parameters
-n_sim <- 100         # Number of simulations
-n <- 1000            # Sample size
-p <- 2               # Number of covariates
-J <- 3               # Number of ordinal categories
-h_p <- 0.5           # Pilot bandwidth
-h <- n^(-1/6)             # Final bandwidth
-Kernel <- function(x) dnorm(x) # Gaussian Kernel
+
+# -------------------------------
+# Functions
+# -------------------------------
 
 # Generate the population {{{
 generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist='logistic', 
@@ -18,32 +14,27 @@ generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist='logistic',
   set.seed(seed) 
   
   X <- matrix(rnorm(N*xdim), ncol=xdim)
-  colnames(X) <- paste0("x", 1:xdim)
+  colnames(X) <- paste0('x', 1:xdim)
   e <- switch(dist,
     logistic = rlogis(N),
     normal   = rnorm(N),
     tdis     = rt(N, df=df),
     chisq    = rchisq(N, df=df) + location,
-    stop("Unknown distribution"))
+    stop('Unknown distribution'))
   
   if (negative == TRUE) {
     e <- -e
   }
   y_star <- X %*% beta + e  # Only x1 has true effect
-  thresholds <- c(-1, 0.5)
-
+  thresholds <- c(-1, 0.5, 1, 3)
   y_ord <- cut(y_star, breaks = c(-Inf, thresholds, Inf),
     labels = FALSE, ordered_result = TRUE)
-  y_ord <- as.numeric(y_ord)
   
-  data <- as.data.frame(cbind(X, e, y_ord))
+  data <- as.data.frame(cbind(X, e))
+  data$y_ord <- as.numeric(y_ord)
   return(data)
 }
 # }}}
-
-# -------------------------------
-# Functions
-# -------------------------------
 
 ## Pilot KDE {{{
 pilot_kde <- function(V, l, h_p, sigma, j) {
@@ -120,11 +111,10 @@ final_kde <- function(V, l, lambda, h, j) {
 # }}}
 
 # Klien and Sherman (2002) Estimator {{{
-KS_estimator <- function(Y, X) {
+ks_estimator <- function(Y, X) {
   J <- max(Y)
   # Quasi-likelihood {{{
   quasi_likelihood <- function(beta) {
-    # beta <- c(0.1, 0.1)
     V_hat <- X %*% beta
 
     P_est_list <- list()
@@ -132,13 +122,9 @@ KS_estimator <- function(Y, X) {
       n1 <- sum(Y <= j)
       n0 <- sum(Y > j)
 
-      # Separate V values
-      V_j1 <- V_hat[Y <= j]
-      V_j0 <- V_hat[Y > j]
-
       # Pilot KDE estimation
-      sigma1 <- sd(V_j1)
-      sigma0 <- sd(V_j0)
+      sigma1 <- sd(V_hat[Y <= j])
+      sigma0 <- sd(V_hat[Y > j])
 
       g1_pilot <- pilot_kde(V_hat, 1, h_p, sigma1, j)
       g0_pilot <- pilot_kde(V_hat, 0, h_p, sigma0, j)
@@ -162,19 +148,19 @@ KS_estimator <- function(Y, X) {
     likelihood <- 0
     for (i in 1:length(Y)) {
       y_i <- Y[i]
-      if (y_i == 0) {
-        likelihood <- likelihood + 1/n * (abs(X[i]) < quantile(X, 0.95)) * log(P_est_list[[1]][i])
+      if (y_i == min(Y)) {
+        likelihood <- likelihood + 1/n * as.numeric(abs(X[i]) < quantile(X, 0.95)) * log(P_est_list[[1]][i])
       } else {
         likelihood <- likelihood + 1/n * (abs(X[i]) < quantile(X, 0.95)) * log(P_est_list[[y_i + 1]][i] - P_est_list[[y_i]][i])
       }
     }
-
-    return(-likelihood)
+    return(- likelihood)
   }
   # }}}
 
   # Optimization
-  beta_opt <- optim(coef(lm(as.numeric(Y) ~ X))[-1], fn=quasi_likelihood, method = "BFGS")
+  quasi_likelihood(c(0.01, 0.48))
+  beta_opt <- optim(round(coef(lm(as.numeric(Y) ~ X))[-1], 2), fn=quasi_likelihood, method = 'Nelder-Mead')
   beta_hat <- beta_opt$par
 
   return(beta_hat)
@@ -183,12 +169,10 @@ KS_estimator <- function(Y, X) {
 
 # KDE Based Estimator {{{
 kde_estimator <- function(Y, X) {
+  J <- max(Y)
   # Quasi-likelihood 
   quasi_likelihood <- function(beta) {
-    # beta <- c(0.1, 0.1)
     V_hat <- X %*% beta
-    J <- max(Y)
-
 
     P_est_list <- list()
     for (j in 0:J) {
@@ -207,74 +191,108 @@ kde_estimator <- function(Y, X) {
     likelihood <- 0
     for (i in 1:length(Y)) {
       y_i <- Y[i]
-      if (y_i == 0) {
-        likelihood <- likelihood + 1/n * (abs(X[i]) < quantile(X, 0.95)) * log(P_est_list[[1]][i])
+      if (y_i == min(Y)) {
+        likelihood <- likelihood + 1/n * log(P_est_list[[1]][i])
       } else {
-        likelihood <- likelihood + 1/n * (abs(X[i]) < quantile(X, 0.95)) * log(P_est_list[[y_i + 1]][i] - P_est_list[[y_i]][i])
+        likelihood <- likelihood + 1/n * log(P_est_list[[y_i + 1]][i] - P_est_list[[y_i]][i])
       }
     }
-
     return(- likelihood)
   }
 
-  beta_opt <- optim(coef(lm(as.numeric(Y) ~ X))[-1], fn=quasi_likelihood, method = "BFGS")
+  # Optimization
+  beta_opt <- optim(coef(lm(as.numeric(Y) ~ X))[-1], fn=quasi_likelihood, method = 'Nelder-Mead')
   beta_hat <- beta_opt$par
 
   return(beta_hat)
 }
 # }}}
 
-# -------------------------------
-# Generate Population
-# -------------------------------
-set.seed(42)
-distributions <- c("logistic", "normal", "tdis", "chisq")
-dist <- distributions[4]
-df <- 5
-N <- 10e+5
-beta <- c(1, 0.5)
-loc <- -10
-neg <- FALSE
-pop <- generate_pop(dist=dist, df=df, beta=beta, negative=neg, location=loc)
-hist(as.numeric(pop$y_ord))
-hist(pop$y_ord)
+# One Simulation {{{
+simul <- function(n, pop) {
+  # Sample
+  idx = sample(N, n)
+  sample_data <- pop[idx, ]
 
-# -------------------------------
-# Simulation (2002)
-# -------------------------------
+  Y <- sample_data$y_ord
+  X <- as.matrix(sample_data[, c(1, 2)])
 
-ks_estimates <- matrix(0, nrow = n_sim, ncol = p)
-kde_estimates <- matrix(0, nrow = n_sim, ncol = p)
-# {{{
-for (sim in 1:n_sim) {
-  cat("Simulation:", sim, "\n")
-
-  n <- 1000
-  idx <- sample(N, n)
+  # Ordered logit
+  fit_logit <- polr(ordered(y_ord) ~ x1 + x2, data = sample_data, method = 'logistic')
+  beta_hat_logit <- coef(fit_logit)
   
-  sample <- pop[idx, ]
-
-  Y <- sample$y_ord
-  X <- as.matrix(sample[,c(1, 2)])
+  # Ordered probit
+  fit_probit <- polr(ordered(y_ord) ~ x1 + x2, data = sample_data, method = 'probit')
+  beta_hat_probit <- coef(fit_probit)
   
-  ks_estimates[sim, ] <- KS_estimator(Y, X)
-  kde_estimates[sim, ] <- kde_estimator(Y, X)
+  # OLS
+  fit_ols <- lm(as.numeric(y_ord) ~ x1 + x2, data=sample_data)
+  beta_hat_ols <- coef(fit_ols)[-1]
+
+  # Klein and Sherman
+  beta_hat_ks <- ks_estimator(Y, X)
+  
+  # KDE
+  beta_hat_kde <- kde_estimator(Y, X)
+
+  out <- data.table(
+    rbind(
+      beta_hat_logit,
+      beta_hat_probit,
+      beta_hat_ks,
+      beta_hat_kde,
+      beta_hat_ols
+    )
+  )
+  out <- out[, ':='(
+    models = list('ologit', 'oprobit', 'KS', 'KDE', 'OLS'),
+    n = n,
+    dist = dist
+    )
+  ]
 }
 # }}}
 
-fwrite(ks_estimates, file="../data/ks_estimates.csv", bom=T)
-fwrite(ks_estimates, file="../data/kde_estimates.csv", bom=T)
+# -------------------------------
+# Generate Population
+# -------------------------------
 
+# Parameters
+n_sim <- 10         # Number of simulations
+n <- 1000            # Sample size
+p <- 2               # Number of covariates
+# J <- 5               # Number of ordinal categories
+h_p <- 0.5           # Pilot bandwidth
+h <- n^(-1/6)             # Final bandwidth
+Kernel <- function(x) dnorm(x) # Gaussian Kernel
 
-# # -------------------------------
-# # Simulation Results
-# # -------------------------------
-# cat("\n--- Simulation Results ---\n")
-# cat("True beta:", true_beta, "\n")
-# cat("Mean of beta estimates:", colMeans(beta_estimates2), "\n")
-# cat("SD of beta estimates:", apply(beta_estimates2, 2, sd), "\n\n")
-#
-# # Visualization
-# # par(mfrow = c(1, 2))
-# boxplot(beta_estimates2, main = "Beta Estimates", names = paste0("Beta", 1:p))
-# abline(h = true_beta, col = "red", lty = 2)
+set.seed(42)
+distributions <- c('logistic', 'normal', 'tdis', 'chisq')
+dist <- distributions[4]
+df <- 3
+N <- 10e+5
+beta <- c(-0.1, 1)
+loc <- -5
+neg <- TRUE
+pop <- generate_pop(dist=dist, df=df, beta=beta, negative=neg, location=loc)
+# hist(as.numeric(pop$y_ord))
+hist(pop$y_ord)
+
+# -------------------------------
+# Simulation
+# -------------------------------
+
+estimates <- data.table()
+for (sim in 1:n_sim) {
+  cat('Simulation:', sim, '\n')
+  n <- 1000
+  estimates <- rbindlist(list(estimates, simul(n, pop)))
+}
+
+fwrite(estimates, file='../data/estimates.csv', bom=T)
+
+# -------------------------------
+# Simulation Results
+# -------------------------------
+estimates <- fread('../data/estimates.csv')
+estimates[, lapply(.(x1/x2, x2/x2), mean), ,by=models]

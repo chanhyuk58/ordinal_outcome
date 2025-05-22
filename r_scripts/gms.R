@@ -167,7 +167,6 @@ N <- 10e+5
 all <- data.frame()
 for (loc in locations) {
   beta <- c(-0.1, 1)
-  loc <- 5
   neg = TRUE
   data <- generate_pop(dist=dist, df=df, beta=beta, negative=neg, location=loc)
   sample_sizes <- seq(500, 4000, 500)
