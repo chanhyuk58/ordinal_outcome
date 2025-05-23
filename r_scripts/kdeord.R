@@ -118,7 +118,7 @@ ks_estimator <- function(Y, X) {
     V_hat <- X %*% beta
 
     P_est_list <- list()
-    for (j in 0:J) {
+    for (j in 1:J) {
       n1 <- sum(Y <= j)
       n0 <- sum(Y > j)
 
@@ -141,7 +141,7 @@ ks_estimator <- function(Y, X) {
       p1 <- n1 / length(Y)
       p0 <- n0 / length(Y)
       P_j_est <- (p1 * g1_final) / (p1 * g1_final + p0 * g0_final)
-      P_est_list[[j + 1]] <- P_j_est
+      P_est_list[[1]] <- P_j_est
     }
 
     # Quasi-likelihood calculation
@@ -159,7 +159,6 @@ ks_estimator <- function(Y, X) {
   # }}}
 
   # Optimization
-  quasi_likelihood(c(0.01, 0.48))
   beta_opt <- optim(round(coef(lm(as.numeric(Y) ~ X))[-1], 2), fn=quasi_likelihood, method = 'Nelder-Mead')
   beta_hat <- beta_opt$par
 
