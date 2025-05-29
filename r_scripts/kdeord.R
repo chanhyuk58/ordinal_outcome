@@ -37,7 +37,7 @@ generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist='logistic',
 # }}}
 
 ## Pilot KDE {{{
-pilot_kde <- function(V, l, h_p, sigma, j) {
+pilot_kde <- function(Y, V, l, h_p, sigma, j) {
   kde_values <- numeric(n)
   if (l == 1) {
     n1 <- length(V[Y <= j])
@@ -82,7 +82,7 @@ compute_local_bandwidth <- function(pilot_density, sigma, n) {
 # }}}
 
 ## Final KDE {{{
-final_kde <- function(V, l, lambda, h, j) {
+final_kde <- function(Y, V, l, lambda, h, j) {
   kde_values <- numeric(n)
   if (l == 1) {
     n1 <- length(V[Y <= j])
@@ -126,40 +126,101 @@ ks_estimator <- function(Y, X) {
       sigma1 <- sd(V_hat[Y <= j])
       sigma0 <- sd(V_hat[Y > j])
 
-      g1_pilot <- pilot_kde(V_hat, 1, h_p, sigma1, j)
-      g0_pilot <- pilot_kde(V_hat, 0, h_p, sigma0, j)
+      g1_pilot <- pilot_kde(Y, V_hat, 1, h_p, sigma1, j)
+      g0_pilot <- pilot_kde(Y, V_hat, 0, h_p, sigma0, j)
 
       # Local bandwidths
       lambda1 <- compute_local_bandwidth(g1_pilot, sigma1, n1)
       lambda0 <- compute_local_bandwidth(g0_pilot, sigma0, n0)
 
       # Final KDE
-      g1_final <- final_kde(V_hat, 1,  lambda1, h, j)
-      g0_final <- final_kde(V_hat, 0, lambda0, h, j)
+      g1_final <- final_kde(Y, V_hat, 1,  lambda1, h, j)
+      g0_final <- final_kde(Y, V_hat, 0, lambda0, h, j)
 
       # Conditional Probabilities
       p1 <- n1 / length(Y)
       p0 <- n0 / length(Y)
       P_j_est <- (p1 * g1_final) / (p1 * g1_final + p0 * g0_final)
-      P_est_list[[1]] <- P_j_est
+      P_est_list[[j]] <- P_j_est
     }
+    P_est_list[[J]] <- rep(1, n)
+
+    pmin(P_est_list)
+    
 
     # Quasi-likelihood calculation
     likelihood <- 0
     for (i in 1:length(Y)) {
       y_i <- Y[i]
-      if (y_i == min(Y)) {
-        likelihood <- likelihood + 1/n * as.numeric(abs(X[i]) < quantile(X, 0.95)) * log(P_est_list[[1]][i])
+      if (all(sapply(P_est_list, function(x) x > 0))) {
+        if (y_i == 1) {
+          likelihood <- likelihood - 1/n * as.numeric(abs(X[i]) < quantile(X, 0.95)) * log(P_est_list[[1]][i])
+        } else {
+          likelihood <- likelihood - 1/n * (abs(X[i]) < quantile(X, 0.95)) * log(P_est_list[[y_i]][i] - P_est_list[[y_i - 1]][i])
+        }
       } else {
-        likelihood <- likelihood + 1/n * (abs(X[i]) < quantile(X, 0.95)) * log(P_est_list[[y_i + 1]][i] - P_est_list[[y_i]][i])
+        likelihood <- Inf
       }
     }
-    return(- likelihood)
+    return(likelihood)
   }
   # }}}
 
+  # Quasi-gradient {{{
+  # quasi_gradient <- function(beta) {
+  #   V_hat <- X %*% beta
+  #   gradient_beta <- numeric(length(beta))
+  #
+  #   P_est_list <- list()
+  #   for (j in 1:J) {
+  #     n1 <- sum(Y <= j)
+  #     n0 <- sum(Y > j)
+  #
+  #     # Pilot KDE estimation
+  #     sigma1 <- sd(V_hat[Y <= j])
+  #     sigma0 <- sd(V_hat[Y > j])
+  #
+  #     g1_pilot <- pilot_kde(V_hat, 1, h_p, sigma1, j)
+  #     g0_pilot <- pilot_kde(V_hat, 0, h_p, sigma0, j)
+  #
+  #     # Local bandwidths
+  #     lambda1 <- compute_local_bandwidth(g1_pilot, sigma1, n1)
+  #     lambda0 <- compute_local_bandwidth(g0_pilot, sigma0, n0)
+  #
+  #     # Final KDE
+  #     g1_final <- final_kde(V_hat, 1,  lambda1, h, j)
+  #     g0_final <- final_kde(V_hat, 0, lambda0, h, j)
+  #
+  #     # Conditional Probabilities
+  #     p1 <- n1 / length(Y)
+  #     p0 <- n0 / length(Y)
+  #     P_j_est <- (p1 * g1_final) / (p1 * g1_final + p0 * g0_final)
+  #     P_est_list[[j]] <- P_j_est
+  #   }
+  #
+  #   # Gradient Calculation
+  #   for (i in 1:n) {
+  #     xi <- X[i, ]
+  #     vi <- V_hat[i]
+  #     indicator_1 <- ifelse(Y[i] <= j, 1, 0)
+  #     indicator_0 <- ifelse(Y[i] > j, 1, 0)
+  #
+  #     if (j == 1) {
+  #       gradient <- gradient + indicator_1 * (1 - P_j_est[i]) * xi
+  #     } else if (j == J) {
+  #       gradient <- gradient - indicator_0 * P_j_est[i] * xi
+  #     } else {
+  #       gradient <- gradient + indicator_1 * (1 - P_j_est[i]) * xi - indicator_0 * P_j_est[i] * xi
+  #     }
+  #   }
+  #   return(-gradient)
+  # }
+  # # }}}
+
   # Optimization
-  beta_opt <- optim(round(coef(lm(as.numeric(Y) ~ X))[-1], 2), fn=quasi_likelihood, method = 'Nelder-Mead')
+  beta_opt <- optim(round(coef(lm(as.numeric(Y) ~ X))[-1], 2), fn=quasi_likelihood, 
+    # gr=quasi_gradient, method = 'BFGS')
+    method = 'BFGS')
   beta_hat <- beta_opt$par
 
   return(beta_hat)
@@ -174,7 +235,7 @@ kde_estimator <- function(Y, X) {
     V_hat <- X %*% beta
 
     P_est_list <- list()
-    for (j in 0:J) {
+    for (j in 1:J) {
       g_bw <- np::npcdensbw(ydat=V_hat, xdat=ordered(as.numeric(Y <= j)))
       g1 <- fitted(np::npcdens(g_bw, newdata=data.frame(y=V_hat, x=1)))
       g0 <- fitted(np::npcdens(g_bw, newdata=data.frame(y=V_hat, x=0)))
@@ -183,24 +244,29 @@ kde_estimator <- function(Y, X) {
       p1 <- sum(Y <= j) / length(Y)
       p0 <- sum(Y > j) / length(Y)
       P_j_est <- (p1 * g1) / (p1 * g1 + p0 * g0)
-      P_est_list[[j + 1]] <- P_j_est
+      P_est_list[[j]] <- P_j_est
     }
+    P_est_list[[J]] <- rep(1, n)
 
     # Quasi-likelihood calculation
     likelihood <- 0
     for (i in 1:length(Y)) {
       y_i <- Y[i]
-      if (y_i == min(Y)) {
-        likelihood <- likelihood + 1/n * log(P_est_list[[1]][i])
+      if (all(sapply(P_est_list, function(x) x > 0))) {
+        if (y_i == 1) {
+          likelihood <- likelihood - 1/n * log(P_est_list[[1]][i])
+        } else {
+          likelihood <- likelihood - 1/n * log(P_est_list[[y_i]][i] - P_est_list[[y_i - 1]][i])
+        }
       } else {
-        likelihood <- likelihood + 1/n * log(P_est_list[[y_i + 1]][i] - P_est_list[[y_i]][i])
+        likelihood <- Inf
       }
     }
-    return(- likelihood)
+    return(likelihood)
   }
 
   # Optimization
-  beta_opt <- optim(coef(lm(as.numeric(Y) ~ X))[-1], fn=quasi_likelihood, method = 'Nelder-Mead')
+  beta_opt <- optim(coef(lm(as.numeric(Y) ~ X))[-1], fn=quasi_likelihood, method = 'BFGS')
   beta_hat <- beta_opt$par
 
   return(beta_hat)
@@ -230,10 +296,11 @@ simul <- function(n, pop) {
 
   # Klein and Sherman
   beta_hat_ks <- ks_estimator(Y, X)
+  beta_hat_ks / beta_hat_ks[2]
   
   # KDE
   beta_hat_kde <- kde_estimator(Y, X)
-
+  beta_hat_kde / beta_hat_kde[2]
   out <- data.table(
     rbind(
       beta_hat_logit,
@@ -257,7 +324,7 @@ simul <- function(n, pop) {
 # -------------------------------
 
 # Parameters
-n_sim <- 10         # Number of simulations
+n_sim <- 100         # Number of simulations
 n <- 1000            # Sample size
 p <- 2               # Number of covariates
 # J <- 5               # Number of ordinal categories
@@ -284,7 +351,7 @@ hist(pop$y_ord)
 estimates <- data.table()
 for (sim in 1:n_sim) {
   cat('Simulation:', sim, '\n')
-  n <- 1000
+  n <- 100
   estimates <- rbindlist(list(estimates, simul(n, pop)))
 }
 
