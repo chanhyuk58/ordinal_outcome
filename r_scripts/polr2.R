@@ -330,8 +330,7 @@ anova.polr <- function (object, ..., test = c("Chisq", "none"))
     names(out) <- c("Model", "Resid. df", "Resid. Dev", "Test",
                     "   Df", "LR stat.", "Pr(Chi)")
     if (test == "none") out <- out[, -7L]
-    class(out) <- c("Anova", "data.frame")
-    attr(out, "heading") <-
+    class(out) <- c("Anova", "data.frame")(out, "heading") <-
         c("Likelihood ratio tests of ordinal regression models\n",
           paste("Response:", rsp))
     out

@@ -244,46 +244,55 @@ ks_estimator <- function(Y, X) {
 # Y <- pop$y_ord
 # X <- as.matrix(pop[, c(1, 2)])
 kde_estimator <- function(Y, X) {
-  J <- max(Y)
+  # J <- max(Y)
   # Quasi-likelihood 
   quasi_likelihood <- function(beta) {
-        beta <- coef(lm(as.numeric(Y) ~ X))[-1]
+        # beta <- coef(lm(as.numeric(Y) ~ X))[-1]
     V_hat <- X %*% beta
 
-    P_est_list <- list()
-    for (j in 1:J) {
-      g_bw <- np::npcdensbw(ydat=V_hat, xdat=ordered(as.numeric(Y <= j)))
-      g1 <- fitted(np::npcdens(g_bw, newdata=data.frame(y=V_hat, x=1)))
-      g0 <- fitted(np::npcdens(g_bw, newdata=data.frame(y=V_hat, x=0)))
-
-      # Conditional Probabilities
-      p1 <- sum(Y <= j) / length(Y)
-      p0 <- sum(Y > j) / length(Y)
-      P_j_est <- (p1 * g1) / (p1 * g1 + p0 * g0)
-      P_est_list[[j]] <- P_j_est
-    }
-    P_est_list[[J]] <- rep(1, n)
+    g_bw <- np::npcdistbw(xdat=V_hat, ydat=ordered(Y))
+    # plot(g_bw)
+    p1 <- (np::npcdist(g_bw, exdat=V_hat, eydat=ordered(Y)))$condist
+    p2 <- (np::npcdist(g_bw, exdat=V_hat, eydat=ordered(Y + 1L)))$condist
+    # P_est_list <- list()
+    # for (j in 1:J) {
+    #   g_bw <- np::npcdensbw(ydat=V_hat, xdat=ordered(as.numeric(Y <= j)))
+    #   g1 <- (np::npcdens(g_bw, eydat=V_hat, exdat=1))$condens
+    #   g0 <- (np::npcdens(g_bw, eydat=V_hat, exdat=0))$condens
+    #
+    #
+    #   # Conditional Probabilities
+    #   p1 <- sum(Y <= j) / length(Y)
+    #   p0 <- sum(Y > j) / length(Y)
+    #   P_j_est <- (p1 * g1) / (p1 * g1 + p0 * g0)
+    #   P_est_list[[j]] <- P_j_est
+    # }
+    # P_est_list[[J]] <- rep(1, n)
 
     # Quasi-likelihood calculation
-    likelihood <- 0
-    for (i in 1:length(Y)) {
-      y_i <- Y[i]
-      if (y_i == 1) {
-        pr <- P_est_list[[y_i]][1]
-      } else {
-        pr <- P_est_list[[y_i]][i] - P_est_list[[y_i - 1]][i]
-      }
-      if (!is.na(pr)) {
-        if (pr > 0) {
-          likelihood <- likelihood + 1/n * as.numeric(abs(X[i]) < quantile(X, 0.95)) * log(pr)
-        } else {
-          likelihood <- Inf
-        }
-      } else {
-        likelihood <- Inf
-      }
-    }
-    return(- likelihood)
+    likelihood <- p2 - p1
+    # likelihood <- 0
+    # for (i in 1:length(Y)) {
+    #   y_i <- Y[i]
+    #   if (y_i == 1) {
+    #     pr <- P_est_list[[y_i]][1]
+    #   } else {
+    #     pr <- P_est_list[[y_i]][i] - P_est_list[[y_i - 1]][i]
+    #   }
+    #   if (!is.na(pr)) {
+    #     if (pr > 0) {
+    #       likelihood <- likelihood + 1/n * as.numeric(abs(X[i]) < quantile(X, 0.95)) * log(pr)
+    #     } else {
+    #       likelihood <- Inf
+    #     }
+    #   } else {
+    #     likelihood <- Inf
+    #   }
+    # }
+    if (all(likelihood > 0))
+      return(-sum(log(likelihood)))
+    else
+      Inf
   }
 
 
@@ -291,7 +300,7 @@ kde_estimator <- function(Y, X) {
   beta_opt <- optim(coef(lm(as.numeric(Y) ~ X))[-1], fn=quasi_likelihood, method = 'BFGS')
   beta_hat <- beta_opt$par
 
-  return(beta_hat)
+  return(beta_opt)
 }
 # }}}
 
@@ -321,7 +330,9 @@ simul <- function(n, pop) {
 
   # KDE
   beta_hat_kde <- kde_estimator(Y, X)
-  # beta_hat_kde / beta_hat_kde[2]
+
+  beta_hat_logit / beta_hat_logit[2]
+  beta_hat_kde / beta_hat_kde[2]
   out <- data.table(
     rbind(
       beta_hat_logit,
@@ -354,9 +365,9 @@ Kernel <- function(x) dnorm(x) # Gaussian Kernel
 # -------------------------------
 ns <- c(500, 1000, 2000)
 # n <- ns[2]
-# locs <- seq(-2, 2, 1)
+locs <- seq(-2, 2, 1)
 # loc <- locs[1]
-loc <- 0
+# loc <- 0
 
 estimates <- data.table()
 for (n in ns) {
@@ -364,11 +375,11 @@ for (n in ns) {
     set.seed(42)
     distributions <- c('logistic', 'normal', 'tdis', 'chisq')
     dist <- distributions[4]
-    df <- 10
-    N <- 10e+5
-    beta <- c(0.1, 1)
-    neg <- FALSE
-    pop <- generate_pop(dist=dist, df=df, beta=beta, negative=neg, location=loc)
+    df <- 3
+    N <- 1e+5
+    beta <- c(1, 1)
+    neg <- TRUE
+    pop <- generate_pop(dist=dist, df=df, beta=beta, negative=neg, location=loc, N=N)
     h_p <- 0.5           # Pilot bandwidth
     h <- n^(-1/6)             # Final bandwidth
 
