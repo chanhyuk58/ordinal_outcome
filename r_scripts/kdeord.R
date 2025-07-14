@@ -125,8 +125,8 @@ ks_estimator <- function(Y, X) {
   quasi_likelihood <- function(beta) {
     V_hat <- X %*% beta
 
-    P_est_list <- list()
-    for (j in 1:J) {
+    P_est_list <- matrix(0, (J + 1L), n)
+    for (j in 1:(J - 1L)) {
       n1 <- sum(Y <= j)
       n0 <- sum(Y > j)
 
@@ -149,33 +149,21 @@ ks_estimator <- function(Y, X) {
       p1 <- n1 / length(Y)
       p0 <- n0 / length(Y)
       P_j_est <- (p1 * g1_final) / (p1 * g1_final + p0 * g0_final)
-      P_est_list[[j]] <- P_j_est
+      P_est_list[j, ] <- P_j_est
     }
-    P_est_list[[J]] <- rep(1, n)
-
-    pmin(P_est_list)
-
-
+    P_est_list[J, ] <- rep(1, n)
+    P_est_list[(J + 1L), ] <- rep(1, n)
+    # diag(P_est_list[(Y + 1L), ])
     # Quasi-likelihood calculation
     likelihood <- 0
-    for (i in 1:length(Y)) {
-      y_i <- Y[i]
-      if (y_i == 1) {
-        pr <- P_est_list[[y_i]][1]
-      } else {
-        pr <- P_est_list[[y_i]][i] - P_est_list[[y_i - 1]][i]
-      }
-      if (!is.na(pr)) {
-        if (pr > 0) {
-          likelihood <- likelihood + 1/n * as.numeric(abs(X[i]) < quantile(X, 0.95)) * log(pr)
-        } else {
-          likelihood <- Inf
-        }
-      } else {
-        likelihood <- Inf
-      }
+    # pr <- P_est_list[[Y + 1L]][[Y]] - P_est_list[[Y]][Y]
+    pr <- diag(P_est_list[(Y + 1L), ]) - diag(P_est_list[Y, ])
+    if (all(pr > 0)) {
+      likelihood <- likelihood + 1/n * as.numeric(abs(X[i]) < quantile(X, 0.95)) * log(pr)
+    } else {
+      likelihood <- 1e+10
     }
-    return(- likelihood)
+    return(-likelihood)
   }
   # }}}
 
@@ -231,7 +219,7 @@ ks_estimator <- function(Y, X) {
   # # }}}
 
   # Optimization
-  beta_opt <- optim(round(coef(lm(as.numeric(Y) ~ X))[-1], 1), fn=quasi_likelihood, 
+  beta_opt <- optim(coef(lm(as.numeric(Y) ~ X))[-1], fn=quasi_likelihood, 
     # gr=quasi_gradient, method = 'BFGS')
     method = 'BFGS')
   beta_hat <- beta_opt$par
@@ -244,55 +232,58 @@ ks_estimator <- function(Y, X) {
 # Y <- pop$y_ord
 # X <- as.matrix(pop[, c(1, 2)])
 kde_estimator <- function(Y, X) {
-  # J <- max(Y)
+  J <- max(Y)
   # Quasi-likelihood 
   quasi_likelihood <- function(beta) {
         # beta <- coef(lm(as.numeric(Y) ~ X))[-1]
     V_hat <- X %*% beta
 
-    g_bw <- np::npcdistbw(xdat=V_hat, ydat=ordered(Y))
-    # plot(g_bw)
-    p1 <- (np::npcdist(g_bw, exdat=V_hat, eydat=ordered(Y)))$condist
-    p2 <- (np::npcdist(g_bw, exdat=V_hat, eydat=ordered(Y + 1L)))$condist
-    # P_est_list <- list()
-    # for (j in 1:J) {
-    #   g_bw <- np::npcdensbw(ydat=V_hat, xdat=ordered(as.numeric(Y <= j)))
-    #   g1 <- (np::npcdens(g_bw, eydat=V_hat, exdat=1))$condens
-    #   g0 <- (np::npcdens(g_bw, eydat=V_hat, exdat=0))$condens
-    #
-    #
-    #   # Conditional Probabilities
-    #   p1 <- sum(Y <= j) / length(Y)
-    #   p0 <- sum(Y > j) / length(Y)
-    #   P_j_est <- (p1 * g1) / (p1 * g1 + p0 * g0)
-    #   P_est_list[[j]] <- P_j_est
-    # }
-    # P_est_list[[J]] <- rep(1, n)
+    # g_bw <- np::npcdistbw(xdat=V_hat, ydat=ordered(Y))
+    # # plot(g_bw)
+    # p1 <- (np::npcdist(g_bw, exdat=V_hat, eydat=ordered(Y)))$condist
+    # p2 <- (np::npcdist(g_bw, exdat=V_hat, eydat=ordered(Y + 1L)))$condist
+
+    P_est_list <- list()
+    for (j in 1:(J - 1L)) {
+      g_bw <- np::npcdensbw(ydat=V_hat, xdat=as.numeric(Y <= j))
+            # plot(g_bw)
+      g1 <- (np::npcdens(g_bw, eydat=V_hat, exdat=rep(1, n)))$condens
+      g0 <- (np::npcdens(g_bw, eydat=V_hat, exdat=rep(0, n)))$condens
+
+
+      # Conditional Probabilities
+      p1 <- sum(Y <= j) / length(Y)
+      p0 <- sum(Y > j) / length(Y)
+      P_j_est <- (p1 * g1) / (p1 * g1 + p0 * g0)
+      P_est_list[[j]] <- P_j_est
+    }
+    P_est_list[[J]] <- rep(1, n)
 
     # Quasi-likelihood calculation
-    likelihood <- p2 - p1
-    # likelihood <- 0
-    # for (i in 1:length(Y)) {
-    #   y_i <- Y[i]
-    #   if (y_i == 1) {
-    #     pr <- P_est_list[[y_i]][1]
-    #   } else {
-    #     pr <- P_est_list[[y_i]][i] - P_est_list[[y_i - 1]][i]
-    #   }
-    #   if (!is.na(pr)) {
-    #     if (pr > 0) {
-    #       likelihood <- likelihood + 1/n * as.numeric(abs(X[i]) < quantile(X, 0.95)) * log(pr)
-    #     } else {
-    #       likelihood <- Inf
-    #     }
-    #   } else {
-    #     likelihood <- Inf
-    #   }
-    # }
-    if (all(likelihood > 0))
-      return(-sum(log(likelihood)))
-    else
-      Inf
+    # likelihood <- p2 - p1
+    likelihood <- 0
+    for (i in 1:length(Y)) {
+      y_i <- Y[i]
+      if (y_i == 1) {
+        pr <- P_est_list[[y_i]][1]
+      } else {
+        pr <- P_est_list[[y_i]][i] - P_est_list[[y_i - 1]][i]
+      }
+      if (!is.na(pr)) {
+        if (pr > 0) {
+          likelihood <- likelihood + 1/n * as.numeric(abs(X[i]) < quantile(X, 0.95)) * log(pr)
+        } else {
+          likelihood <- Inf
+        }
+      } else {
+        likelihood <- Inf
+      }
+    }
+    return(-likelihood)
+    # if (all(likelihood > 0))
+    #   return(-sum(log(likelihood)))
+    # else
+    #   Inf
   }
 
 
@@ -329,21 +320,19 @@ simul <- function(n, pop) {
   beta_hat_ks <- ks_estimator(Y, X)
 
   # KDE
-  beta_hat_kde <- kde_estimator(Y, X)
+  # beta_hat_kde <- kde_estimator(Y, X)$par
 
-  beta_hat_logit / beta_hat_logit[2]
-  beta_hat_kde / beta_hat_kde[2]
   out <- data.table(
     rbind(
       beta_hat_logit,
       beta_hat_probit,
       beta_hat_ols,
       beta_hat_ks,
-      beta_hat_kde
+      # beta_hat_kde
     )
   )
   out <- out[, ':='(
-    models = list('ologit', 'oprobit', 'OLS', 'KS', 'KDE'),
+    models = list('ologit', 'oprobit', 'OLS', 'KS'),
     n = n,
     loc = loc,
     dist = dist
@@ -377,7 +366,7 @@ for (n in ns) {
     dist <- distributions[4]
     df <- 3
     N <- 1e+5
-    beta <- c(1, 1)
+    beta <- c(2, 1)
     neg <- TRUE
     pop <- generate_pop(dist=dist, df=df, beta=beta, negative=neg, location=loc, N=N)
     h_p <- 0.5           # Pilot bandwidth
