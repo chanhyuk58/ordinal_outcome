@@ -17,7 +17,7 @@ parReplicate <- function(cl, rep, expr, simplify=TRUE, USE.NAMES=TRUE){
 
 # Generate the population {{{
 generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist='logistic', 
-                         df=1, seed=63130, negative=FALSE, location=0, sd=1) {
+                         df=1, seed=63130, negative=FALSE, location=0, sd=1, ncp=0) {
   set.seed(seed) 
 
   X <- matrix(rnorm(N*(xdim)), ncol=xdim)
@@ -27,7 +27,7 @@ generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist='logistic',
     logistic = rlogis(N),
     normal   = rnorm(N, mean=location, sd=sd),
     tdis     = rt(N, df=df),
-    chisq    = rchisq(N, df=df) + location,
+    chisq    = rchisq(N, df=df, ncp=ncp) + location,
     stop('Unknown distribution'))
 
   if (negative == TRUE) {
@@ -119,7 +119,7 @@ final_kde <- function(Y, V, l, lambda, h, j) {
 # }}}
 
 # Klien and Sherman (2002) Estimator {{{
-ks_estimator <- function(formula, data) {
+ks_estimator <- function(formula, data, B=200) {
   y_lab <- all.vars(formula)[1]
   x_lab <- all.vars(formula)[-1]
   J <- max(data[, y_lab])
@@ -257,29 +257,17 @@ ks_estimator <- function(formula, data) {
       Y = Y, X =X
     )
     beta_hat <- beta_opt$par
+    print('boot!')
     return(beta_hat)
   }
   # }}}
 
-  boot_obj <- boot::boot(sample_data, opt, 5)
+  out$boot_obj <- boot::boot(data, opt, B)
+  out$coef <- boot_obj$t0
+  out$bootstrap_se <- apply(boot_obj$t, sd, MARGIN=2) 
+  out$bootstrap_mean <- apply(boot_obj$t, mean, MARGIN=2) 
 
-    boot::boot(sample_data, statistic=function(data, ind){
-    Y <- data[ind, y_lab]
-    X <- as.matrix(data[ind, x_lab])
-
-    beta_opt <- optim(
-      round(coef(lm(Y  ~ X))[-1], 1), 
-      fn=quasi_likelihood, 
-      gr=quasi_gradient,
-      method='BFGS',
-      Y = Y, X =X
-    )
-    beta_hat <- beta_opt$par
-    print('bootstrap!')
-    return(beta_hat)
-  }, 5)$t0
-
-  return(t0)
+  return(out)
 }
 # }}}
 
@@ -344,31 +332,29 @@ simul <- function(n, pop) {
   idx = sample(N, n)
   sample_data <- pop[idx, ]
 
-  Y <- sample_data$y_ord
-  X <- as.matrix(sample_data[, c(1:3)])
-
+  formula <- ordered(y_ord) ~ x1 + x2 + x3 + x4 + T
   # Ordered logit
-  fit_logit <- MASS::polr(ordered(y_ord) ~ x1 + x2 + T, data=sample_data, method = 'logistic', Hess=T)
-  beta_hat_logit <- coef(summary(fit_logit))[1:dim(X)[2], 1]
-  beta_hat_se_logit <- coef(summary(fit_logit))[1:dim(X)[2], 2]
+  fit_logit <- MASS::polr(formula, data=sample_data, method = 'logistic', Hess=T)
+  beta_hat_logit <- coef(summary(fit_logit))[1:(xdim + 1), 1]
+  beta_hat_se_logit <- coef(summary(fit_logit))[1:(xdim + 1), 2]
   print('probit done')
 
   # Ordered probit
-  fit_probit <- MASS::polr(ordered(Y) ~ X, method = 'probit', Hess=T)
-  beta_hat_probit <- coef(summary(fit_probit))[1:dim(X)[2], 1]
-  beta_hat_se_probit <- coef(summary(fit_probit))[1:dim(X)[2], 2]
+  fit_probit <- MASS::polr(formula, data=sample_data, method = 'probit', Hess=T)
+  beta_hat_probit <- coef(summary(fit_probit))[1:(xdim + 1), 1]
+  beta_hat_se_probit <- coef(summary(fit_probit))[1:(xdim + 1), 2]
   print('probit done')
 
   # OLS
-  fit_ols <- lm(as.numeric(Y) ~ X)
-  beta_hat_ols <- coef(summary(fit_ols))[(1:dim(X)[2]+1L), 1]
-  beta_hat_se_ols <- coef(summary(fit_ols))[(1:dim(X)[2]+1L), 2]
+  fit_ols <- lm(as.numeric(y_ord) ~ x1 + x2 + x3 + x4 + T, data=sample_data)
+  beta_hat_ols <- coef(summary(fit_ols))[(1:(xdim + 2)), 1]
+  beta_hat_se_ols <- coef(summary(fit_ols))[(1:(xdim + 2)), 2]
   print('ols done')
 
   # Klein and Sherman
   fit_ks <- ks_estimator(y_ord ~ x1 + x2 + T, data=sample_data)
-  beta_hat_ks <- fit_ks[[1]]
-  beta_hat_se_ks <- fit_ks[[2]]
+  beta_hat_ks <- fit_ks$coef
+  beta_hat_se_ks <- fit_ks$bootstrap_se
   print('ks done')
 
   # KDE
@@ -388,7 +374,7 @@ simul <- function(n, pop) {
     models = list('ologit', 'oprobit', 'OLS', 'KS'),
     # models = list('ologit', 'oprobit', 'OLS'),
     n = n,
-    loc = loc,
+    ncp = loc,
     dist = dist
   )
     ]
@@ -409,7 +395,7 @@ n_sim <- 100         # Number of simulations
 # -------------------------------
 ns <- c(1000, 2000)
 # n <- ns[1]
-locs <- seq(1, 10, 3)
+locs <- seq(1, 3, 1)
 # loc <- locs[1]
 
 estimates <- data.table()
@@ -418,18 +404,20 @@ for (n in ns) {
     set.seed(42)
     distributions <- c('logistic', 'normal', 'tdis', 'chisq')
     dist <- distributions[4]
-    df <- loc
+    df <- 2
+    ncp <- loc
     N <- 1e+5
-    beta <- c(-1, 1, 0.5)
+    beta <- c(-1, 1, sqrt(2), 2, 0.5)
     neg <- F
-    pop <- generate_pop(dist=dist, df=df, loc=0, beta=beta, negative=neg, N=N, xdim=2)
+    xdim <- 4
+    pop <- generate_pop(dist=dist, df=df, loc=0, beta=beta, negative=neg, N=N, xdim=xdim, ncp=ncp)
 
     cl <- parallel::makePSOCKcluster(4)
     parallel::clusterExport(cl, varlist=c(ls(), list('N', 'n', 'pop', 'simul', 'polr', 'ks_estimator', 'data.table')), envir=environment())
     out <- rbindlist(parReplicate(cl, n_sim, simul(n, pop), simplify=FALSE))
-    print(paste('sample size:', n, '\nlocation:', loc))
+    print(paste('sample size:', n, '\nncp:', loc))
     estimates <- rbindlist(list(estimates, out))
-    fwrite(estimates, file='../data/estimates.csv', bom=T)
+    fwrite(estimates, file='../data/estimates_chisq_ncp1-3_boot.csv', bom=T)
     print(estimates[, lapply(.(X1/X2, X1_se, X2/X2, X2_se, XT/X2, XT_se), mean), ,by=.(as.character(models), n, loc, dist)])
   }
 }
