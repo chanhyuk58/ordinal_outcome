@@ -16,17 +16,20 @@
 \usepackage{amsthm}
 \usepackage{amsfonts}
 \newtheorem{assumption}{Assumption}
+\newtheorem{theorem}{Theorem}
 % \usepackage[cjk]{kotex}
 
-% \usepackage{listings}
+\usepackage{listings}
+\lstset{language=R,keywordstyle={\bfseries}}
 % \usepackage{tikz}
+\usepackage{multirow}
 
 \usepackage{setspace}
 \doublespacing
 % }}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Title & Author %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\title{Partial ID for Ordered Choices with Regressor measured in Bins}
+\title{Causal Inference with Ordinal Outcome: Semiparametric Approach}
 \author{Chanhyuk Park}
 \date{}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,175 +38,367 @@
     \maketitle
 
 \begin{abstract}
-    As survey experiments and causal inference frameworks gain importance, individual-level survey data has become increasingly popular. These surveys often measure outcomes using ordered responses, and some control or independent variables are recorded in bins. Statistical analysis of such data requires careful consideration, as failing to account for differences in response interpretation, misspecification of underlying distributions, and uncertainties arising from the imprecise measurement of variables measured in bins can lead to biased and inconsistent results. Research designs focused on causal inference, such as survey experiments or DiD design with observational data, may be harmed more by these challenges, as biases can sometimes be large enough to alter the sign of estimated coefficients. This paper introduces a semiparametric partial identification method that is more robust to model misspecification and the presence of variables measured in bins than standard Orderd Probit or logit models. Monte Carlo simulation results demonstrate that the proposed approach better accounts for heterogeneity, accommodates different distributional forms of outcomes, and effectively addresses biases from variables measured in bins.
+    Many of the political science research aiming the identification of causal parameters also rely heavily on ordinal scales in measuring outcomes such as attitudes, preferences, or perceptions. While emphasis on causal identification increases, there has been less discussion on how we can do causal inference with these ordinal outcomes. Simple cardinalization only identifies the direction of the causal effect at best and generally cannot identify the causal effect directly. IRT based methods require multiple items of questions which is usually not the case in practice. Ordered logit and probit models are widely used but, they rely on strong and often untested assumptions about the distribution of unobserved error terms, and when these assumptions are violated, the estimates are inconsistent and biased, leading to incorrect inferences. This paper introduces a diagnosis for the distributional assumptions by utilizing surrogate-based residuals, and suggests a semiparametric identification strategy as an alternative model that is more robust than standard Ordered Probit or logit models. Through simulation studies and an empirical application to political attitude data, this paper shows how departures from assumed error distributions can lead to substantively misleading conclusions. 
 \end{abstract}
 
 \newpage
 \section{Introduction}
 
-Individual-level survey has been used to study micro-level political opinions. As the emphasis on causal inference frameworks increases and survey experiments become more common, survey data continues to gain more popularity. One common situation that researchers regularly encounter is the pair of ordinal outcome variable and at least one of variable that is only measured in bins. This paper shows that the standard method to deal with ordinal outcomes and binned covariates may lead to inconsistent and biased estimation, and introduces a semiparametric partial identification approach.
+With growing emphasis on the causal inference framework, political science has sought on identifying the causal effect on policies and other political factors. Survey experiment, observational studies  with designs such as difference-in-difference and regression discontinuity become some of the prevalent empirical strategy in political science. For example, during the period from 2021 to 2024, about 20\% of articles published in top 3 general political science journals (\textit{American Journal of Political Science, American Political Science Journal, and Journal of Politics}) included survey experiment as one of their empirical strategy. 
 
-Ordinal outcomes, although the true values of these opinions would lie on a continuous scale, are typically measured using ordered-choice questions (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}). Political opinons on variable policy areas are great examples of this: politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, and foreign policy preferences \citep{Scheve2001r, Mayda2005a}. These outcomes put two obstacles in statistical analysis. First, respondents may not interpret response scales uniformly. Some individuals may have lower (or higher) thresholds than others, meaning that one person’s strongly agree might be equivalent to another’s agree \citet{King2004a}. Second, the true distribution of the outcome is unobservable, and misspecification of this distribution can lead to inconsistent and biased results \citep{Manski1988a, Greene2010a, Bond2018a}. 
+A lost of research with causal inference framework deal with attitudes, opinions and preferences as outcomes, and they often measured with ordinal scales. Researchers are interested in identifying causal effect on people's preferences such as politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, and foreign policy preferences \citep{Scheve2001r, Mayda2005a}. Researchers frequently rely on ordered responses, measured with Likert-type choices (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}). Ordinal scales, unlike interval or cardinal scales, carry only information on orders. The common operation with labels of $\{1, 2, 3, 4, 5\}$ is arbitrary and carries no numerical meaning, and the distances between each values are not necessarily equal. 
 
-In addition to these two problems, binned variables add potential bias in estimation due to its imprecise measurement. Variables such as income, asset, education (schooling year), or age, are often measured in bins for privacy reasons and researchers usually observe only the lower and upper bounds instead of the exact values. Whether a bracketed variable serves as a primary independent variable or a control, the uncertainty from its imprecise measurement may introduce additional bias in estimation and identification. 
+The problem is that commonly used causal inference tools mostly assumes cardinal or at least interval outcomes. Thus, it is not guarantees that tools and designs such as means-difference, difference-in-differences, and regression discontinuity to work on ordinal outcomes. One commonly used approach is ignoring the ordinal nature and treat ordinal outcomes as cardinal variables by assigning numeric labels to each responses. This enables us to use all causal inference tools as usual. However, since the numeric labels are arbitrary, this approach, at best, only can uncover the direction of the causal effect, and the size of the estimates are hard to interpret \citep{Schroder2017a, Bond2018a, Bloem2022a}. 
 
-Ordered logit and Orderd Probit models are by far the most popular choices in analyzing data with ordinal outcomes. They effectively incorporate the ordinal character of the outcome variable and also guarantees fast estimation through the maximum likelihood estimation (MLE). However, these strength do not come without costs. Both models rely on strong distributional assumptions (e.g., Orderd Probit assumes a normally distributed outcome), making them vulnerable to bias from distributional misspecification. Additionally, these models are generally not robust to uncertainty introduced by bracketed control or independent variables.
+Another approach is based on IRT. IRT based methods utilize multiple items of questions on one latent outcome variable to recover the latent outcome variable itself in the first step and then use causal inference tools with the recovered latent outcome variable. Recently developed hierarchical IRT method \citep{Zhou2019a, Stoetzer2025a} effectively merges the two steps with EM algorithm. Although this methods can identify the treatment effect up to scale, but in practice, it is hard to find multiple items on political concepts.
 
-The magnitude of bias arising from these three challenges can be significant enough to alter the sign of estimated coefficients—an especially serious issue given that survey-based research designs, including survey experiments and observational studies using difference-in-differences (DiD) designs, often involve causal interpretation.
+Lastly, common ordered logit model and ordered probit model are built on a latent variable framework, and thus useful tool in identifying the causal parameter in latent space. They effectively incorporate the ordinal character of the outcome variable and also guarantees fast estimation through the maximum likelihood estimation (MLE). However, both models rely on strict distributional assumptions about the error term in the latent variable model -- logistic for ordered logit, and standard normal for ordered probit. When these assumptions are violated, estimates can be inconsistent and biased, even in large samples. Critically, this bias is not just a matter of inefficiency; in many cases, it can alter the sign of estimated treatment effects or covariate associations, leading to incorrect substantive conclusions \citep{Manski1988a, Greene2010a}.
 
-To address these issues, this paper introduces a semiparametric partial identification approach based on the Modified Maximum Score (MMS) estimation technique from \citet{Manski2002a}, further developed in \citet{Wang2022a}. 
-%Improvement in survey design \citep{King2004a, King2007a, Chen2024a}, sensitivity analysis \citep{Bloem2022a}, and semiparametric approach \citep{Lee1992a, Lewbel2000a, Klein2002a, Liu2024a} have been proposed to mitigate some of the biases, but most of them only deal with one or two problems.
-\citet{Wang2022a}'s approach offers several advantages over standard Orderd Probit and logit models. Being semiparametric, it avoids strong distributional assumptions and is therefore less prone to biases from model misspecification and response scale heterogeneity. Moreover, by explicitly accounting for bracketed variables -- whether as key independent variables or as controls --this method provides more robust results in most survey analysis settings.
+This paper makes two contributions regarding these problems. First, it introduces a practical and accessible framework for diagnosing distributional assumptions in ordinal regression models using surrogate residuals. These diagnostics allow researchers to detect skewness and other departures from assumed error distributions, implemented via the \lstinline{sure} package in R. Second, this paper also proposes a semiparametric alternative to conventional ordinal models when distributional assumptions appear to be violated. Specifically, I focus on the Klein–Spady estimator, which does not assume a specific error distribution and remains consistent under a broader set of conditions. Utilizing Kernel Density Estimation (KDE) this estimator offers a compelling balance between robustness and interpretability, making it a promising option for applied survey researchers.
 
-To evaluate the performance of this approach, this paper presents Monte Carlo simulation results. These simulations demonstrate that when the true distribution deviates significantly from normality, standard Orderd Probit and logit models yield biased estimates, whereas the proposed approach remains more robust. Furthermore, the proposed method offers more precise estimation even in the presence of bracketed regressors. 
+To evaluate the performance of these methods, the paper presents Monte Carlo simulations that vary the shape of the latent error distribution and the precision of covariate measurement. The simulations show that ordered logit and probit estimators become biased under skewed distributions, while the semiparametric estimator maintains unbiasedness. Finally, this paper apply these tools to a real-world political survey, illustrating how distributional misspecification can meaningfully affect substantive conclusions and showing how semiparametric methods provide a more robust alternative.
 
-\section{Statistical Models for Ordered Outcomes}
+By offering both a diagnostic strategy and an estimation solution, this paper provides researchers with tools to improve inference in a wide class of models using ordinal outcomes—a common yet under-scrutinized challenge in political science.
 
-Political science research frequently relies on outcomes measured in ordered responses, and its popularity continues to grow as causal inference methods and individual-level survey experiments receive increasing attention. Due to privacy concerns, these surveys often include bracketed variables, such as income and assets, where respondents select a range with lower and upper bounds rather than reporting exact values.
+% Improvement in survey design \citep{King2004a, King2007a, Chen2024a}, sensitivity analysis \citep{Bloem2022a}, and semiparametric approach \citep{Lee1992a, Lewbel2000a, Klein2002a, Liu2024a} have been proposed to mitigate some of the biases, but most of them only deal with one or two problems.
 
-The two most commonly used statistical models for analyzing such data are Orderd Probit and Ordered logit. These models require strong distributional assumptions; for example, Orderd Probit assumes that the conditional distribution of outcomes follows a normal distribution. While these assumptions facilitate fast and efficient estimation using maximum likelihood, many researchers have criticized them for failing to account for three key challenges in survey data: (1) variations in individual interpretation of response scales, (2) misspecification of the true outcome distribution, and (3) uncertainty arising from imprecisely measured bracketed variables.
+\section{Causal Inference with Ordinal Outcomes}
 
-First, respondents may not interpret response scales uniformly. Political opinion questions are typically measured using five-point Likert scales, which are inherently subjective. Some individuals may have lower (or higher) thresholds than others, meaning that one person’s \textit{strongly agree} might be equivalent to another’s \textit{agree} \citet{King2004a}. As shown in Figure \ref{fig:1}, although both A and B have same opinion denoted by the red arrow, they may answer differently because they interpret the scale differently.
+With growing emphasis on the causal inference framework, political science has sought on identifying the causal effect on policies and other political factors. Survey experiment, observational studies  with designs such as difference-in-difference and regression discontinuity become some of the prevalent empirical strategy in political science. For example, during the period from 2021 to 2024, about 20\% of articles published in top 3 general political science journals (\textit{American Journal of Political Science, American Political Science Journal, and Journal of Politics}) included survey experiment as one of their empirical strategy. 
 
-\citet{Aldrich1977a} examined interpretability issues when recovering politicians’ ideological positions from ordinal survey responses, though without directly addressing estimation concerns. \citet{King2004a} proposed the “anchored vignettes” approach to mitigate these issues at the survey design stage. This method introduces standardized example questions designed to capture respondents’ interpretations of key concepts, allowing researchers to adjust responses accordingly. \citet{King2007a} further refined the approach by developing methods to evaluate anchoring vignettes. However, a major limitation of this approach is its reliance on the assumption that respondents interpret both vignettes and primary survey questions consistently—an assumption that is difficult to test empirically.
+Many of political science research with causal inference framework target the causal effect on abstract and subjective concepts and preferences, and they often operationalized as ordinal variables.Researchers are interested in identifying causal effect of policies and other factors on people's preferences such as politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, and foreign policy preferences \citep{Scheve2001r, Mayda2005a}. We cannot observe these outcomes directly, but we believe many of them can be expressed on a uni-dimensional space; for example, we can imagine to line up people based on their opinion on pension reform. Researchers frequently rely on ordered responses, measured with Likert-type choices (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}). 
 
-\begin{figure}
-    \begin{center}
-        \includegraphics[width=0.95\textwidth]{../figures/interpretation3.pdf}
-    \end{center}
-    \caption{Different interpretation of the scale}\label{fig:1}
-\end{figure}
+Although this combination of ordinal outcome and causal inference becomes more common, there has been less discussion on exactly what it means to do causal inference with ordinal outcome. Ordinal scales, unlike interval or cardinal scales, carry only information on orders. The common operational labels of $\{1, 2, 3, 4, 5\}$ are arbitrary and carry no numerical meaning, and the distances between each values are not necessarily equal. This unique characteristic of ordinal outcomes poses question on what should be the estimand, and which causal inference tools to be used to estimate, and what the estimates mean, because many of the causal inference tools assume that the outcomes are cardinal or at least interval. 
 
+To be more specific, let us suppose a following simple model. There is a latent continuous outcome variable of $Y^{\ast}$ in a latent space. This can be thought as lining up people based on their preferences or opinion on a certain political issue. Then, assume following partially linear true data-generating process (DGP):
+\begin{equation}
+    Y^{\ast} = f(X, \beta) + D^{T}\tau + \epsilon
+\end{equation}
+$D$ is a binary treatment indicator, where $1$ denotes a treatment group and $0$ denotes a control group, $X$ is a vector of regressors, and $\epsilon$ is a latent error term. 
 
-Second, misspecification of the outcome distribution can lead to inconsistent and biased results \citep{Manski1988a, Greene2010a, Bond2018a}. \citet{Bond2018a} demonstrated that naive estimation using Ordered logit or Orderd Probit—which impose strong distributional assumptions—can sometimes lead to conclusions opposite to the true effect if the actual outcome distribution deviates significantly from the assumed model. Figure \ref{fig:2} shows the biases in coefficients when the true distribution of error term is exponential for the different sample sizes on the x-axis. Both Orderd Probit (light purple line) and Ordered logit (light blue line) models have large biases, and these biases do not decrease as the sample size increases. This issue is difficult to detect because Ordered logit and Orderd Probit models often produce similar results. Although statistical tests for distributional assumptions exist, they do not provide alternative models when those assumptions are violated \citep{Bera1982a, Glewwe1997a, Weiss1997a}.
+Now, borrowing from the potential outcome framework \citep{Rubin1974a}, let us denote the potential outcome in the latent space as $Y^{\ast}(d)$ and the potential outcome in observed data as $Y(d)$, where $d \in \{0, 1\}$ denotes the treatment status. We put following standard causal inference assumptions regarding the latent $Y^{\ast}$. 
 
-\begin{figure}
-    \begin{center}
-        \includegraphics[width=0.95\textwidth]{../figures/liu_probit_logit.png}
-    \end{center}
-    \caption{Biases in coefficients when the distribution of the error term is exponential (from \citet{Liu2024a}). Y-axis denotes the size of the bias of the coefficients, and X-axis denotes sample sizes. Light blue lines are biases of the results from Ordered logit models, and light purple lines are biases of the results from Orderd Probit models.}\label{fig:2}
-\end{figure}
+\begin{assumption}{SUTVA}
+    A unit's potential outcomes are not affected by the treatment given to other units. $Y^{\ast}_{i} = Y^{\ast}(D_{i})$
+\end{assumption}
 
+\begin{assumption}{Ignorability}
+    The treatment assignment is conditionally independent to the potential outcomes. $Y^{\ast}_{i} \perp\!\!\!\perp D_{i} \mid X_{i}$
+\end{assumption}
 
-Recently, \citet{Bloem2022a} introduced a sensitivity analysis for distributional assumptions. Building on \citet{Schroder2017a}, \citet{Bloem2022a} proposed a robustness test for plausible monotonic increasing transformations of the observed ordinal scale’s distribution. This framework is valuable because it allows researchers to assess how robust their findings are to certain distributional changes, such as globally concave and convex transformations or transformations with an inflection point. However, as the author notes, despite covering many theoretically plausible cases, the study remains limited to a restricted set of distributional forms.
+\begin{assumption}{Positivity}
+    There is non-zero probability of being treated. $\mathbb{P}\left(D_i = 1\right) > 0$
+\end{assumption}
 
-On the other hands, semiparametric approaches have been developed to mitigate both response scale interpretation issues and potential distributional misspecification. The literature can be roughly divided in two categories. Kernel-based approaches estimate the error distribution nonparametrically using kernel estimation strategy. \citet{Lewbel2000a} was one of the first to attempt relaxing both assumptions in this approach. \citet{Klein2002a} introduced a shift-restriction-based approach that uses kernel estimation for both cut points and regression coefficients, providing greater flexibility. One downside of this approach is that researchers to decide which kernels to be used, and the performance largely depends on this decision.
+The target causal estimand considered in this paper is the average treatment effect (ATE) in terms of the latent outcome $Y^{\ast}$. 
+If all above assumptions are met, ATE of $Y^{\ast}$ can be written as $\mathbb{E}\left[Y^{\ast}_{i}(1) \mid D_i = 1 \right] - \mathbb{E}\left[Y^{\ast}_{i}(0) \mid D_i = 0\right] = \tau$. Thus, the goal is identifying $\tau$.
 
-Some semiparametric approaches do not require input from researchers. Variants of the maximum score and maximum rank estimation are prime examples \citet{Lee1992a} extended \citet{Manski1985a}’s maximum score estimation model for binary outcomes to ordered choice settings. \citet{Liu2024a} built on \citet{Klein2002a} by applying isotonic regression and maximum rank estimation strategy instead of kernel methods. \citet{Ito2021a} leveraged Monte Carlo resampling to construct likelihoods, enabling estimation without strict distributional assumptions.  %However, these approaches primarily focus on ordered outcomes and largely overlook the challenge of bracketed variables.
+The problem is that continuous $Y^{\ast}$ can not be observed directly, but we only can observe some (monotonic) transformation of it. Denote the observed ordinal outcome as $Y$ and the transformation (often called reporting function) as $g$.
+% $$
+%     Y = \begin{cases}
+%         0 & \text{if } \alpha_{-1} < g(Y^{\ast}) \le \alpha_{0} \\
+%         1 & \text{if } \alpha_{0} < g(Y^{\ast}) \le \alpha_{1} \\
+%         \vdots & \vdots  \\
+%         J & \text{if } \alpha_{J-1} < g(Y^{\ast}) \le \alpha_{J} \\
+%     \end{cases}
+% $$, where $\alpha_{k}$ denotes the threshold points for each ordinal category. Conventionally, $-\infty = \alpha_{-1} \le \alpha_{0} \le \ldots \le \alpha_{k} = \infty$. Here I assume that everyone has same thresholds, ignoring the additional problems arising from inter- and intra-personal differences in scale use \citep{King2004a, King2007a}.
 
-Although previously mentioned semiparametric approaches offer greater robustness to both issues of different interpretation among respondents and distributional misspecification, most models care less about the additional complexity introduced by bracketed variables, which are frequently used in survey data. Whether a bracketed variable serves as a key independent variable or a control, its imprecise measurement may further bias the estimation of the parameters. One recent study by \citet{Chan2024a} attempts to address bracketed variables by leveraging multiple survey questions with different discretization schemes. Their findings suggest that access to alternative measures with varying bracket definitions improves distributional approximation, leading to point identification. While the results from their research suggest that researchers can achieve both robust estimation and enhanced respondent privacy by including multiple measures of the same variable, a key limitation is that such alternative measures are rarely available in practice.
-
-Building upon these previous research efforts, this paper introduces a semiparametric partial identification approach developed in \citet{Wang2022a} that offers greater robustness to the three challenges discussed above in individual-level survey data. This approach extends one of the most prominent semiparametric methods -- the Generalized Maximum Score estimator proposed by \citet{Lee1992a} -- to explicitly account for cases in which independent or control variables are measured in brackets. Being another variant of the maximum score estimation, this approach does not require researchers to decide tuning parameters such as bandwidth for kernels.
-
-
-\section{Semiparametric Partial Identification Approach}
-This paper deals with the common setting in political science studies that deals with individual level survey data, where (a) the outcome is observed in ordinal way, (b) at least one of the regressors is measured in brackets. 
-
-Suppose a true or latent value of the outcome is continuous and denote it with $Y^{\ast}$. We further assume that the true data-generating process (DGP) is captured as:
 $$
-    Y^{\ast} = X^{T}\beta_{1} + v^{T}\beta_{2} + \epsilon
+    Y = g(Y^{\ast})
 $$ 
-, where $X$ is the vector of regressors and $v$ is the bracket-valued regressor and $\epsilon$ is an error term. 
 
-We do not observe the $Y^{\ast}$ directly, but observe the ordinal choices, $Y$, made based on $Y^{\ast}$. 
-$$
-    Y = \begin{cases}
-        0 & \alpha_{-1} \le Y^{\ast} \le \alpha_{0} \\
-        1 & \alpha_{0} \le Y^{\ast} \le \alpha_{1} \\
-        \vdots &  \\
-        k & \alpha_{k-1} \le Y^{\ast} \le \alpha_{k} \\
-    \end{cases}
-$$ 
-, where $\alpha_{k}$ denotes the cut points for each ordinal category. Conventionally, $-\infty = \alpha_{-1} \le \alpha_{0} \le \ldots \le \alpha_{k} = \infty$. 
+One may concern the inter- and intra-personal differences in $g$. In other words, each respondent may use different internal process in transforming $Y^{\ast}$ into $Y$. This hampers the identification, but the concern may be attenuated by careful survey design utilizing anchored vignettes suggested in \citep{King2004a, King2007a}. Throughout the paper, I assume everyone shares same $g$, ignoring the additional problems arising from inter- and intra-personal differences. 
 
-Also, we do not observe $v$ directly, but only informed the lower bound of $v_{0}$ and the upper bound of $v_{1}$ for each unit. Usually, some sensitive information such as income, asset and education levels are measured in this manner. 
+\begin{assumption}{Uniform Reporting function}
+    The reporting function $g$ is invariant across units.
+\end{assumption}
 
-Ordered probit and logit models estimate the modeling parameters, $\beta$s and cut-points ($\alpha$s) based on distributional assumptions on error terms. However, the estimator from these models are inconsistent and biased if the distributional assumptions cannot be met. For now, let us assume that we observe the true $v$.
 
-For example, Ordered Probit model assume that the error term ($\epsilon$) follows the standard normal distribution. Then the probability of observing $Y = j$ is given by:
+The identification problem arises from the fact that we cannot observe $Y^{\ast}$ directly nor know the transformation $g$. If we can directly observe $Y^{\ast}$, then ATE can easily be identified as usual. Or if we have perfect knowledge on $g$, we can also identify the causal effect since $\mathbb{E}\left[Y^{\ast}_{i}(1)\right] - \mathbb{E}\left[Y^{\ast}_{i}(0)\right] = \mathbb{E}\left[g(Y(1))\right] = \mathbb{E}\left[g(Y(0))\right]$. 
+
+However, in usual settings, we only can observe $Y$. In this setting, we only can identify ATE up to a scale. 
+
+
+
+Regarding the causal estimand $\tau$, there have been three common approaches in political science: 1) ignore the ordinal nature and regard it as cardinal value 2) IRT based approaches, and 3) ordered regression. Assigning numerical values to ordinal outcomes enables using usual causal inference tools such as means-difference, least squares, and difference-in-differences. One downside for this approach comes from the fact that the numerical labels are arbitrary, and theoretically any labels should work if the preserve the order. For example, labeling \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree} as $\{1, 2, 3, 4, 5\}$ is no more reasonable than labeling them as $\{1, 3, 15, 50, 100\}$. As discussed in \citet{Bond2018a} and \citet{Schroder2017a}, in most cases, there exists at least one labeling scheme that can flip the sign of the causal effect. \citet{Bloem2022a} partly deals with this problem by providing a sensitivity test and a partial identification method based on the test. 
+
+However, the more serious problem of cardinalization approach is the interpretation of the estimates. For instance, means-difference and difference-in-differences are comparing numerical expectations of outcomes from different groups. However, if the observed outcomes are \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}, even though we have transformed them into numbers, what does the expectations of these responses, mean in terms of the latent variable $Y^{\ast}$? In a potential outcome framework, the relationship between $\mathbb{E}\left[Y(d) \mid X \right]$ and $\mathbb{E}\left[Y^\ast(d) \mid X \right]$ is not clear. Furthermore, even if we safely put some meanings to the expectations, the size of the difference between expectations are hardly interpretable, since they depend on the labeling scheme. For example, in case of 5 point Likert scale, if we assign $\{2, 4, 6, 8, 10\}$, instead of $\{1, 2, 3, 4, 5\}$, the size of the difference will be doubled. This may significantly misleading, since the estimates we have only have very loose link with the treatment effects, and may over- or under-estimate them. 
+
+
+Another approach in estimating causal effect with ordinal variable is through IRT.  IRT based Two-step approach first estimate the latent variable using the serious of items that were designed to measure the same concept in different angles. In the context of the model setting above, using multiple $Y$, IRT estimates the $Y^{\ast}$. After we get the estimate for the latent variable $Y^{\ast}$, then we can employ the usual causal inference tools to identify $\tau$ up to scale since it is now have numerical meanings. The second variant of IRT based approach, the hierarchical IRT is recent discussed in \citet{Stoetzer2025a}. Instead of estimating the latent variable in the first step, they effectively merge the two steps in to EM algorithm, and produces more consistent estimates of the causal effects. Since IRT based methods do not put any numerical meaning to the ordinal outcomes themselves, the estimates from the methods can be interpreted as the target causal effect up to scale. One downside of the approach is that it is advised to have at least 3 different items for IRT to work properly, but most of the political science research rely on 1 or 2 items in measuring their outcomes. Therefore, when researcher is focusing on the treatment effect on specific dimension such as opinion on gender inequality or immigrant issue, where outcomes are not usually measured with multiple items, IRT might not be a good choice.
+
+
+The third approach is using ordinal regression, and by far the most common methods are ordered logit and probit regressions. Similar to the IRT based methods, both ordered logit and probit utilize the ordered nature of the outcomes measured in ordinal scales, and designed to identify the actual target causal effect in unobserved, latent space up to scale. However, these models require strong distributional assumptions on the error term in the latent space, $\epsilon$; ordered probit assumes a normal distribution and ordered logit assumes a logistic distribution. While these assumptions facilitate fast and efficient estimation using maximum likelihood, when the distributional assumptions fail, the estimates are statistically inconsistent and biased. 
+
+Let $i$ be the index for $i$th data. To construct likelihood function, the probability of observing $Y = j$ given $X_{i}$ is:
 $$
 \begin{aligned}
-    \mathbb{P}\left(Y = j \mid X\right) &= \mathbb{P}\left(Y^\ast \le \alpha_j\right) - \mathbb{P}\left(Y^\ast > \alpha_j-1\right) \\
-    &=\mathbb{P}\left(\epsilon \le \alpha_j - X^\beta_{1} - v^T \beta_{2}\right) - \mathbb{P}\left(\epsilon > \alpha_{j-1} - X^\beta_{1} - v^T \beta_{2}\right)\\
-    &= \Phi(\alpha{j} - X^{T}\beta_{1} - v^{T} \beta_{2}) - \Phi(\alpha{j-1} - X^{T}\beta_{1} - v^{T} \beta_{2})
+    \mathbb{P}\left(Y = j \mid X_{i}\right) &= \mathbb{P}\left(Y^\ast \le \alpha_j\right) - \mathbb{P}\left(Y^\ast > \alpha_{j-1}\right) \\
+    &=\mathbb{P}\left(\epsilon \le \alpha_j - (X_{i}^{T}\beta + D_{i}^{T}\tau) \right) - \mathbb{P}\left(\epsilon > \alpha_{j-1} - (X_{i}^{T}\beta + D_{i}^{T}\tau) \right)\\
+    &= F(\alpha_{j} - (X_{i}^{T}\beta + D_{i}^{T}\tau) ) - F(\alpha_{j-1} - (X_{i}^{T}\beta + D_{i}^{T}\tau))
 \end{aligned}
 $$
-, where $\Phi(\cdot)$ is the standard normal cumulative distribution function (CDF). 
+, where $F(\cdot)$ is a unknown but assumed distributional function (CDF). 
 
-The parameters can be easily estimated. The MLE gives:
+Based on this, the parameters can be easily estimated with maximum likelihood.
 $$
-    (\beta_{1}, \beta_{2}, \alpha) = \arg\max_{\beta_{1}, \beta_{2}, \alpha} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( \Phi(\alpha_{j} - X^{T}\beta_{1} - v^{T}\beta_{2}) - \Phi(\alpha_{j-1} - X^{T}\beta_{1} - v^{T}\beta_{2}) \right) \right]
+    (\beta, \tau) = \arg\max_{\beta, \tau} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( F(\alpha_{j} - (X_{i}^{T}\beta + D_{i}^{T}\tau)) - F(\alpha_{j-1} - (X_{i}^{T}\beta + D_{i}^{T}\tau)) \right) \right]
 $$ 
 
-Suppose that the true distribution of $\epsilon$ is not normal, and denote the CDF as $F(\cdot)$. If the distribution is symmetric, then the MLE under this true distribution would be:
+To solve this MLE, standard ordered logit and probit models put assumption on $F(\cdot)$. For example, Ordered Probit model assume that the error term ($\epsilon$) follows the standard normal distribution. Let $\Phi(\cdot)$ denote the standard normal distribution function. Then the MLE becomes:
+
 $$
-    (\beta_{1}, \beta_{2}, \alpha) = \arg\max_{\beta_{1}, \beta_{2}, \alpha} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( F(\alpha_{j} - X^{T}\beta_{1} - v^{T}\beta_{2}) - F(\alpha_{j-1} - X^{T}\beta_{1} - v^{T}\beta_{2}) \right) \right]
+    (\beta, \tau) = \arg\max_{\beta, \tau} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( \Phi(\alpha_{j} - (X_{i}^{T}\beta + D_{i}^{T}\tau)) - \Phi(\alpha_{j-1} - (X_{i}^{T}\beta + D_{i}^{T}\tau)) \right) \right]
 $$ 
 
-Since $F \neq \Phi$, the estimators from Ordered Probit model are inconsistent, because increase in sample size does not make the two distributions closer, and therefore the estimators from two MLE will not converge. Also, the estimators are biased, but the size and direction of the bias depend on the shape of $F$. 
+However, it is not guaranteed that the distributional assumption that $F(\cdot) = \Phi(\cdot)$, and if they are different, the estimators from ordered probit model are to be biased and inconsistent, because it will converge to some value $(\tilde{\beta}, \tilde{\alpha}) \neq (\beta, \alpha)$ and increase in sample size does not make the two distributions closer, and therefore the estimators from two MLE will not converge to the true values \citep{Manski1988a, Greene2010a, Bond2018a}. Considering ordered logit model, logistic distribution is assumed and exactly same logic will lead to the biased and inconsistent estimation of parameters. The size and direction of the bias depend on the difference between $F(\cdot)$ and the assumed distribution, but in recent empirical works, right (positively) skewed error distributions would generally attenuate the size of the $\beta$ estimations \citep{Johnston2020a, Smits2020a}. Theoretically, the estimates from a misspecified model may have opposite sign to the true treatment effect, leading researchers toward substantially different inferences \citep{Manski1988a, Greene2010a}. This issue even harder to detect because ordered logit and ordered probit models often produce similar results. 
 
-Now we go back to the original setting and only observe $v_{0}$ and $v_{1}$, instead of $v$. It is easy to see that this imprecise measure of $v$ may lead to another bias, by affecting the log likelihood function. The size and direction of the bias also depend on the shape of $F$.
+This paper extends the ordinal regression approach, first by introducing a diagnostic tool for the validity of the distributional assumptions for the ordered logit and probit models, and by introducing a semiparametric method that can estimate the true treatment effect without strong distributional assumptions. 
 
-\section{Generalized Maximum Score Estimator}
-Generalized Modified Maximum Score (GMMS) estimator suggested by \citet{Wang2022a} can deal with the inconsistency and the bias caused by distributional misspecification and the bias from binned covariates. The estimator is based on the modified maximum score estimator (MMS) \citep{Manski2002a} and the generalized maximum score (GMS) estimator \citep{Lee1992a}, both of which are based on the maximum score estimator \citep{Manski1975a}.
 
-GMMS imposes below assumptions:
+% In the next section, this paper introduces surrogate based residuals approach developed by \cite{Liu2018a}, which can be a useful diagnostic tool for detecting distributional assumption misspecification.
 
-\begin{assumption}
-    $quantile_{\alpha}(\epsilon \mid X, v) = 0$
-\end{assumption}
 
-\begin{assumption}
-    $\mathbb{P}\left(\epsilon \mid X, v, v_{0}, v_{1}\right) = \mathbb{P}\left(\epsilon \mid X, v\right)$
-\end{assumption}
 
-\begin{assumption}
-    $\beta_{2} > 0$
-\end{assumption}
 
-Following \citet{Manski1985a}, \citet{Horowitz1992a}, and \citet{Lee1992a}, the first assumption, that the conditional $\alpha$ quantile of the error term equals $0$,  means that at least at one point, the outcome is fully explained by covariates without error. This is the only restriction on the distribution of the error term, thereby the conditional distribution of the outcome. This semiparametric nature of the estimator mitigates problem of different interpretation among respondents and the bias from misspecification. The second and third assumptions deal with the bias generated by imprecise measurement of some variables in the regression equation. For the rest of the paper, I assume that $median(\epsilon \mid X, v) = 0$. 
+% These models require strong distributional assumptions; for example, Ordered Probit assumes that the conditional distribution of outcomes follows a normal distribution. While these assumptions facilitate fast and efficient estimation using maximum likelihood, many researchers have criticized them for failing to account for three key challenges in survey data: (1) variations in individual interpretation of response scales, (2) misspecification of the true outcome distribution, and (3) uncertainty arising from imprecisely measured bracketed variables.
 
-The second assumption states that the error term are conditionally independent from $v_{0}$ and $v_{1}$ given both $X$ and $v$. In other words, if the exact value of $v$ is known, then $v_{0}$ and $v_{1}$ carries no further information. The last assumption requires $v$ to have strict monotone relationship with the outcome, and this should be justified by the data, theory or results from previous research. If $v$ is thought to have native relationship, then simple reverse coding will satisfy the assumption.
+% First, respondents may not interpret response scales uniformly. Political opinion questions are typically measured using five-point Likert scales, which are inherently subjective. Some individuals may have lower (or higher) thresholds than others, meaning that one person’s \textit{strongly agree} might be equivalent to another’s \textit{agree} \citet{King2004a}. As shown in Figure 1, although both A and B have same opinion denoted by the red arrow, they may answer differently because they interpret the scale differently.
+%
+% \citet{Aldrich1977a} examined interpretability issues when recovering politicians’ ideological positions from ordinal survey responses, though without directly addressing estimation concerns. \citet{King2004a} proposed the “anchored vignettes” approach to mitigate these issues at the survey design stage. This method introduces standardized example questions designed to capture respondents’ interpretations of key concepts, allowing researchers to adjust responses accordingly. \citet{King2007a} further refined the approach by developing methods to evaluate anchoring vignettes. However, a major limitation of this approach is its reliance on the assumption that respondents interpret both vignettes and primary survey questions consistently—an assumption that is difficult to test empirically.
 
-Before this, need to introduce partial identification.
-For the notational ease define $Y_{mi} = \mathbf{1}\{Y_i > m\}$. Let $P_n(Y_{mi} = m \mid X_i, V^0_i, V^1_i)$ be consistent estimates of $P(Y_{m} = m \mid X, V^0, V^1)$ for $m = 1, \ldots, M - 1$. Furthermore, define $\lambda_{mn}(X_i, V^0_i, V^1_i) = \mathbf{1}\left\{P_n(Y^m_i = m \mid X_i, V^0_i, V^1_i) > \frac{1}{2} \right\}$. 
+\section{Test for the Distributional Assumptions: Surrogate-based Residuals Approach}
 
-Then, the finite sample estimation of the identified set $\Theta_{n}$ using GMMS is given as:
-\begin{equation}
-    \begin{aligned}
-        \Theta_n &= \{ b: S_{n}(b) \ge \max_{C \in \mathcal{B}} S_{n}(c) - \varepsilon_{n}\}\\
-    \end{aligned}
-\end{equation}
-, where
+The researchers generally overlook the inconsistent bias in ordered logit and probit regression models partly because the absence of appropriate diagnostic tools that can test the validity of the distributional assumptions.
+% In models that do not deal with latent space, the test for the assumption on error term can be carried out by analyzing the residuals, the difference between the observed outcome and the fitted values. However, in models with latent variable space including ordered regression models, this cannot be done since we could not directly observe the true latent outcome but only observe the ordered discretized version of it. 
 
-\begin{multline}
-    S_n(b^s) = \frac{1}{n} \sum_{i=1}^n \sum_{m=1}^{M-1} \biggl(Y_{mi} - \frac{1}{2}\biggl)  \biggl[ \lambda_{mn}(X_i, V_{0i}, V_{1i}) \cdot \text{sgn}(\tilde{X}'_i b + V^1_i + b_{1m}) Y_{mi} + \\ 
-    (1 - \lambda_{mn}(X_i, V_{0i}, V_{1i})) \cdot \text{sgn}(\tilde{X}'_i b + V_{0i} + b_{1m}){\biggl]}
-\end{multline}
-, for some $\varepsilon_{n} > 0$. 
-The basic intuition here is to maximize the sign consistency for each $Y_{j}$. 
+Although statistical tests for distributional assumptions has been existed \citep{Bera1982a, Glewwe1997a, Weiss1997a}, most of them are limited to probit models because most of the tests based on the moment conditions and moment conditions for standard normal is much clearer. More recently, \citet{Li2010a} suggested a general residual analysis approach using the sign-based statistics (SBS), by collapsing ordered choices into multiple binary choices, but the result from the analysis is hard to interpret and fails to provide consistent diagnosis because the calculates residuals are dependent on the values of the covariates. 
 
-$\varepsilon_{n}$ gives room for partial identification, so it is preferred to be as small as possible, but not to small. \citet{Chernozhukov2007a} proves that when $\varepsilon_{n} \propto \frac{\ln(n)}{n}$, GMMS estimator is $\sqrt{n}$ consistent. To follow their proof, I choose to set $\varepsilon_{n} = \frac{\ln(n)}{n}$. 
+% \citet{Bloem2022a} approached the same question in a slightly different angle and introduced a sensitivity analysis for distributional assumptions. Building on \citet{Schroder2017a}, \citet{Bloem2022a} proposed a robustness test for plausible monotonic increasing transformations of the observed ordinal scale’s distribution. This framework is valuable because it allows researchers to assess how robust their findings are to certain distributional changes, such as globally concave and convex transformations or transformations with an inflection point. However, as the author notes, despite covering many theoretically plausible cases, the study remains limited to a restricted set of distributional forms.
 
-The conditional probability $P_n(Y_{mi} = m \mid X_i, V^0_i, V^1_i)$ can be estimated nonparametrically from the data. \citet{Wang2022a} suggested to use kernel based smoothing estimator, but I follow \citet{Hall2004a}, who suggested direct nonparametric estimation of conditional distribution of discrete variable via cross-validation. 
+\citet{Liu2018a} extend the residual approach suggested by \citet{Li2010a}, but instead of using the sign-based statistic, it generates a surrogate variable for the error term in latent variable space and use that to test for the distributional assumptions. Since the surrogate residuals are constructed to be continuous, it shares the similar properties to that of the common residuals for continuous outcomes. Thus, one can use this surrogate residuals to either graphically diagnosis the validity of the distributional assumption or to construct numerical test including the Kolmogorov-Smirnov test or the Anderson-Darling test. 
 
-\section{Monte Carlo Simulations}
-I tried several Monte Carlo experiments to test the performance of GMMS, and compare it with those of standard Orderd Probit and Logit models. Here I consider the case where the outcome is a ordinal variable with 5 levels:
+To illustrate the construction of the surrogate residuals, let's suppose a standard problem setting with latent variable space mentioned in Section 1 and further suppose that we consider a ordered regression model with an assumption that the error term in latent space follows $F(\cdot)$. Then, define $Z$ as $- (X^T\beta + D^T\tau) + \epsilon$, where $\epsilon$ follows the error distribution assumed by the model, $F(\cdot)$. If the specified ordered regression model is correct, the marginal distribution of $Z$ should closely follow that of the true latent outcome variable $Y^{\ast}$. Based on $Z$ and the observed outcome $Y$, then the surrogate variable $S$ is sampled from a conditional distribution of hypothetical variable $Z$ given the observed ordinal outcomes $Y$. This results in truncating $Z$ at each of the estimated threshold points by the model. To be more specific, $S$ follows below distribution:
+
+$$
+    S \sim \begin{cases}
+        Z \mid \alpha_{0} < Z \le \alpha_{1} & \text{ if } Y = 1 \\
+        Z \mid \alpha_{2} < Z \le \alpha_{2} & \text{ if } Y = 2 \\
+        \vdots & \vdots  \\
+        Z \mid \alpha_{J-1} < Z \le \alpha_{J} & \text{ if } Y = J \\
+    \end{cases}
+$$ 
+
+
+The constructed surrogate $S$ is to be a continuous variable, thus the surrogate-based residuals can be calculated just like the other continuous variable cases:
+
+$$
+    R_{S} = S - \mathbb{E}\left[ S | X \right] = S - \mathbb{E}\left[ Z | X \right]
+$$ 
+
+Since the surrogate $S$ is continuous, graphical analysis such as Q-Q plot against the assumed distribution can provide first step test for the distributional assumption and bootstrapped goodness-of-fit tests such as Kolmogorov-Smirnov test can be done \footnote{R package \lstinline{sure} provides useful tools such as functions for surrogate residual calculation and plotting.}. Kolmogorov-Smirnov test used to check the equality between the CDF of the assumed distribution and the empirical CDF of the surrogate-based residuals by summing up the distance between two distributions. If the surrogate-based residuals from the considered ordered regression model do not seem to agree with the assumed distribution, one should consider using alternative models \footnote{However, it should be noted that since this diagnosis based on (surrogate) residuals, distributional misspecification is not the only reason that can cause a bad fit. As \citet{Glewwe1997a} and \citet{Greene2010a} noted earlier, there can be multiple reasons including omitted variable with wildly different distributions or misspecification of a functional form of the latent equation. Both misspecified functional form and omitted variable are important issues require attention but for the purpose of this paper, I focus on the issues arise from the misspecification regarding distribution of the error terms.}. One may want to try alternative parametric regression models such as skewed logit distribution \citep{Nagler1994a} or a generalized version of ordered logit or probit models \citep{Johnston2020a} and pick a model with the best goodness-of-fit score using the surrogate-based residuals. 
+
+Alternative to the parametric approach rely on semiparametric approach with minimum distributional assumptions. Semiparametric approaches have been developed to mitigate the potential distributional misspecification. The literature can be roughly divided in two categories. The rank-based maximum
+score approach put minimum assumptions on distributions that can enable quantile regressions and uses that property to estimate the parameters. One downside of this approach is that it is usually the case that the convergence is very slow \citep{Manski1988a, Lee1992a}. On the other hand, Kernel-based approaches estimate the error distribution nonparametrically using kernel estimation strategy. \citet{Lewbel2000a} was one of the first to attempt relaxing both assumptions in this approach. \citet{Klein2002a} introduced a shift-restriction-based approach that uses kernel density estimation (KDE) for both cut points and regression coefficients, providing greater flexibility. In the next section, I would like to introduce a Kernel-based semiparametric approach suggested by \citet{Klein2002a}. 
+
+% One downside of this approach is that researchers to decide which kernels to be used, and the performance largely depends on this decision.
+
+% Some semiparametric approaches do not require input from researchers. Variants of the maximum score and maximum rank estimation are prime examples \citet{Lee1992a} extended \citet{Manski1985a}’s maximum score estimation model for binary outcomes to ordered choice settings. \citet{Liu2024a} built on \citet{Klein2002a} by applying isotonic regression and maximum rank estimation strategy instead of kernel methods. \citet{Ito2021a} leveraged Monte Carlo resampling to construct likelihoods, enabling estimation without strict distributional assumptions.  %However, these approaches primarily focus on ordered outcomes and largely overlook the challenge of bracketed variables.
+
+\section{One Alternative Model: KDE-based Semiparametric Regression}
+
+Instead of assuming the distribution of the error term, \citet{Klein2002a} suggested a method that can identify the treatment effect based on the estimated error distribution. The method first estimate the error distribution based on kernel density estimation (KDE) and then construct a quasi-likelihood function based on it. Beginning with the standard latent variable space setting discussed in Section 2, recall that 
+
+$$
+\begin{aligned}
+    \mathbb{P}\left(Y = j \mid X_{i}\right) &= \mathbb{P}\left(Y^\ast \le \alpha_j\right) - \mathbb{P}\left(Y^\ast > \alpha_j-1\right) \\
+    &=\mathbb{P}\left(Y \le j \mid (X_{i}^{T}\beta + D_{i}^{T}\tau) \right) - \mathbb{P}\left(Y \le j-1 \mid (X_{i}^{T}\beta + D_{i}^{T}\tau) \right)\\
+\end{aligned}
+$$
+
+Using the Bayes' rule, $\mathbb{P}\left(Y \le j \mid (X_{i}^T\beta + D_{i}^T \tau) \right)$ can be expressed as:
+$$
+    \mathbb{P}\left(Y \le j \mid (X_{i}^T\beta + D_{i}^T \tau) \right) = \frac{\mathbb{P}\left(Y \le j\right) \times g_{1}((X^T\beta + D^T\tau) \mid Y \le j)}{\mathbb{P}\left(Y \le j\right) \times g_{1}((X^T\beta + D^T\tau) \mid Y \le j) + \mathbb{P}\left(Y > j\right) \times g_{0}((X^T\beta + D^T\tau) \mid Y > j)}
+$$, where $g_{0}(\cdot)$ and $g_{0}(\cdot)$ denote conditional density of $(X^T\beta + D^T\tau)$ given $Y > j$ or $Y \le j$ respectively. 
+
+Both $\mathbb{P}\left(Y \le j\right)$ and $\mathbb{P}\left(Y > j\right)$ are approximated as a sample probability, and based on local smoothing technique developed by \citet{Abramson1982a} and \citet{Silverman1986a}, they estimate the $g_{1}(\cdot)$ and $g_{0}(\cdot)$ density using KDE, and use them to approximate $\mathbb{P}\left(Y \le j \mid (X_{i}^T\beta + D_{i}^T \tau) \right)$. 
+
+The estimation of $g_{1}(\cdot)$ starts with pilot density estimation. Let $\hat{\sigma}_{1}$ be the sample standard deviation of the $(X_{k}^T\beta + D_{k}^T \tau 1_{\{ Y_{k} \le j \}}$ and $n_{1} = \sum_{k} 1_{\{ Y_{k} \le j \}}$. Fix $\delta \in (0, \frac{1}{3)}$, and define a pilot bandwidth $h_{p} = n^{\gamma}$, where $\frac{1}{10} < \gamma < \frac{1}{3(3 + \delta)}$. Then the pilot KDE of $g_{1}(\cdot)$ can be done in a leave-one-out estimation:
+
+$$
+    \hat{\pi}_{1 i} = \frac{1}{n_{1}} \sum_{k \neq i} \left[ 1_{\{ Y_{k} \le j \}} \cdot K\left(\frac{(X_{i}^T\beta + D_{i}^T \tau) - (X_{k}^T\beta + D_{k}^T \tau)}{\hat{\sigma}_{1} h_{p}}\right) \cdot \frac{1}{\hat{\sigma}_{1} h_{p}} \right]
+$$ 
+
+Next, to make final KDE to be a smooth density function, local smoothing parameter $\hat{l}_{1 i}$ is defined as:
+$$
+    \hat{l}_{1 i} = \frac{\hat{\pi}_{1 i}}{\hat{m}_{1}}
+$$, where $\hat{m}_{1}$ is a geometric mean of the $\hat{\pi}_{1 i}$. 
+
+Then define $\hat{d}_{1}$ for $l > 0$ which approximates the indicator function $1_{\{ l > a_{n_{1}} \}}$, where $a_{n_{1}} \propto [\ln n_{1}]^{-1}$.
+$$
+    \hat{d}_{1} = \frac{1}{1 + \exp \left( - n_{1}^\epsilon [l - a_{n_{1}}] \right)}
+$$, where $\epsilon \in (0, \frac{1}{40} - \frac{\delta}{20})$.
+
+Lastly, calculate the bandwidth for the final KDE, $h_{f}$ with parameters above:
+$$
+    h_{f} = \hat{\sigma_{1}} \left[ \hat{l}_{1 i} \hat{d}_{1 i} + a_{n_{1}} [1 - \hat{d}_{1 i}] \right]^{-\frac{1}{2}}
+$$
+
+Choose $ \alpha \in (\frac{3 + \delta}{20}, \frac{1}{6})$. Let $ h = n^{-\alpha}$. Define
+
+$$
+    \hat{g}_{1}(\cdot) = \frac{1}{n_{1}} \sum_{k} 1_{\{ Y_{k} \le j \}} \cdot K \left( \frac{(X_{i}^T\beta + D_{i}^T \tau) - f(X_{k} - \beta)}{\hat{h}_{f} \cdot h }\right) \cdot \frac{1}{\hat{h}_{f} \cdot h } 
+$$ 
+
+$\hat{g}(\cdot)$ is defined analogously, replacing $Y_k \leq j$ with $Y_k > j$.
+
+Since the KDE may not perform well on the edge cases, trimming out the data points that the absolute value is not within the range of $q$th quantile of $|X_{i}|$. Let $\hat{m}$ be the indicator of this trimming:
+$$
+    \hat{m}(X_{i}) = 1_{\{ |X_{i}| < q\text{th quantile of } |X| \}}
+$$ 
+
+The final quasi-likelihood function is:
+$$
+    \frac{1}{n} \sum_{i = 1}^{n} \hat{m}(X_{i}) \sum_{j = 0}^{J} 1_{\{ Y = j \}} \log \left[ \hat{\mathbb{P}}\left(Y \le j \mid f(X_{i, \beta})\right) - \hat{\mathbb{P}}\left( Y \le j-1 \mid (X_{i}^T\beta + D_{i}^T \tau)\right) \right]
+$$ 
+
+The maximum likelihood estimation using this quasi-likelihood function gives estimates for $\beta$ and $\tau$ up to scale. 
+
+\begin{theorem}[Consistency of the estimator]
+    For an consistent KDE, as $n \to \infty$, $\abs{\hat{\tau} - \tau} = o_{p}(1)$
+\end{theorem}
+
+The consistency of the estimates can be guaranteed by the fact that the KDE method is consistent. As the $n$ goes to infinity, the KDE estimates of $\hat{g}_{1}(\cdot)$ and $\hat{g}_{0}(\cdot)$ approach the true density and as the $\hat{\mathbb{P}\left(Y \le j\right)}$. Then the quasi-likelihood function approach the true likelihood function and the maximum likelihood then guarantees the consistency. The KDE method used in this estimator is locally smoothed KDE, and for the consistency of the locally smoothed KDE, see \citet{Klein1993a}, \citet{Abramson1982a}, and \citet{Silverman1986a}. 
+
+
+
+\section{Monte Carlo Simulation}
+
+I tried several Monte Carlo experiments to test the surrogate-based residuals and compare the performance of the Klein and Sherman semiparametric estimator compared with standard ordered probit and logit models. Here I consider the case where the outcome is a ordinal variable with 3 levels.
+
+The latent variable $Y^{\ast}$ follows the relationship:
+$$
+    Y^{\ast} = D^{T} \tau + X^{T}\beta + \epsilon
+$$, and we observe $Y$ that is constructed as:
 $$
     Y = \begin{cases}
         1 &\text{if}\quad \alpha_{-1} \le Y^\ast \le \alpha_0 \\
-        \vdots & \\
-        5 &\text{if}\quad \alpha_{-3} \le Y^\ast \le \alpha_4 \\
+        2 &\text{if}\quad \alpha_{0} \le Y^\ast \le \alpha_1 \\
+        3 &\text{if}\quad \alpha_{1} \le Y^\ast \le \alpha_2 \\
     \end{cases}
-$$ 
-, where $Y^{\ast} = \beta_{0} + X^{T} \beta_{1} + v^{T} \beta_{2}$. $X$ and $v$ are one-dimensional, for simplicity. $X \sim \mathcal{N}(1, 2)$, and $v \sim \mathcal{N}(0, 2)$. $v_{1}$ is derived by round up $v$ to the nearest integer, and $v_{0}$ equals $v_{1} - 1$. The coefficients, $(\beta_{0} , \beta_{1}, \beta_{2})$ are set to $(0.5, -0.5, 0.5)$. 
+$$, where $\alpha_{-1} = -\infty$, and $\alpha_{2} = \infty$. 
 
-I tested for two different distribution for the error term, $\epsilon$, the exponential distribution and the student-t distribution. Both distributions have relatively fat tailed and skewed compared to the standard normal distribution and frequently observed in real world settings. I also consider three sample sizes of 200, 500, 1,000. The number of
-Monte Carlo replication is 100, and all estimations are the means of the 100 replication results. 
+$D$ simulates treatment status, so each data point is randomly assigned $0$(control) or $1$(treatment), $X$ is drawn from $\mathcal{N}(0, 1)$ and $\tau$ set to be $0.5$. Since the estimators only identify $\tau$ up to scale, without lose of generality, I set $\beta$ to be $1$ for easier interpretation.
 
-Table shows the estimation of coefficients for $X$ and $v$ from GMMS, Ordered Probit and Ordered Logit models.
+I tested for two different distribution for the error term, $\epsilon$, the lognormal distribution with $\log(sd) = 10$ (skewed right or positively skewed) and the negative lognormal distribution with the same parameter setting(skewed left or negatively skewed). Both distributions have relatively fat tailed and skewed compared to the standard normal distribution.Two sample sizes of 1,000 and 2,000 are considered. I first generate a population of size $1e+7$ and draw random samples for Monte Carlo replication from this population. The number of Monte Carlo replication is 100, and all estimations are the means of the 100 replication results. % Regarding the Klein and Sherman estimator, bootstrap 100 replications were employed to get the standard errors. 
+
+% \begin{figure}[!htb]
+%     \caption{Q-Q plots for Surrogate-based Residuals Calculate with Ordered Logit and Probit on Monte Carlo Sample}
+%     \begin{tabular}{ccc}
+%         Ordered Logit  &  \includegraphics[width=0.4\textwidth]{../figures/qqplot_logit_lnorm10.pdf} & \includegraphics[width=0.4\textwidth]{../figures/qqplot_logit_neg_lnorm10.pdf} \\
+%         Ordered Probit  &  \includegraphics[width=0.4\textwidth]{../figures/qqplot_probit_lnorm10.pdf} & \includegraphics[width=0.4\textwidth]{../figures/qqplot_probit_neg_lnorm10.pdf} \\
+%         & Log-normal Distribution & Negative Log-normal Distribution  \\
+%     \end{tabular}
+% \end{figure}
+
+% First, to test the distributional assumption for ordered logit and probit model, surrogate-based residuals derived using the suggested method in Section 3. Figure 1 shows Q-Q plots for both ordered logit and probit models on Monte Carlo samples described above. The panels on the first row correspond to the Q-Q plots of the surrogate-based residuals from the ordered logit models, and the panels on the second row correspond to the surrogate-based residuals from the ordered probit models. Both surrogate-based residuals form ordered logit and probit models when the error term is log-normal distribution are skewed to the right compared to the standard logistic and normal distributions respectively. On the other hand, when the error term follows negative log-normal distribution, the residuals are generally skewed to the left. Considering the relatively small size of the treatment effect ($0.01$) these skewness may significantly change the coefficient in size and direction. 
 
 
+% \begin{figure}[!htb]
+%     \caption{Cumulative p-values from 50 Kolmogorov-Smirnov tests on Surrogate-based Residuals Calculate with Ordered Logit and Probit on Monte Carlo Sample}
+%     \begin{tabular}{ccc}
+%         Ordered Logit  &  \includegraphics[width=0.4\textwidth]{../figures/ks_logit_lnorm10.pdf} & \includegraphics[width=0.4\textwidth]{../figures/ks_logit_neg_lnorm10.pdf} \\
+%         Ordered Probit  &  \includegraphics[width=0.4\textwidth]{../figures/ks_probit_lnorm10.pdf} & \includegraphics[width=0.4\textwidth]{../figures/ks_probit_neg_lnorm10.pdf} \\
+%         & Log-normal Distribution & Negative Log-normal Distribution  \\
+%     \end{tabular}
+% \end{figure}
+
+% We can also run standard test for distributional assumption. Figure 2 reports the cumulative p-values from 50 iterations of Kolmogorov-Smirnov test for both ordered regression models with the Monte Carlo samples. Again, The panels on the first row correspond to the Q-Q plots of the surrogate-based residuals from the ordered logit models, and the panels on the second row correspond to the surrogate-based residuals from the ordered probit models. As expected from the Q-Q plot, the p-values are concentrated in the areas very close to 0. The mean of the p-values are indistinguishable from 0 for all four cases. This strongly against the distributional assumptions of both ordered logit and probit models. 
+
+% \clearpage
+% \begin{table}[!htb]
+%     \caption{Monte Carlo Simulation Results}
+%     \begin{tabular}{c|cccc|cccc}
+%         \           & \multicolumn{4}{c}{log-normal}  &  \multicolumn{4}{c}{negative log-normal} \\
+%         \           & OLS & O Logit & O Probit & Klein-Sherman & OLS & O Logit & O Probit & Klein-Sherman \\
+%         \hline \\
+%         \multicolumn{3}{l}{Sample Size = 1,000} & & & & & & \\
+%         \hline \\
+%         $\beta_{1} / \beta_{2}$ & $-0.2556$ & $-1.057$ & $-1.061$ & $-0.987$ & $-0.233$ & $-1.055$ & $-1.050$ & $-1.042$ \\
+%         \           & $(0.033)$ & $(0.061)$ & $(0.034)$ & $(0.042)$ & $(0.033)$ &  $(0.061)$ & $(0.034)$ & $(0.034)$ \\
+%         $\beta_{D} / \beta_{2}$ & $0.005$ & $-0.005 $ & $0.025$ & $0.025$ & $-0.001$ & $-0.014$ & $-0.014$ & $0.018$\\
+%         \           & $(0.066)$ & $(0.1155)$ & $(0.066)$ & $(0.072)$ & $(0.066)$ & $(0.115)$ & $(0.067)$ & $(0.034)$ \\
+%         \hline \\
+%         \multicolumn{3}{l}{Sample Size = 2,000} & & & & & & \\
+%         \hline \\
+%         $\beta_{1} / \beta_{2}$ & $-0.251$ & $-1.080 $ & $-1.079$ & & $-0.249$ & $-1.042$ & $-1.033$ & \\
+%         \           & $(0.032)$ & $(0.043)$ & $(0.024)$ & & $(0.023)$ & $(0.043)$ & $(0.024)$ & \\
+%         $\beta_{D} / \beta_{2}$ & $0.009$ & $0.037$ & $0.036$ & & $0.005$ & $0.014$ & $0.018$ & \\
+%         \           & $(0.047)$ & $(0.081)$ & $(0.047)$ & & $(0.047)$ & $(0.082)$ & $(0.047)$ & \\
+%     \end{tabular}
+% \end{table}
+
+By construction, the distributional assumptions for both ordered logit and ordered probit models are violated. I would like to compare the estimation results from both ordered logit and probit model and OLS with Klein and Sherman estimator proposed in Section 4 to show the performance of the semiparametric estimator. For the OLS, I employed two labeling scheme: 
+
+Table 1 summarizes the Monte Carlo simulation results. Since all models identify $\beta$ coefficients up to the scale, I set $\beta_{2} = 1$. Recall that the true values for $\beta_{1} / \beta_{2}$ is $-1$ and $\beta_{D} / \beta_{2}$ is $0.01$. The coefficient estimates from OLS is largely overestimated in size but the signs are correct. The two ordered regression models generally accurate regarding the coefficient estimates for $\beta_{1}$. However, 
+the sign of the coefficient estimates for the treatment variable sometimes go reverse to the true value. These are somewhat expected from the previous diagnosis using surrogate-based residuals. Since the models cannot aptly capture the true error distribution, the coefficient estimates become biased and inconsistent. Considering the standard errors, these coefficients would not carry statistically significant meanings. Klein and Sherman estimator generally does well, although it overestimates the coefficients of the treatment variable and fails to achieve statistically significant results. 
+
+\section{Applications}
+\subsection{Application 1: \citet{Ballard-Rosa2024a}}
+The first example replicates the analysis by \citet{Ballard-Rosa2024a}. The main argument of the study was that the exposure to the framing linking globalization and reduced American Dream would lower the support for trade expansion, and the effect would be larger among the citizens who believe in meritocratic values. The treatment group was shown a statement that some of the US's foreign policy reduces chances of achieving American Dreams, while control group was given that some of the US's foreign policy increases the domestic economic inequality. The outcome of interest is the view on the expansion of trade relationship, and this was measured with 5 point Likert-type choices. The authors utilized OLS and the results generally confirmed their claim; that the American Dream framing greatly reduce individual's support for trade expansion and the effect was larger if a respondent believes more in meritocratic values. 
+
+Even though the outcome variable is measured in ordinal scales, the authors analyze the data using OLS, which assumes that the outcome to be at least interval. This may lead to potential bias due to model misspecification, so I retest their main models in Table 2 (column 1 and 2) with ordered regression models. The results reported in Table 2. The first two columns show the replicated result of their original analysis and columns 3 to 6 report the ordered logit and probit model results. 
+
+
+\begin{table}[!htb]
+    \caption{Replication of \citet{Ballard-Rosa2024a} Table 2}
+\begin{center}
+\begin{tabular}{l c c c c c c}
+\hline
+    &\multicolumn{2}{c}{Original -- OLS} &\multicolumn{2}{c}{Ordered Logit} & \multicolumn{2}{c}{Ordered Probit} \\
+ & Model 1 & Model 2 & Model 1 & Model 2 & Model 1 & Model 2 \\
+\hline
+American Dream Treatment  & $-0.05$     & $-0.08$      & $-0.13$     & $-0.18$     & $-0.06$      & $-0.09$      \\
+                          & $(0.05)$    & $(0.05)$     & $(0.09)$    & $(0.10)$    & $(0.06)$     & $(0.06)$     \\
+meritocrat                & $0.04$      & $0.06$       & $-0.04$     & $-0.00$     & $-0.00$      & $0.02$       \\
+                          & $(0.08)$    & $(0.09)$     & $(0.14)$    & $(0.15)$    & $(0.08)$     & $(0.08)$     \\
+AD Treatment x meritocrat & $-0.29^{*}$ & $-0.33^{**}$ & $-0.44^{*}$ & $-0.52^{*}$ & $-0.30^{**}$ & $-0.35^{**}$ \\
+                          & $(0.12)$    & $(0.12)$     & $(0.20)$    & $(0.21)$    & $(0.11)$     & $(0.12)$     \\
+\hline
+Deviance                  & $1929.01$   & $1927.39$    & $5322.79$   & $5321.19$   & $5327.36$    & $5325.32$    \\
+Dispersion                & $0.99$      & $0.99$       & $$          & $$          & $$           & $$           \\
+Num. obs.                 & $1954$      & $1954$       & $1954$      & $1954$      & $1954$       & $1954$       \\
+AIC                       & $$          & $$           & $5366.79$   & $5367.19$   & $5371.36$    & $5371.32$    \\
+BIC                       & $$          & $$           & $5489.49$   & $5495.47$   & $5494.07$    & $5499.61$    \\
+Log Likelihood            & $$          & $$           & $-2661.39$  & $-2660.59$  & $-2663.68$   & $-2662.66$   \\
+\hline
+\multicolumn{7}{l}{\scriptsize{$^{***}p<0.001$; $^{**}p<0.01$; $^{*}p<0.05$}}
+\end{tabular}
+\end{center}
+\end{table}
+
+To further confirm the results from the ordered logit and probit model, diagnostic test on distributional assumptions using surrogate-based residuals are employed. Figure 3 graphically depicts the tests for the distributional assumptions. The panels on the first column shows the Q-Q plot of the surrogate-based residuals and the assumed distributions and two seem to be aligned well. The panels on the second column further confirm that the violation of the distributional assumption is not an issue in these models. The p-values from 50 Kolmogorov-Smirnov tests are almost uniformly distributed in both models. However, the ordered logit model aligns more tightly with the $45^{\circ}$ line, thus it might be the best fitted model in this case. 
+
+Need to include Klein and Sherman Results
+
+% \begin{figure}[!htb]
+%     \caption{Q-Q plots, P-values from Kolmogorov-Smirnov test resutls using Surrogate-based Residuals Calculate with Ordered Logit and Probit}
+%     \begin{tabular}{ccc}
+%         Ordered Logit  &  \includegraphics[width=0.4\textwidth]{../figures/Ballad_partisan_logit_qq.pdf} & \includegraphics[width=0.4\textwidth]{../figures/Ballad_partisan_logit_ks.pdf} \\
+%         Ordered Probit  &  \includegraphics[width=0.4\textwidth]{../figures/Ballad_partisan_probit_qq.pdf} & \includegraphics[width=0.4\textwidth]{../figures/Ballad_partisan_probit_ks.pdf}\\
+%         & Q-Q Plot & Kolmogorov-Smirnov Test  \\
+%     \end{tabular}
+% \end{figure}
+
+\clearpage
+\section{Conclusion}
+This paper underscores the importance of scrutinizing distributional assumptions in ordinal regression models, particularly in the context of survey-based causal inference. While ordered logit and probit models have become standard tools in political science, their reliance on specific error distributions poses significant risks when those assumptions do not hold. The violation of distributional assumptions leads to the biased and inconsistent estimation which may lead to inappropriate inference. This point has been demonstrated through simulation studies and empirical analysis. Although it is not statistically meaningful, the ordered regression models show misleading signs of treatment effects in simulation settings.
+
+To address this challenge, I introduced a diagnostic approach using surrogate residuals, offering researchers a practical means to assess the validity of distributional assumptions in ordinal models. The suggested method approximates the residuals in latent variable space in continuous manner, which enables further diagnosis using graphical tools such as Q-Q plot and standard tests for distributional similarity such as Kolmogorov-Smirnov test and Anderson-Darling test. 
+
+When diagnostics suggest substantial departures, this paper recommends a semiparametric alternative -- the Klein and Sherman estimator -- which avoids reliance on a fully specified error distribution and performs robustly under a wide range of conditions. Monte Carlo simulation reaffirms that Klein and Sherman estimator can outperform standard ordered regression models when distributional assumptions are violated. 
+
+These tools empower researchers to move beyond mechanical application of ordered logit and probit models and to make informed modeling choices that better reflect the structure of their data. By integrating diagnostics and semiparametric methods into the applied researcher’s toolkit, this work contributes to more reliable causal inference and better empirical practice in the analysis of ordinal survey outcomes.
 
 \bibliographystyle{apsr}
 \bibliography{/Users/chanhyuk/Documents/MyLibrary}

@@ -1,9 +1,16 @@
 # Required Libraries
-library('MASS')  # For multivariate normal data generation
-# library('np')    # For Non-parametric KDE
-library('data.table')
-# library('ggplot2')
-
+library("MASS")  # For multivariate normal data generation
+# library("sn")
+# library("np")    # For Non-parametric KDE
+library("data.table")
+# library("ggplot2")
+# library("sure")
+# library("moments")
+# library("texreg")
+library("txtplot")
+# library("KernSmooth")
+# library("lpcde")
+library("hdrcde")
 
 # -------------------------------
 # Functions
@@ -16,27 +23,39 @@ parReplicate <- function(cl, rep, expr, simplify=TRUE, USE.NAMES=TRUE){
 # }}}
 
 # Generate the population {{{
-generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist='logistic', 
-                         df=1, seed=63130, negative=FALSE, location=0, sd=1, ncp=0) {
-  set.seed(seed) 
+generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist="logistic", 
+                         df=1, negative=FALSE, location=0, sd=1, ncp=0) {
 
   X <- matrix(rnorm(N*(xdim)), ncol=xdim)
   X <- cbind(X, sample(c(0,1), N, replace=T))
-  colnames(X) <- c(paste0('x', 1:xdim), 'T')
+  # X <- cbind(rep(1, N), sample(c(0,1), N, replace=T))
+  colnames(X) <- c(paste0("x", 1:xdim), "T")
+  # colnames(X) <- c("Intercept", "T")
+
   e <- switch(dist,
     logistic = rlogis(N),
     normal   = rnorm(N, mean=location, sd=sd),
+    snormal  = rsn(N, alpha=df),
+    lnormal  = rlnorm(N, sdlog=df),
+    st       = rst(N, omega=1, nu=3, alpha=df),
+    exp      = rexp(N, rate=df),
     tdis     = rt(N, df=df),
     chisq    = rchisq(N, df=df, ncp=ncp) + location,
-    stop('Unknown distribution'))
+    stop("Unknown distribution"))
+
+  e <- e - mean(e)
 
   if (negative == TRUE) {
     e <- -e
   }
-  y_star <- X %*% beta + e  # Only x1 has true effect
-  thresholds <- c(-1, -0.6, 3, 4)
+
+  y_star <- X %*% beta + e
+  txtdensity(y_star)
+
+  thresholds <- quantile(y_star, c(0.3, 0.7))
   y_ord <- cut(y_star, breaks = c(-Inf, thresholds, Inf),
     labels = FALSE, ordered_result = TRUE)
+  txtbarchart(factor(y_ord))
 
   data <- as.data.frame(cbind(X, e))
   data$y_ord <- as.numeric(y_ord)
@@ -45,7 +64,8 @@ generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist='logistic',
 # }}}
 
 ## Pilot KDE {{{
-pilot_kde <- function(Y, V, l, h_p, sigma, j) {
+pilot_kde <- function(Y, V, l, h_p, sigma, j, n) {
+  Kernel <- function(x) {return(dnorm(x))} # Gaussian Kernel
   kde_values <- numeric(n)
   if (l == 1) {
     n1 <- length(V[Y <= j])
@@ -90,7 +110,8 @@ compute_local_bandwidth <- function(pilot_density, sigma, n) {
 # }}}
 
 ## Final KDE {{{
-final_kde <- function(Y, V, l, lambda, h, j) {
+final_kde <- function(Y, V, l, lambda, h, j, n) {
+  Kernel <- function(x) {return(dnorm(x))} # Gaussian Kernel
   kde_values <- numeric(n)
   if (l == 1) {
     n1 <- length(V[Y <= j])
@@ -120,20 +141,25 @@ final_kde <- function(Y, V, l, lambda, h, j) {
 
 # Klien and Sherman (2002) Estimator {{{
 ks_estimator <- function(formula, data, B=200) {
+  data <- data.frame(data)
+  data <- data[complete.cases(data[, all.vars(formula)]), ]
   y_lab <- all.vars(formula)[1]
   x_lab <- all.vars(formula)[-1]
+  # Y <- data[, y_lab]
+  # X <- data[, x_lab]
+
   J <- max(data[, y_lab])
-  n <- dim(data)[1]
+  n <- length(data[, y_lab])
+
   h_p <- n^(-0.11)           # Pilot bandwidth
   h <- n^(-0.16)             # Final bandwidth
 
   Kernel <- function(x) {return(dnorm(x))} # Gaussian Kernel
-  Kernel_prime <- function(u) {return(-u * dnorm(u))}  # derivative of standard normal density
+  # Kernel_prime <- function(u) {return(-u * dnorm(u))}  # derivative of standard normal density
 
-  P_est_mat <- matrix(0, (J + 2L), n)
-  dP_dV <- array(0, dim = c(J + 2L, n))  # dP_j/dV for all j, all i
   # Quasi-likelihood {{{
   quasi_likelihood <- function(beta, Y, X) {
+    P_est_mat <- array(0, dim=c((J + 2L), n))
     V_hat <- X %*% beta
 
     for (j in 1:(J)) {
@@ -144,16 +170,16 @@ ks_estimator <- function(formula, data, B=200) {
       sigma1 <- sd(V_hat[Y <= j])
       sigma0 <- sd(V_hat[Y > j])
 
-      g1_pilot <- pilot_kde(Y, V_hat, 1, h_p, sigma1, j)
-      g0_pilot <- pilot_kde(Y, V_hat, 0, h_p, sigma0, j)
+      g1_pilot <- pilot_kde(Y, V_hat, 1, h_p, sigma1, j, n)
+      g0_pilot <- pilot_kde(Y, V_hat, 0, h_p, sigma0, j, n)
 
       # Local bandwidths
       lambda1 <- compute_local_bandwidth(g1_pilot, sigma1, n1)
       lambda0 <- compute_local_bandwidth(g0_pilot, sigma0, n0)
 
       # Final KDE
-      g1_final <- final_kde(Y, V_hat, 1,  lambda1, h, j)
-      g0_final <- final_kde(Y, V_hat, 0, lambda0, h, j)
+      g1_final <- final_kde(Y, V_hat, 1,  lambda1, h, j, n)
+      g0_final <- final_kde(Y, V_hat, 0, lambda0, h, j, n)
 
       # Conditional Probabilities
       p1 <- n1 / length(Y)
@@ -166,103 +192,44 @@ ks_estimator <- function(formula, data, B=200) {
 
     # Quasi-likelihood calculation
     pr <- diag(P_est_mat[(Y + 1L), ]) - diag(P_est_mat[(Y), ])
-
+    valid <- (apply(abs(X) <= quantile(abs(X), 0.98), function(x) all(x), MARGIN=1))
+    pr <- pr[valid]
     if (all(pr > 0 & !is.na(pr))) {
-      print('Yes')
+      print("Yes")
       likelihood <- -sum(
-        log(pr[(apply(abs(X) <= quantile(abs(X), 0.98), function(x) all(x), MARGIN=1))])
-        # log(pr)
+        log(pr)
       )
     } else {
-      print('no')
+      print("no")
       likelihood <- 1e+100
     }
     return(likelihood)
   }
   # }}}
-  # Quasi_gradient {{{
-  quasi_gradient <- function(beta, Y, X) {
-    V_hat <- X %*% beta
-    grad <- rep(0, length(beta))
-
-    for (j in 1:(J)) {
-      n1 <- sum(Y <= j)
-      n0 <- sum(Y > j)
-      p1 <- n1 / length(Y)
-      p0 <- n0 / length(Y)
-
-      # Pilot KDE
-      sigma1 <- sd(V_hat[Y <= j])
-      sigma0 <- sd(V_hat[Y > j])
-      g1_pilot <- pilot_kde(Y, V_hat, 1, h_p, sigma1, j)
-      g0_pilot <- pilot_kde(Y, V_hat, 0, h_p, sigma0, j)
-
-      lambda1 <- compute_local_bandwidth(g1_pilot, sigma1, n1)
-      lambda0 <- compute_local_bandwidth(g0_pilot, sigma0, n0)
-
-      g1 <- final_kde(Y, V_hat, 1, lambda1, h, j)
-      g0 <- final_kde(Y, V_hat, 0, lambda0, h, j)
-
-      # Derivatives of g1 and g0 w.r.t. V
-      dg1_dV <- numeric(n)
-      dg0_dV <- numeric(n)
-      for (i in 1:n) {
-        weights1 <- (Y <= j) * Kernel_prime((V_hat[i] - V_hat) / (lambda1 * h)) / (lambda1 * h)^2
-        weights0 <- (Y > j) * Kernel_prime((V_hat[i] - V_hat) / (lambda0 * h)) / (lambda0 * h)^2
-        if (n1 > 0) dg1_dV[i] <- -mean(weights1)
-        if (n0 > 0) dg0_dV[i] <- -mean(weights0)
-      }
-
-      A <- p1 * g1
-      B <- p0 * g0
-      A_prime <- p1 * dg1_dV
-      B_prime <- p0 * dg0_dV
-
-      # dPj_dV <- (A_prime * (A + B) - A * (A_prime + B_prime)) / (A + B)^2
-      dPj_dV <- (A_prime * B) - (A * B_prime) / (A + B)^2
-      dP_dV[j + 1L, ] <- dPj_dV
-    }
-
-    # Fill boundary probabilities
-    dP_dV[1, ] <- 0
-    dP_dV[J + 2L, ] <- 0
-
-    pr <- diag(P_est_mat[(Y + 1L), ]) - diag(P_est_mat[(Y), ])
-    dpr_dV <- diag(dP_dV[Y + 1L, ]) - diag(dP_dV[Y, ])
-    summary(dpr_dV)
-
-    # valid <- pr > 0 & !is.na(pr) & (apply(abs(X) <= quantile(abs(X), 0.98), function(x) all(x), MARGIN=1))
-    if (all(pr > 0 & !is.na(pr))) {
-      valid <- (apply(abs(X) <= quantile(abs(X), 0.98), function(x) all(x), MARGIN=1))
-      X_sub <- X[valid, , drop = FALSE]
-      w <- (-1 / pr[valid]) * dpr_dV[valid]
-      grad <- w %*% X_sub
-    }
-    else {
-      grad <- rep(NA_real_, dim(X)[2])
-    }
-    return(grad)
-  }
-  # }}}
   # Optimization {{{
   opt <- function(data, ind) {
-    Y <- data[ind, y_lab]
+    Y <- as.numeric(factor(data[ind, y_lab]))
     X <- as.matrix(data[ind, x_lab])
 
     beta_opt <- optim(
       coef(lm(Y  ~ X))[-1], 
       fn=quasi_likelihood, 
-      gr=quasi_gradient,
-      method='BFGS',
-      Y = Y, X =X
+      # gr=quasi_gradient,
+      method="BFGS",
+      Y = Y, X = X
     )
+
+    i <- i + 1
     beta_hat <- beta_opt$par
-    print('boot!')
+    print(paste("#####", i, "th KS boot! #####"))
     return(beta_hat)
   }
   # }}}
 
-  out$boot_obj <- boot::boot(data, opt, B)
+  i <- 0 # bootstrap replication counter
+  boot_obj <- boot::boot(data, opt, B)
+  out <- list()
+  # out$boot_raw <- boot_obj$t
   out$coef <- boot_obj$t0
   out$bootstrap_se <- apply(boot_obj$t, sd, MARGIN=2) 
   out$bootstrap_mean <- apply(boot_obj$t, mean, MARGIN=2) 
@@ -272,22 +239,38 @@ ks_estimator <- function(formula, data, B=200) {
 # }}}
 
 # KDE Based Estimator {{{
-# Y <- pop$y_ord
-# X <- as.matrix(pop[, c(1, 2)])
-kde_estimator <- function(Y, X) {
-  J <- max(Y)
-   
+kde_estimator <- function(formula, data, B=200) {
+  y_lab <- all.vars(formula)[1]
+  x_lab <- all.vars(formula)[-1]
+  # Y <- sample_data[, y_lab]
+  # X <- as.matrix(sample_data[, x_lab])
+
+  J <- max(data[, y_lab])
+  n <- length(data[, y_lab])
+
   # Quasi-likelihood {{{
-  quasi_likelihood <- function(beta) {
-        # beta <- coef(lm(as.numeric(Y) ~ X))[-1]
+  quasi_likelihood <- function(beta, Y, X) {
+    P_est_mat <- matrix(0, (J + 2L), n)
+    # beta <- coef(lm(as.numeric(Y) ~ X))[-1]
     V_hat <- X %*% beta
 
-    P_est_mat <- matrix(0, (J + 2L), n)
     for (j in 1:(J-1)) {
-      g_bw <- np::npcdensbw(ydat=V_hat, xdat=as.numeric(Y <= j))
-      g1 <- (np::npcdens(g_bw, eydat=V_hat, exdat=rep(1, n)))$condens
-      g0 <- (np::npcdens(g_bw, eydat=V_hat, exdat=rep(0, n)))$condens
+      g_hdrcde <- (hdrcde::cde(y=V_hat, x=as.numeric(Y <= j), rescale=FALSE,
+      x.margin=c(0, 1), y.margin=V_hat, x.nmae="Y <= j", y.name="V_hat"))
+      g0 <- g_hdrcde$z[1, match(V_hat, g_hdrcde$y)]
+      g1 <- g_hdrcde$z[2, match(V_hat, g_hdrcde$y)]
+      # txtplot(V_hat, g0)
+      # txtplot(V_hat, g1)
 
+      # g1_lpcde <- (lpcde::lpcde(y_data=V_hat, x_data=as.numeric(Y <= j),
+      #   y_grid=V_hat, x=1, normalize=TRUE, nonneg=TRUE))
+      # g0_lpcde <- (lpcde::lpcde(y_data=V_hat, x_data=as.numeric(Y <= j),
+      #   y_grid=V_hat, x=0, normalize=TRUE, nonneg=TRUE))
+      # txtplot(g1_lpcde)
+      # plot(g1_lpcde)
+      #
+      # g1 <- g1_lpcde$Estimate
+      # g0 <- g0_lpcde$Estimate
 
       # Conditional Probabilities
       p1 <- sum(Y <= j) / length(Y)
@@ -295,90 +278,159 @@ kde_estimator <- function(Y, X) {
       P_j_est <- (p1 * g1) / (p1 * g1 + p0 * g0)
       P_est_mat[(j + 1L), ] <- P_j_est
     }
-    P_est_mat[1, ] <- rep(0, n)
-    P_est_mat[(J + 1L), ] <- rep(1, n)
+    P_est_mat[1, ] <- rep(0L, n)
+    P_est_mat[(J + 1L), ] <- rep(1, n) # - colSums(P_est_mat[1:J, ])
     P_est_mat[(J + 2L), ] <- rep(1, n)
 
     # Quasi-likelihood calculation
     pr <- diag(P_est_mat[(Y + 1L), ]) - diag(P_est_mat[Y, ])
+    # summary(pr)
 
     if (all(pr > 0 & !is.na(pr))) {
-      print('yes')
+      print("yes")
       likelihood <- -sum(
         # log(pr[(apply(abs(X) <= quantile(abs(X), 0.95), function(x) all(x), MARGIN=1))])
         log(pr)
       )
     } else {
-      print('no')
-      likelihood <- Inf
+      print("no")
+      likelihood <- 1e+100
     }
     return(likelihood)
   }
   # }}}
+  # Optimization {{{
+  opt <- function(data, ind) {
+    Y <- data[ind, y_lab]
+    X <- as.matrix(data[ind, x_lab])
 
-  # Optimization
-  beta_opt <- optim(
-    coef(lm(Y  ~ X))[-1], 
-    fn=quasi_likelihood, 
-    method = 'BFGS')
-  beta_hat <- beta_opt$par
-  return(beta_opt)
+    beta_opt <- optim(
+      coef(lm(Y ~ X))[-1], 
+      fn=quasi_likelihood, 
+      method="BFGS",
+      Y = Y, X = X
+    )
+    beta_hat <- beta_opt$par
+    # beta_hat / beta_hat[1]
+
+    i <- i + 1
+    print(paste("#####", i, "th boot! #####"))
+    return(beta_hat)
+  }
+  # }}}
+
+  i <- 0 # bootstrap replication counter
+  boot_obj <- boot::boot(data, opt, B)
+  out <- list()
+  # out$boot_raw <- boot_obj$t
+  out$coef <- boot_obj$t0
+  out$bootstrap_se <- apply(boot_obj$t, sd, MARGIN=2) 
+  out$bootstrap_mean <- apply(boot_obj$t, mean, MARGIN=2) 
+
+  return(out)
 }
 # }}}
 
 # One Simulation {{{
+# lines(density(rlogis(1000)), lty=2)
+# plot(gof(fit_logit, nsim=100, test="ks"))
+# plot(density(res))
+# lines(density(res))
+
+# skewness(rlnorm(1e+5, sdlog=10))
+#
+# res <- resids(fit_logit)
+# skewness(res)
+# res2 <- resids(fit_probit)
+# skewness(res2)
+
+# pdf(width=5, height=5, file="../figures/ks_logit_lnorm10.pdf")
+# plot(gof(fit_logit, nsim=50, test="ks"))
+# plot(gof(fit_probit, nsim=50, test="ks"))
+# sure::autoplot.polr(fit_logit, nsim=100, what="qq", distribution=qlogis)
+# sure::autoplot.polr(fit_probit, nsim=100, what="qq", distribution=qnorm)
+# dev.off()
+
 simul <- function(n, pop) {
   # Sample
   idx = sample(N, n)
   sample_data <- pop[idx, ]
+  # sample_data <- pop
 
-  formula <- ordered(y_ord) ~ x1 + x2 + x3 + x4 + T
+  formula <- ordered(y_ord) ~ x1 + T
   # Ordered logit
-  fit_logit <- MASS::polr(formula, data=sample_data, method = 'logistic', Hess=T)
+  fit_logit <- MASS::polr(formula, data=sample_data, method = "logistic", Hess=T)
   beta_hat_logit <- coef(summary(fit_logit))[1:(xdim + 1), 1]
+  # beta_hat_logit / beta_hat_logit[1]
   beta_hat_se_logit <- coef(summary(fit_logit))[1:(xdim + 1), 2]
-  print('probit done')
+  print("ologit done")
 
   # Ordered probit
-  fit_probit <- MASS::polr(formula, data=sample_data, method = 'probit', Hess=T)
+  fit_probit <- MASS::polr(formula, data=sample_data, method = "probit", Hess=T)
   beta_hat_probit <- coef(summary(fit_probit))[1:(xdim + 1), 1]
+  # beta_hat_probit / beta_hat_probit[1]
   beta_hat_se_probit <- coef(summary(fit_probit))[1:(xdim + 1), 2]
-  print('probit done')
+  print("oprobit done")
 
+  formula2 <- (y_ord) ~ x1 + T
   # OLS
-  fit_ols <- lm(as.numeric(y_ord) ~ x1 + x2 + x3 + x4 + T, data=sample_data)
-  beta_hat_ols <- coef(summary(fit_ols))[(1:(xdim + 2)), 1]
-  beta_hat_se_ols <- coef(summary(fit_ols))[(1:(xdim + 2)), 2]
-  print('ols done')
+  fit_ols <- lm(formula2, data=sample_data)
+  beta_hat_ols <- coef(summary(fit_ols))[(2:(xdim + 2)), 1]
+  # beta_hat_ols / beta_hat_ols[2]
+  beta_hat_se_ols <- coef(summary(fit_ols))[(2:(xdim + 2)), 2]
+  print("ols done")
 
-  # Klein and Sherman
-  fit_ks <- ks_estimator(y_ord ~ x1 + x2 + T, data=sample_data)
+  # screenreg(list(fit_logit, fit_probit, fit_ols))
+
+  # Klein and Sherman   
+  # start_time <- Sys.time()
+  fit_ks <- ks_estimator(formula2, data=sample_data, B=0)
+  # end_time <- Sys.time()
+  # execution_time <- end_time - start_time
+  # print(execution_time)
+
+  beta_hat_ks <- fit_ks$bootstrap_mean
   beta_hat_ks <- fit_ks$coef
-  beta_hat_se_ks <- fit_ks$bootstrap_se
-  print('ks done')
+  # beta_hat_ks / beta_hat_ks[1]
+  # beta_hat_se_ks <- fit_ks$bootstrap_se
+  beta_hat_se_ks <- c(0, 0)
+  print("ks done")
 
   # KDE
-  # beta_hat_kde <- kde_estimator(Y, X)$par
+  # start_time <- Sys.time()
+  fit_kde <- kde_estimator(formula2, data=sample_data, B=0)
+  # end_time <- Sys.time()
+  # execution_time <- end_time - start_time
+  # print(execution_time)
+
+  beta_hat_kde <- fit_kde$coef
+  # beta_hat_kde <- fit_kde$bootstrap_mean
+  # beta_hat_kde / beta_hat_kde[1]
+  # beta_hat_se_kde <- apply(fit_kde$boot_raw / fit_kde$boot_raw[, 1], sd, MARGIN=2)
+  beta_hat_se_kde <- c(0, 0)
+  print("kde done")
 
   out <- data.table(
       rbind(
         c(beta_hat_logit, beta_hat_se_logit),
         c(beta_hat_probit, beta_hat_se_probit),
         c(beta_hat_ols, beta_hat_se_ols),
-        c(beta_hat_ks, beta_hat_se_ks)
-        # c(beta_hat_kde, beta_hat_se_kde),
+        c(beta_hat_ks, beta_hat_se_ks),
+        c(beta_hat_kde, beta_hat_se_kde)
       )  
   )
-  names(out) <- c('X1', 'X2', 'XT', 'X1_se', 'X2_se', 'XT_se')
-  out <- out[, ':='(
-    models = list('ologit', 'oprobit', 'OLS', 'KS'),
-    # models = list('ologit', 'oprobit', 'OLS'),
+  
+  names(out) <- c(paste0("X", 1:xdim), "XT", paste0("X", 1:xdim, "_se"), "XT_se")
+  out <- out[, ":="(
+    models = list("ologit", "oprobit", "OLS", "KS", "KDE"),
+    # models = list("ologit", "oprobit", "OLS", "KS"),
+    # models = list("ologit", "oprobit", "OLS"),
     n = n,
-    ncp = loc,
+    par = par,
     dist = dist
   )
     ]
-  print('One simulation is done!')
+  print("One simulation is done!")
   return(out)
 }
 # }}}
@@ -388,45 +440,51 @@ simul <- function(n, pop) {
 # -------------------------------
 
 # Parameters
-n_sim <- 100         # Number of simulations
+n_sim <- 1000         # Number of simulations
 
 # -------------------------------
 # Simulation
 # -------------------------------
-ns <- c(1000, 2000)
+ns <- c(250, 500, 1000, 1500)
+# ns <- c(2000)
 # n <- ns[1]
-locs <- seq(1, 3, 1)
-# loc <- locs[1]
+pars <- seq(0, 1, 0.25)
+# pars <- c(T, F)
+# par <- pars[1]
 
 estimates <- data.table()
 for (n in ns) {
-  for (loc in locs) {
+  for (par in pars) {
     set.seed(42)
-    distributions <- c('logistic', 'normal', 'tdis', 'chisq')
-    dist <- distributions[4]
-    df <- 2
-    ncp <- loc
     N <- 1e+5
-    beta <- c(-1, 1, sqrt(2), 2, 0.5)
+    beta <- c(1, 0.5)
+    xdim <- 1
+
+    distributions <- c("logistic", "normal", "snormal", "st", "tdis", "chisq", "exp", "lnormal")
+    dist <- distributions[8]
+    # df <- par
+    df <- 4
+    # neg <- par
     neg <- F
-    xdim <- 4
-    pop <- generate_pop(dist=dist, df=df, loc=0, beta=beta, negative=neg, N=N, xdim=xdim, ncp=ncp)
+
+    pop <- generate_pop(dist=dist, df=df, beta=beta, negative=neg, N=N, xdim=xdim)
 
     cl <- parallel::makePSOCKcluster(4)
-    parallel::clusterExport(cl, varlist=c(ls(), list('N', 'n', 'pop', 'simul', 'polr', 'ks_estimator', 'data.table')), envir=environment())
+    parallel::clusterExport(cl, varlist=c(ls(), list("N", "n", "pop", "simul", "polr", "ks_estimator", "data.table", "kde_estimator")), envir=environment())
     out <- rbindlist(parReplicate(cl, n_sim, simul(n, pop), simplify=FALSE))
-    print(paste('sample size:', n, '\nncp:', loc))
+    print(paste("sample size:", n, "\ndf:", par))
     estimates <- rbindlist(list(estimates, out))
-    fwrite(estimates, file='../data/estimates_chisq_ncp1-3_boot.csv', bom=T)
-    print(estimates[, lapply(.(X1/X2, X1_se, X2/X2, X2_se, XT/X2, XT_se), mean), ,by=.(as.character(models), n, loc, dist)])
+    fwrite(estimates, file="../data/estimates_lnorm-10.csv", bom=T)
+    print(estimates[order(as.character(models), par), lapply(.(XT/X1, XT_se), mean), ,by=.(as.character(models), n, par, dist)])
+    pop <- NA
   }
 }
 
 # -------------------------------
 # Simulation Results
 # -------------------------------
-estimates <- fread('../data/estimates.csv')
-estimates[, lapply(.(X1/X2, X1_se, X2/X2, X2_se, XT/X2, XT_se), mean, na.rm=T), ,by=.(as.character(models), n, loc, dist)]
+estimates <- fread("../data/estimates_lnorm-10_noboot.csv")
+print(estimates[order(as.character(models), par), lapply(.(X1, X1_se, XT, XT_se), mean), ,by=.(as.character(models), n, par, dist)])
 
 # -------------------------------
 # Graph
