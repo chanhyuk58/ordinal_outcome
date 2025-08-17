@@ -17,6 +17,7 @@
 \usepackage{amsfonts}
 \newtheorem{assumption}{Assumption}
 \newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
 % \usepackage[cjk]{kotex}
 
 \usepackage{listings}
@@ -64,6 +65,7 @@ By offering both a diagnostic strategy and an estimation solution, this paper pr
 
 \section{Causal Inference with Ordinal Outcomes}
 
+\subsection{Identification Problem}
 With growing emphasis on the causal inference framework, political science has sought on identifying the causal effect on policies and other political factors. Survey experiment, observational studies  with designs such as difference-in-difference and regression discontinuity become some of the prevalent empirical strategy in political science. For example, during the period from 2021 to 2024, about 20\% of articles published in top 3 general political science journals (\textit{American Journal of Political Science, American Political Science Journal, and Journal of Politics}) included survey experiment as one of their empirical strategy. 
 
 Many of political science research with causal inference framework target the causal effect on abstract and subjective concepts and preferences, and they often operationalized as ordinal variables.Researchers are interested in identifying causal effect of policies and other factors on people's preferences such as politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, and foreign policy preferences \citep{Scheve2001r, Mayda2005a}. We cannot observe these outcomes directly, but we believe many of them can be expressed on a uni-dimensional space; for example, we can imagine to line up people based on their opinion on pension reform. Researchers frequently rely on ordered responses, measured with Likert-type choices (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}). 
@@ -74,7 +76,7 @@ To be more specific, let us suppose a following simple model. There is a latent 
 \begin{equation}
     Y^{\ast} = f(X, \beta) + D^{T}\tau + \epsilon
 \end{equation}
-$D$ is a binary treatment indicator, where $1$ denotes a treatment group and $0$ denotes a control group, $X$ is a vector of regressors, and $\epsilon$ is a latent error term. 
+$D$ is a binary treatment indicator, where $1$ denotes a treatment group and $0$ denotes a control group, $X$ is a vector of regressors, and $\epsilon$ is a latent error term and its density is defined with $f$, and its distribution is defined by $F$. 
 
 Now, borrowing from the potential outcome framework \citep{Rubin1974a}, let us denote the potential outcome in the latent space as $Y^{\ast}(d)$ and the potential outcome in observed data as $Y(d)$, where $d \in \{0, 1\}$ denotes the treatment status. We put following standard causal inference assumptions regarding the latent $Y^{\ast}$. 
 
@@ -91,17 +93,13 @@ Now, borrowing from the potential outcome framework \citep{Rubin1974a}, let us d
 \end{assumption}
 
 The target causal estimand considered in this paper is the average treatment effect (ATE) in terms of the latent outcome $Y^{\ast}$. 
-If all above assumptions are met, ATE of $Y^{\ast}$ can be written as $\mathbb{E}\left[Y^{\ast}_{i}(1) \mid D_i = 1 \right] - \mathbb{E}\left[Y^{\ast}_{i}(0) \mid D_i = 0\right] = \tau$. Thus, the goal is identifying $\tau$.
 
-The problem is that continuous $Y^{\ast}$ can not be observed directly, but we only can observe some (monotonic) transformation of it. Denote the observed ordinal outcome as $Y$ and the transformation (often called reporting function) as $g$.
-% $$
-%     Y = \begin{cases}
-%         0 & \text{if } \alpha_{-1} < g(Y^{\ast}) \le \alpha_{0} \\
-%         1 & \text{if } \alpha_{0} < g(Y^{\ast}) \le \alpha_{1} \\
-%         \vdots & \vdots  \\
-%         J & \text{if } \alpha_{J-1} < g(Y^{\ast}) \le \alpha_{J} \\
-%     \end{cases}
-% $$, where $\alpha_{k}$ denotes the threshold points for each ordinal category. Conventionally, $-\infty = \alpha_{-1} \le \alpha_{0} \le \ldots \le \alpha_{k} = \infty$. Here I assume that everyone has same thresholds, ignoring the additional problems arising from inter- and intra-personal differences in scale use \citep{King2004a, King2007a}.
+If all above assumptions are met, ATE on $Y^{\ast}$ can be written as 
+$$
+    \mathbb{E}\left[Y^{\ast}_{i}(1) \mid D_i = 1 \right] - \mathbb{E}\left[Y^{\ast}_{i}(0) \mid D_i = 0\right] = \tau
+$$. 
+
+The problem arises from the fact that continuous $Y^{\ast}$ can not be observed directly, but we only can observe some (monotonic) transformation of it. Denote the observed ordinal outcome as $Y$ and the transformation (often called reporting function) as $g$.
 
 $$
     Y = g(Y^{\ast})
@@ -109,26 +107,53 @@ $$
 
 One may concern the inter- and intra-personal differences in $g$. In other words, each respondent may use different internal process in transforming $Y^{\ast}$ into $Y$. This hampers the identification, but the concern may be attenuated by careful survey design utilizing anchored vignettes suggested in \citep{King2004a, King2007a}. Throughout the paper, I assume everyone shares same $g$, ignoring the additional problems arising from inter- and intra-personal differences. 
 
-\begin{assumption}{Uniform Reporting function}
-    The reporting function $g$ is invariant across units.
+\begin{assumption}{Uniform Monotonic Reporting function}
+    The monotonic reporting function $g$ is invariant across units.
 \end{assumption}
 
+$g$ can also be thought of as a function that cuts $Y^{\ast}$ into $Y$ with some thresholds,
+$$
+    Y = \begin{cases}
+        0 & \text{if } \alpha_{-1} < g(Y^{\ast}) \le \alpha_{0} \\
+        1 & \text{if } \alpha_{0} < g(Y^{\ast}) \le \alpha_{1} \\
+        \vdots & \vdots  \\
+        J & \text{if } \alpha_{J-1} < g(Y^{\ast}) \le \alpha_{J} \\
+    \end{cases}
+$$, where $\alpha_{k}$ denotes the threshold points for each ordinal category. 
 
-The identification problem arises from the fact that we cannot observe $Y^{\ast}$ directly nor know the transformation $g$. If we can directly observe $Y^{\ast}$, then ATE can easily be identified as usual. Or if we have perfect knowledge on $g$, we can also identify the causal effect since $\mathbb{E}\left[Y^{\ast}_{i}(1)\right] - \mathbb{E}\left[Y^{\ast}_{i}(0)\right] = \mathbb{E}\left[g(Y(1))\right] = \mathbb{E}\left[g(Y(0))\right]$. 
+Under this settings, we only can observe $Y$ directly, and have no good knowledge on either $Y^{\ast}$ nor $g$. Thus, the naive estimator of ATE, $\mathbb{E}\left[Y^\ast(1)\right] - \mathbb{E}\left[Y^\ast(0)\right]$ cannot be obtained. Also, since $g$ is unknown, and scaling by positive constant would not change the ordering of $Y$, we only can identify the target causal parameter up to scale. In other words, we only can identify the size of the treatment effect relative to a coefficient of another covariate. Let us denote $\beta_{a}$ as a coefficient of the covariate that is going to work as an anchor. 
 
-However, in usual settings, we only can observe $Y$. In this setting, we only can identify ATE up to a scale. 
+\begin{definition}{Anchored Latent Treatment Effect}
+    $\tau_{ALTE} = \tau_{0} / \beta_{a}$
+\end{definition}
 
+\subsection{Estimation}
 
+Regarding the setting, there have been three common approaches in political science: 1) ignore the ordinal nature and regard it as cardinal value 2) IRT based approaches, and 3) ordered regression.
 
-Regarding the causal estimand $\tau$, there have been three common approaches in political science: 1) ignore the ordinal nature and regard it as cardinal value 2) IRT based approaches, and 3) ordered regression. Assigning numerical values to ordinal outcomes enables using usual causal inference tools such as means-difference, least squares, and difference-in-differences. One downside for this approach comes from the fact that the numerical labels are arbitrary, and theoretically any labels should work if the preserve the order. For example, labeling \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree} as $\{1, 2, 3, 4, 5\}$ is no more reasonable than labeling them as $\{1, 3, 15, 50, 100\}$. As discussed in \citet{Bond2018a} and \citet{Schroder2017a}, in most cases, there exists at least one labeling scheme that can flip the sign of the causal effect. \citet{Bloem2022a} partly deals with this problem by providing a sensitivity test and a partial identification method based on the test. 
+The first approach assigns numerical values to ordinal outcome $Y$. The assumption here is that the numerical labels would be a proper representation of the inverse of the unobserved reporting function, $g^{-1}$. Let us denote this cardinalization scheme as $l$
 
-However, the more serious problem of cardinalization approach is the interpretation of the estimates. For instance, means-difference and difference-in-differences are comparing numerical expectations of outcomes from different groups. However, if the observed outcomes are \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}, even though we have transformed them into numbers, what does the expectations of these responses, mean in terms of the latent variable $Y^{\ast}$? In a potential outcome framework, the relationship between $\mathbb{E}\left[Y(d) \mid X \right]$ and $\mathbb{E}\left[Y^\ast(d) \mid X \right]$ is not clear. Furthermore, even if we safely put some meanings to the expectations, the size of the difference between expectations are hardly interpretable, since they depend on the labeling scheme. For example, in case of 5 point Likert scale, if we assign $\{2, 4, 6, 8, 10\}$, instead of $\{1, 2, 3, 4, 5\}$, the size of the difference will be doubled. This may significantly misleading, since the estimates we have only have very loose link with the treatment effects, and may over- or under-estimate them. 
+\begin{assumption}{Proper Cardinalization}
+    Researchers can properly assign numerical values to the ordinal outcome $Y$ which can then approximate the inverse of the reporting function. $l \sim g^{-1}$
+\end{assumption}
 
+This enables researcher to use usual causal inference tools such as means-difference, least squares, and difference-in-differences, because now the numerical values are assumed to capture the latent variable $Y^{\ast}$. One critical downside for this approach comes from the fact that the numerical labels are arbitrary, and theoretically any labels should work if they preserve the order. In some problems, researchers may find some numerical labels that can is believed to be the true values on the latent space, but in many cases it is hard to justify one labels to the other. For example, labeling \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree} as $\{1, 2, 3, 4, 5\}$ is no more reasonable than labeling them as $\{-1, 3, 15, 50, 100\}$. Thus, the size of the difference between expectations are hardly interpretable, since they depend on the labeling scheme. For example, in case of 5 point Likert scale, if we assign $\{2, 4, 6, 8, 10\}$, instead of $\{1, 2, 3, 4, 5\}$, the size of the difference will be doubled. This may significantly misleading, since the estimates we have only have very loose link with the treatment effects, and may over- or under-estimate them. Even worse, as discussed in \citet{Bond2018a} and \citet{Schroder2017a}, in most cases, there exists at least one labeling scheme that can flip the sign of the estimated causal effect. \citet{Bloem2022a} partly deals with this problem by providing a sensitivity test and a partial identification method based on the test. 
+
+% However, the more serious problem of cardinalization approach is the interpretation of the estimates. For instance, means-difference and difference-in-differences are comparing numerical expectations of outcomes from different groups. However, if the observed outcomes are \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}, even though we have transformed them into numbers, what does the expectations of these responses, mean in terms of the latent variable $Y^{\ast}$? In a potential outcome framework, the relationship between $\mathbb{E}\left[l(Y(d)) \mid X \right]$ and $\mathbb{E}\left[Y^\ast(d) \mid X \right]$ is not clear. Furthermore, even if we safely put some meanings to the expectations, 
 
 Another approach in estimating causal effect with ordinal variable is through IRT.  IRT based Two-step approach first estimate the latent variable using the serious of items that were designed to measure the same concept in different angles. In the context of the model setting above, using multiple $Y$, IRT estimates the $Y^{\ast}$. After we get the estimate for the latent variable $Y^{\ast}$, then we can employ the usual causal inference tools to identify $\tau$ up to scale since it is now have numerical meanings. The second variant of IRT based approach, the hierarchical IRT is recent discussed in \citet{Stoetzer2025a}. Instead of estimating the latent variable in the first step, they effectively merge the two steps in to EM algorithm, and produces more consistent estimates of the causal effects. Since IRT based methods do not put any numerical meaning to the ordinal outcomes themselves, the estimates from the methods can be interpreted as the target causal effect up to scale. One downside of the approach is that it is advised to have at least 3 different items for IRT to work properly, but most of the political science research rely on 1 or 2 items in measuring their outcomes. Therefore, when researcher is focusing on the treatment effect on specific dimension such as opinion on gender inequality or immigrant issue, where outcomes are not usually measured with multiple items, IRT might not be a good choice.
 
+The third approach is using ordinal regression, and by far the most common methods are ordered logit and probit regressions. Similar to the IRT based methods, both ordered logit and probit utilize the ordered nature of the outcomes measured in ordinal scales, and designed to identify the actual target causal effect in unobserved, latent space up to scale. However, these models require strong distributional assumptions on the error term in the latent space, $\epsilon$.
 
-The third approach is using ordinal regression, and by far the most common methods are ordered logit and probit regressions. Similar to the IRT based methods, both ordered logit and probit utilize the ordered nature of the outcomes measured in ordinal scales, and designed to identify the actual target causal effect in unobserved, latent space up to scale. However, these models require strong distributional assumptions on the error term in the latent space, $\epsilon$; ordered probit assumes a normal distribution and ordered logit assumes a logistic distribution. While these assumptions facilitate fast and efficient estimation using maximum likelihood, when the distributional assumptions fail, the estimates are statistically inconsistent and biased. 
+\begin{assumption}{Distributional Assumption on Error Term}
+     The error term, $\epsilon$ follows certain distribution. For example, ordered logit model assumes standard logistic distribution and ordered probit model assumes standard normal. 
+\end{assumption}
+
+\begin{assumption}{The Error Distribution should be Differentiable}
+    $f$ should be differentiable.
+\end{assumption}
+
+While these assumptions facilitate fast and efficient estimation through maximum likelihood, when the distributional assumptions fail, the estimates are statistically inconsistent and biased. 
 
 Let $i$ be the index for $i$th data. To construct likelihood function, the probability of observing $Y = j$ given $X_{i}$ is:
 $$
@@ -167,47 +192,52 @@ This paper extends the ordinal regression approach, first by introducing a diagn
 %
 % \citet{Aldrich1977a} examined interpretability issues when recovering politicians’ ideological positions from ordinal survey responses, though without directly addressing estimation concerns. \citet{King2004a} proposed the “anchored vignettes” approach to mitigate these issues at the survey design stage. This method introduces standardized example questions designed to capture respondents’ interpretations of key concepts, allowing researchers to adjust responses accordingly. \citet{King2007a} further refined the approach by developing methods to evaluate anchoring vignettes. However, a major limitation of this approach is its reliance on the assumption that respondents interpret both vignettes and primary survey questions consistently—an assumption that is difficult to test empirically.
 
-\section{Test for the Distributional Assumptions: Surrogate-based Residuals Approach}
-
-The researchers generally overlook the inconsistent bias in ordered logit and probit regression models partly because the absence of appropriate diagnostic tools that can test the validity of the distributional assumptions.
-% In models that do not deal with latent space, the test for the assumption on error term can be carried out by analyzing the residuals, the difference between the observed outcome and the fitted values. However, in models with latent variable space including ordered regression models, this cannot be done since we could not directly observe the true latent outcome but only observe the ordered discretized version of it. 
-
-Although statistical tests for distributional assumptions has been existed \citep{Bera1982a, Glewwe1997a, Weiss1997a}, most of them are limited to probit models because most of the tests based on the moment conditions and moment conditions for standard normal is much clearer. More recently, \citet{Li2010a} suggested a general residual analysis approach using the sign-based statistics (SBS), by collapsing ordered choices into multiple binary choices, but the result from the analysis is hard to interpret and fails to provide consistent diagnosis because the calculates residuals are dependent on the values of the covariates. 
-
-% \citet{Bloem2022a} approached the same question in a slightly different angle and introduced a sensitivity analysis for distributional assumptions. Building on \citet{Schroder2017a}, \citet{Bloem2022a} proposed a robustness test for plausible monotonic increasing transformations of the observed ordinal scale’s distribution. This framework is valuable because it allows researchers to assess how robust their findings are to certain distributional changes, such as globally concave and convex transformations or transformations with an inflection point. However, as the author notes, despite covering many theoretically plausible cases, the study remains limited to a restricted set of distributional forms.
-
-\citet{Liu2018a} extend the residual approach suggested by \citet{Li2010a}, but instead of using the sign-based statistic, it generates a surrogate variable for the error term in latent variable space and use that to test for the distributional assumptions. Since the surrogate residuals are constructed to be continuous, it shares the similar properties to that of the common residuals for continuous outcomes. Thus, one can use this surrogate residuals to either graphically diagnosis the validity of the distributional assumption or to construct numerical test including the Kolmogorov-Smirnov test or the Anderson-Darling test. 
-
-To illustrate the construction of the surrogate residuals, let's suppose a standard problem setting with latent variable space mentioned in Section 1 and further suppose that we consider a ordered regression model with an assumption that the error term in latent space follows $F(\cdot)$. Then, define $Z$ as $- (X^T\beta + D^T\tau) + \epsilon$, where $\epsilon$ follows the error distribution assumed by the model, $F(\cdot)$. If the specified ordered regression model is correct, the marginal distribution of $Z$ should closely follow that of the true latent outcome variable $Y^{\ast}$. Based on $Z$ and the observed outcome $Y$, then the surrogate variable $S$ is sampled from a conditional distribution of hypothetical variable $Z$ given the observed ordinal outcomes $Y$. This results in truncating $Z$ at each of the estimated threshold points by the model. To be more specific, $S$ follows below distribution:
-
-$$
-    S \sim \begin{cases}
-        Z \mid \alpha_{0} < Z \le \alpha_{1} & \text{ if } Y = 1 \\
-        Z \mid \alpha_{2} < Z \le \alpha_{2} & \text{ if } Y = 2 \\
-        \vdots & \vdots  \\
-        Z \mid \alpha_{J-1} < Z \le \alpha_{J} & \text{ if } Y = J \\
-    \end{cases}
-$$ 
-
-
-The constructed surrogate $S$ is to be a continuous variable, thus the surrogate-based residuals can be calculated just like the other continuous variable cases:
-
-$$
-    R_{S} = S - \mathbb{E}\left[ S | X \right] = S - \mathbb{E}\left[ Z | X \right]
-$$ 
-
-Since the surrogate $S$ is continuous, graphical analysis such as Q-Q plot against the assumed distribution can provide first step test for the distributional assumption and bootstrapped goodness-of-fit tests such as Kolmogorov-Smirnov test can be done \footnote{R package \lstinline{sure} provides useful tools such as functions for surrogate residual calculation and plotting.}. Kolmogorov-Smirnov test used to check the equality between the CDF of the assumed distribution and the empirical CDF of the surrogate-based residuals by summing up the distance between two distributions. If the surrogate-based residuals from the considered ordered regression model do not seem to agree with the assumed distribution, one should consider using alternative models \footnote{However, it should be noted that since this diagnosis based on (surrogate) residuals, distributional misspecification is not the only reason that can cause a bad fit. As \citet{Glewwe1997a} and \citet{Greene2010a} noted earlier, there can be multiple reasons including omitted variable with wildly different distributions or misspecification of a functional form of the latent equation. Both misspecified functional form and omitted variable are important issues require attention but for the purpose of this paper, I focus on the issues arise from the misspecification regarding distribution of the error terms.}. One may want to try alternative parametric regression models such as skewed logit distribution \citep{Nagler1994a} or a generalized version of ordered logit or probit models \citep{Johnston2020a} and pick a model with the best goodness-of-fit score using the surrogate-based residuals. 
-
-Alternative to the parametric approach rely on semiparametric approach with minimum distributional assumptions. Semiparametric approaches have been developed to mitigate the potential distributional misspecification. The literature can be roughly divided in two categories. The rank-based maximum
-score approach put minimum assumptions on distributions that can enable quantile regressions and uses that property to estimate the parameters. One downside of this approach is that it is usually the case that the convergence is very slow \citep{Manski1988a, Lee1992a}. On the other hand, Kernel-based approaches estimate the error distribution nonparametrically using kernel estimation strategy. \citet{Lewbel2000a} was one of the first to attempt relaxing both assumptions in this approach. \citet{Klein2002a} introduced a shift-restriction-based approach that uses kernel density estimation (KDE) for both cut points and regression coefficients, providing greater flexibility. In the next section, I would like to introduce a Kernel-based semiparametric approach suggested by \citet{Klein2002a}. 
+% \section{Test for the Distributional Assumptions: Surrogate-based Residuals Approach}
+%
+% The researchers generally overlook the inconsistent bias in ordered logit and probit regression models partly because the absence of appropriate diagnostic tools that can test the validity of the distributional assumptions.
+% % In models that do not deal with latent space, the test for the assumption on error term can be carried out by analyzing the residuals, the difference between the observed outcome and the fitted values. However, in models with latent variable space including ordered regression models, this cannot be done since we could not directly observe the true latent outcome but only observe the ordered discretized version of it. 
+%
+% Although statistical tests for distributional assumptions has been existed \citep{Bera1982a, Glewwe1997a, Weiss1997a}, most of them are limited to probit models because most of the tests based on the moment conditions and moment conditions for standard normal is much clearer. More recently, \citet{Li2010a} suggested a general residual analysis approach using the sign-based statistics (SBS), by collapsing ordered choices into multiple binary choices, but the result from the analysis is hard to interpret and fails to provide consistent diagnosis because the calculates residuals are dependent on the values of the covariates. 
+%
+% % \citet{Bloem2022a} approached the same question in a slightly different angle and introduced a sensitivity analysis for distributional assumptions. Building on \citet{Schroder2017a}, \citet{Bloem2022a} proposed a robustness test for plausible monotonic increasing transformations of the observed ordinal scale’s distribution. This framework is valuable because it allows researchers to assess how robust their findings are to certain distributional changes, such as globally concave and convex transformations or transformations with an inflection point. However, as the author notes, despite covering many theoretically plausible cases, the study remains limited to a restricted set of distributional forms.
+%
+% \citet{Liu2018a} extend the residual approach suggested by \citet{Li2010a}, but instead of using the sign-based statistic, it generates a surrogate variable for the error term in latent variable space and use that to test for the distributional assumptions. Since the surrogate residuals are constructed to be continuous, it shares the similar properties to that of the common residuals for continuous outcomes. Thus, one can use this surrogate residuals to either graphically diagnosis the validity of the distributional assumption or to construct numerical test including the Kolmogorov-Smirnov test or the Anderson-Darling test. 
+%
+% To illustrate the construction of the surrogate residuals, let's suppose a standard problem setting with latent variable space mentioned in Section 1 and further suppose that we consider a ordered regression model with an assumption that the error term in latent space follows $F(\cdot)$. Then, define $Z$ as $- (X^T\beta + D^T\tau) + \epsilon$, where $\epsilon$ follows the error distribution assumed by the model, $F(\cdot)$. If the specified ordered regression model is correct, the marginal distribution of $Z$ should closely follow that of the true latent outcome variable $Y^{\ast}$. Based on $Z$ and the observed outcome $Y$, then the surrogate variable $S$ is sampled from a conditional distribution of hypothetical variable $Z$ given the observed ordinal outcomes $Y$. This results in truncating $Z$ at each of the estimated threshold points by the model. To be more specific, $S$ follows below distribution:
+%
+% $$
+%     S \sim \begin{cases}
+%         Z \mid \alpha_{0} < Z \le \alpha_{1} & \text{ if } Y = 1 \\
+%         Z \mid \alpha_{2} < Z \le \alpha_{2} & \text{ if } Y = 2 \\
+%         \vdots & \vdots  \\
+%         Z \mid \alpha_{J-1} < Z \le \alpha_{J} & \text{ if } Y = J \\
+%     \end{cases}
+% $$ 
+%
+%
+% The constructed surrogate $S$ is to be a continuous variable, thus the surrogate-based residuals can be calculated just like the other continuous variable cases:
+%
+% $$
+%     R_{S} = S - \mathbb{E}\left[ S | X \right] = S - \mathbb{E}\left[ Z | X \right]
+% $$ 
+%
+% Since the surrogate $S$ is continuous, graphical analysis such as Q-Q plot against the assumed distribution can provide first step test for the distributional assumption and bootstrapped goodness-of-fit tests such as Kolmogorov-Smirnov test can be done \footnote{R package \lstinline{sure} provides useful tools such as functions for surrogate residual calculation and plotting.}. Kolmogorov-Smirnov test used to check the equality between the CDF of the assumed distribution and the empirical CDF of the surrogate-based residuals by summing up the distance between two distributions. If the surrogate-based residuals from the considered ordered regression model do not seem to agree with the assumed distribution, one should consider using alternative models \footnote{However, it should be noted that since this diagnosis based on (surrogate) residuals, distributional misspecification is not the only reason that can cause a bad fit. As \citet{Glewwe1997a} and \citet{Greene2010a} noted earlier, there can be multiple reasons including omitted variable with wildly different distributions or misspecification of a functional form of the latent equation. Both misspecified functional form and omitted variable are important issues require attention but for the purpose of this paper, I focus on the issues arise from the misspecification regarding distribution of the error terms.}. One may want to try alternative parametric regression models such as skewed logit distribution \citep{Nagler1994a} or a generalized version of ordered logit or probit models \citep{Johnston2020a} and pick a model with the best goodness-of-fit score using the surrogate-based residuals. 
+%
+% Alternative to the parametric approach rely on semiparametric approach with minimum distributional assumptions. Semiparametric approaches have been developed to mitigate the potential distributional misspecification. The literature can be roughly divided in two categories. The rank-based maximum
+% score approach put minimum assumptions on distributions that can enable quantile regressions and uses that property to estimate the parameters. One downside of this approach is that it is usually the case that the convergence is very slow \citep{Manski1988a, Lee1992a}. On the other hand, Kernel-based approaches estimate the error distribution nonparametrically using kernel estimation strategy. \citet{Lewbel2000a} was one of the first to attempt relaxing both assumptions in this approach. \citet{Klein2002a} introduced a shift-restriction-based approach that uses kernel density estimation (KDE) for both cut points and regression coefficients, providing greater flexibility. In the next section, I would like to introduce a Kernel-based semiparametric approach suggested by \citet{Klein2002a}. 
 
 % One downside of this approach is that researchers to decide which kernels to be used, and the performance largely depends on this decision.
 
 % Some semiparametric approaches do not require input from researchers. Variants of the maximum score and maximum rank estimation are prime examples \citet{Lee1992a} extended \citet{Manski1985a}’s maximum score estimation model for binary outcomes to ordered choice settings. \citet{Liu2024a} built on \citet{Klein2002a} by applying isotonic regression and maximum rank estimation strategy instead of kernel methods. \citet{Ito2021a} leveraged Monte Carlo resampling to construct likelihoods, enabling estimation without strict distributional assumptions.  %However, these approaches primarily focus on ordered outcomes and largely overlook the challenge of bracketed variables.
 
-\section{One Alternative Model: KDE-based Semiparametric Regression}
+\section{KDE-based Semiparametric Ordinal Regression}
 
-Instead of assuming the distribution of the error term, \citet{Klein2002a} suggested a method that can identify the treatment effect based on the estimated error distribution. The method first estimate the error distribution based on kernel density estimation (KDE) and then construct a quasi-likelihood function based on it. Beginning with the standard latent variable space setting discussed in Section 2, recall that 
+Instead of assuming the distribution of the error term, \citet{Klein2002a} suggested a method that can identify the treatment effect based on the estimated error distribution. This allow us to identify the ALTE only with Assumption 1 to 4 and 5c.
+
+Let us denote the true log-likelihood as $Q$. Then if we can estimate the distribution of error term correctly, we can construct the quasi-log-likelihood $\hat{Q}$ based on the estimated error distribution, and this would give us consistent estimation of the ALTE through maximum likelihood. 
+
+
+The method first estimate the error distribution based on kernel density estimation (KDE) and then construct a quasi-likelihood function based on it. Beginning with the standard latent variable space setting discussed in Section 2, recall that 
 
 $$
 \begin{aligned}
