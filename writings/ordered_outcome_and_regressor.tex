@@ -141,16 +141,12 @@ This enables researcher to use usual causal inference tools such as means-differ
 
 % However, the more serious problem of cardinalization approach is the interpretation of the estimates. For instance, means-difference and difference-in-differences are comparing numerical expectations of outcomes from different groups. However, if the observed outcomes are \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}, even though we have transformed them into numbers, what does the expectations of these responses, mean in terms of the latent variable $Y^{\ast}$? In a potential outcome framework, the relationship between $\mathbb{E}\left[l(Y(d)) \mid X \right]$ and $\mathbb{E}\left[Y^\ast(d) \mid X \right]$ is not clear. Furthermore, even if we safely put some meanings to the expectations, 
 
-Another approach in estimating causal effect with ordinal variable is through IRT.  IRT based Two-step approach first estimate the latent variable using the serious of items that were designed to measure the same concept in different angles. In the context of the model setting above, using multiple $Y$, IRT estimates the $Y^{\ast}$. After we get the estimate for the latent variable $Y^{\ast}$, then we can employ the usual causal inference tools to identify $\tau$ up to scale since it is now have numerical meanings. The second variant of IRT based approach, the hierarchical IRT is recent discussed in \citet{Stoetzer2025a}. Instead of estimating the latent variable in the first step, they effectively merge the two steps in to EM algorithm, and produces more consistent estimates of the causal effects. Since IRT based methods do not put any numerical meaning to the ordinal outcomes themselves, the estimates from the methods can be interpreted as the target causal effect up to scale. One downside of the approach is that it is advised to have at least 3 different items for IRT to work properly, but most of the political science research rely on 1 or 2 items in measuring their outcomes. Therefore, when researcher is focusing on the treatment effect on specific dimension such as opinion on gender inequality or immigrant issue, where outcomes are not usually measured with multiple items, IRT might not be a good choice.
+Another approach in estimating causal effect with ordinal variable is through IRT. IRT based Two-step approach first estimate the latent variable using the serious of items that were designed to measure the same concept in different angles. In the context of the model setting above, using multiple $Y$, IRT estimates the $Y^{\ast}$. After we get the estimate for the latent variable $Y^{\ast}$, then we can employ the usual causal inference tools to identify $\tau$ up to scale since it is now have numerical meanings. The second variant of IRT based approach, the hierarchical IRT is recent discussed in \citet{Stoetzer2025a}. Instead of estimating the latent variable in the first step, they effectively merge the two steps in to EM algorithm, and produces more consistent estimates of the causal effects. Since IRT based methods do not put any numerical meaning to the ordinal outcomes themselves, the estimates from the methods can be interpreted as the target causal effect up to scale. One downside of the approach is that it is advised to have at least 3 different items for IRT to work properly, but most of the political science research rely on 1 or 2 items in measuring their outcomes. Therefore, when researcher is focusing on the treatment effect on specific dimension such as opinion on gender inequality or immigrant issue, where outcomes are not usually measured with multiple items, IRT might not be a good choice.
 
 The third approach is using ordinal regression, and by far the most common methods are ordered logit and probit regressions. Similar to the IRT based methods, both ordered logit and probit utilize the ordered nature of the outcomes measured in ordinal scales, and designed to identify the actual target causal effect in unobserved, latent space up to scale. However, these models require strong distributional assumptions on the error term in the latent space, $\epsilon$.
 
 \begin{assumption}{Distributional Assumption on Error Term}
      The error term, $\epsilon$ follows certain distribution. For example, ordered logit model assumes standard logistic distribution and ordered probit model assumes standard normal. 
-\end{assumption}
-
-\begin{assumption}{The Error Distribution should be Differentiable}
-    $f$ should be differentiable.
 \end{assumption}
 
 While these assumptions facilitate fast and efficient estimation through maximum likelihood, when the distributional assumptions fail, the estimates are statistically inconsistent and biased. 
@@ -232,7 +228,12 @@ This paper extends the ordinal regression approach, first by introducing a diagn
 
 \section{KDE-based Semiparametric Ordinal Regression}
 
-Instead of assuming the distribution of the error term, \citet{Klein2002a} suggested a method that can identify the treatment effect based on the estimated error distribution. This allow us to identify the ALTE only with Assumption 1 to 4 and 5c.
+Instead of assuming the distribution of the error term, \citet{Klein2002a} suggested a method that can identify the treatment effect based on the estimated error distribution. This allow us to identify the ALTE only with Assumption 1 to 4 and following assumption on the distribution of covariates.
+
+\begin{assumption}{Differentiable Conditional Density}
+    Conditional density of $X$ given $(\beta, \tau, D, Y)$ is strictly positive and differentiable. 
+\end{assumption}
+
 
 Let us denote the true log-likelihood as $Q$. Then if we can estimate the distribution of error term correctly, we can construct the quasi-log-likelihood $\hat{Q}$ based on the estimated error distribution, and this would give us consistent estimation of the ALTE through maximum likelihood. 
 
