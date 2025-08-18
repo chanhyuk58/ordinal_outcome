@@ -3,14 +3,9 @@ library("MASS")  # For multivariate normal data generation
 # library("sn")
 # library("np")    # For Non-parametric KDE
 library("data.table")
-# library("ggplot2")
 # library("sure")
-# library("moments")
 # library("texreg")
 library("txtplot")
-# library("KernSmooth")
-# library("lpdensity")
-# library("hdrcde")
 
 # -------------------------------
 # Functions
@@ -150,9 +145,11 @@ ks_estimator <- function(formula, data, B=100) {
   J <- max(data[, y_lab])
   n <- length(data[, y_lab])
 
-  delta <- 1/8
-  h_p <- n^( -(1/10 + (3 + delta)/3)/2 )           # Pilot bandwidth
-  h <- n^( -( (3 + delta)/20 + 1/6 ) /2 )             # Final bandwidth
+  delta <- 1/10
+  # h_p <- n^( -(1/10 + (3 + delta)/3)/2 )           # Pilot bandwidth
+  h_p <- n^(-0.11)
+  # h <- n^( -( (3 + delta)/20 + 1/6 ) /2 )             # Final bandwidth
+  h <- n^(-0.15)
 
   Kernel <- function(x) {return(dnorm(x))} # Gaussian Kernel
   # Kernel_prime <- function(u) {return(-u * dnorm(u))}  # derivative of standard normal density
@@ -192,7 +189,7 @@ ks_estimator <- function(formula, data, B=100) {
 
     # Quasi-likelihood calculation
     pr <- diag(P_est_mat[(Y + 1L), ]) - diag(P_est_mat[(Y), ])
-    # trim_lvl <- min(0.999, 0.895 + 0.0001 * n)
+    # trim_lvl <- min(0.999, 0.93 + 0.00005 * n)
     trim_lvl <- 0.95
     valid <- (apply(abs(X) <= quantile(abs(X), trim_lvl), function(x) all(x), MARGIN=1))
     pr <- pr[valid]
@@ -355,7 +352,7 @@ simul <- function(n, pop) {
   idx = sample(N, n)
   sample_data <- pop[idx, ]
 
-  # formula <- ordered(y_ord) ~ x1 + T
+  formula <- ordered(y_ord) ~ x1 + T
   formula2 <- (y_ord) ~ x1 + T
 
   # # Ordered logit
@@ -441,6 +438,7 @@ n_sim <- 1000        # Number of simulations
 # -------------------------------
 # Simulation
 # -------------------------------
+# {{{
 ns <- c(250, 500, 750, 1000)
 # n <- ns[1]
 # pars <- c(0.2, 2.5)
@@ -450,6 +448,7 @@ ns <- c(250, 500, 750, 1000)
 # distributions <- c("logistic", "normal", "snormal", "st", "tdis", "chisq", "exp", "lnormal")
 
 pairs <- list(c("tdis", 1))
+# pairs <- list(c("normal", 1))
 
 estimates <- data.table()
 for (n in ns) {
@@ -471,27 +470,9 @@ for (n in ns) {
         out <- rbindlist(parReplicate(cl, n_sim, simul(n, pop), simplify=FALSE))
         print(paste("sample size:", n, "df:", par))
         estimates <- rbindlist(list(estimates, out))
-        fwrite(estimates, file="../data/estimates_tdisdf1_ks(2).csv", bom=T)
+        fwrite(estimates, file="../data/estimates_tdis1_ks(3).csv", bom=T)
         print(estimates[order(as.character(models), par), lapply(.(XT/X1, XT_se), mean), ,by=.(as.character(models), n, par, dist)])
         pop <- NA
     }
 }
-
-# -------------------------------
-# Simulation Results
-# -------------------------------
-# estimates <- fread("../data/estimates_tdisdf1_others.csv")
-# estimates2 <- fread("../data/estimates_tdisdf1_ks.csv")
-# # head(estimates)
-# print(estimates[order(as.character(models), par), lapply(.(XT/X1), mean), ,by=.(as.character(models), n, par, dist)])
-# print(estimates2[order(as.character(models), par), lapply(.(XT/X1), mean), ,by=.(as.character(models), n, par, dist)])
-
-# -------------------------------
-# Graph
-# -------------------------------
-# gd <- estimates[loc%in%c(-7, 7), lapply(.(Xx3/Xx2, Xx2/Xx2), mean), ,by=.(as.character(models), n, loc, dist)]
-# ggplot(aes(x=n, y=V1, col=as.character), data=gd) +
-#   facet_grid(~loc) +
-#   geom_line() +
-#   geom_point() + 
-#   geom_hline(aes(yintercept=4))
+# }}}
