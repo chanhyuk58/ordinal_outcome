@@ -66,6 +66,30 @@ generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist="logistic",
 pilot_kde <- function(Y, V, l, h_p, sigma, j, n) {
   Kernel <- function(x) {return(dnorm(x))} # Gaussian Kernel
   kde_values <- numeric(n)
+  if (l == "1") {
+    n1 <- length(V[Y <= j])
+    if (n1 > 0) {
+      for (i in 1:n) {
+        kde_values[i] <- 1/n1 * 
+          sum(
+            Kernel((V[i] - V[-i][Y[-i] <= j]) / (sigma * h_p)) / (sigma * h_p)
+          ) 
+
+      }
+    }
+  }
+  if (l == "0") {
+    n0 <- length(V[Y > j])
+    if (n0 > 0) {
+      for (i in 1:n) {
+        kde_values[i] <- 1/n0 * 
+          sum(
+            Kernel((V[i] - V[-i][Y[-i] > j]) / (sigma * h_p)) / (sigma * h_p)
+          ) 
+
+      }
+    }
+  }
   if (l == "11") {
     n11 <- length(V[Y <= j & D == 1])
     if (n11 > 0) {
@@ -120,7 +144,7 @@ pilot_kde <- function(Y, V, l, h_p, sigma, j, n) {
 
 ## Smooth Damping weights {{{
 compute_local_bandwidth <- function(pilot_density, sigma, n, delta) {
-  pilot_density <- g00_pilot
+  # pilot_density <- g00_pilot
   # summary(log(pilot_density))
   # summary(pilot_density)
   m <- exp(sum(log(pilot_density)) / length(pilot_density))
@@ -136,6 +160,28 @@ compute_local_bandwidth <- function(pilot_density, sigma, n, delta) {
 final_kde <- function(Y, V, l, lambda, h, j, n) {
   Kernel <- function(x) {return(dnorm(x))} # Gaussian Kernel
   kde_values <- numeric(n)
+  if (l == "1") {
+    n1 <- length(V[Y <= j])
+    if (n1 > 0) {
+      for (i in 1:n) {
+        kde_values[i] <- 1/n1 * 
+          sum(
+            Kernel((V[i] - V[Y <= j]) / (lambda[Y <= j] * h)) / (lambda[Y <= j] * h)
+          )
+      }
+    }
+  }
+  if (l == "0") {
+    n0 <- length(V[Y > j])
+    if (n0 > 0) {
+      for (i in 1:n) {
+        kde_values[i] <- 1/n0 * 
+          sum(
+            Kernel((V[i] - V[Y > j]) / (lambda[Y > j] * h)) / (lambda[Y > j] * h)
+          )
+      }
+    }
+  }
   if (l == "11") {
     n11 <- length(V[Y <= j & D == 1])
     if (n11 > 0) {
@@ -198,11 +244,11 @@ ks_estimator <- function(formula, data, B=100) {
   J <- max(data[, y_lab])
   n <- length(data[, y_lab])
 
-  delta <- 1/6
-  # h_p <- n^( -(1/10 + (3 + delta)/3)/2 )           # Pilot bandwidth
-  h_p <- n^(-0.12)
-  # h <- n^( -( (3 + delta)/20 + 1/6 ) /2 )             # Final bandwidth
-  h <- n^( -0.15 )             # Final bandwidth
+  delta <- 1/4
+  h_p <- n^( -(1/10 + (3 + delta)/3)/2 )           # Pilot bandwidth
+  # h_p <- n^(-0.12)
+  h <- n^( -( (3 + delta)/20 + 1/6 )/2 )             # Final bandwidth
+  # h <- n^( -0.15 )             # Final bandwidth
 
   Kernel <- function(x) {return(dnorm(x))} # Gaussian Kernel
   # Kernel_prime <- function(u) {return(-u * dnorm(u))}  # derivative of standard normal density
@@ -213,42 +259,58 @@ ks_estimator <- function(formula, data, B=100) {
     V_hat <- X %*% beta
 
     for (j in 1:(J)) {
-      n11 <- sum(Y <= j & D == 1)
-      n10 <- sum(Y <= j & D == 0)
-      n01 <- sum(Y > j & D == 1)
-      n00 <- sum(Y > j & D == 0)
+      # n11 <- sum(Y <= j & D == 1)
+      # n10 <- sum(Y <= j & D == 0)
+      # n01 <- sum(Y > j & D == 1)
+      # n00 <- sum(Y > j & D == 0)
+      n1 <- sum(Y <= j)
+      n0 <- sum(Y > j)
 
       # Pilot KDE estimation
-      sigma11 <- sd(V_hat[Y <= j & D == 1])
-      sigma10 <- sd(V_hat[Y <= j & D == 0])
-      sigma01 <- sd(V_hat[Y > j & D == 1])
-      sigma00 <- sd(V_hat[Y > j & D == 0])
+      # sigma11 <- sd(V_hat[Y <= j & D == 1])
+      # sigma10 <- sd(V_hat[Y <= j & D == 0])
+      # sigma01 <- sd(V_hat[Y > j & D == 1])
+      # sigma00 <- sd(V_hat[Y > j & D == 0])
+      sigma1 <- sd(V_hat[Y <= j])
+      sigma0 <- sd(V_hat[Y > j])
 
-      g11_pilot <- pilot_kde(Y, V_hat, "11", h_p, sigma11, j, n)
-      g10_pilot <- pilot_kde(Y, V_hat, "10", h_p, sigma10, j, n)
-      g01_pilot <- pilot_kde(Y, V_hat, "01", h_p, sigma01, j, n)
-      g00_pilot <- pilot_kde(Y, V_hat, "00", h_p, sigma00, j, n)
+      # g11_pilot <- pilot_kde(Y, V_hat, "11", h_p, sigma11, j, n)
+      # g10_pilot <- pilot_kde(Y, V_hat, "10", h_p, sigma10, j, n)
+      # g01_pilot <- pilot_kde(Y, V_hat, "01", h_p, sigma01, j, n)
+      # g00_pilot <- pilot_kde(Y, V_hat, "00", h_p, sigma00, j, n)
+      g1_pilot <- pilot_kde(Y, V_hat, "1", h_p, sigma1, j, n)
+      g0_pilot <- pilot_kde(Y, V_hat, "0", h_p, sigma0, j, n)
       # txtplot(V_hat, g00_pilot)
+      # txtplot(V_hat, g1_pilot)
 
       # Local bandwidths
-      lambda11 <- compute_local_bandwidth(g11_pilot, sigma11, n11, delta)
-      lambda10 <- compute_local_bandwidth(g10_pilot, sigma10, n10, delta)
-      lambda01 <- compute_local_bandwidth(g01_pilot, sigma01, n01, delta)
-      lambda00 <- compute_local_bandwidth(g00_pilot, sigma00, n00, delta)
+      # lambda11 <- compute_local_bandwidth(g11_pilot, sigma11, n11, delta)
+      # lambda10 <- compute_local_bandwidth(g10_pilot, sigma10, n10, delta)
+      # lambda01 <- compute_local_bandwidth(g01_pilot, sigma01, n01, delta)
+      # lambda00 <- compute_local_bandwidth(g00_pilot, sigma00, n00, delta)
+      lambda1 <- compute_local_bandwidth(g1_pilot, sigma1, n1, delta)
+      lambda0 <- compute_local_bandwidth(g0_pilot, sigma0, n0, delta)
 
       # Final KDE
-      g11_final <- final_kde(Y, V_hat, "11",  lambda11, h, j, n)
-      g10_final <- final_kde(Y, V_hat, "10",  lambda10, h, j, n)
-      g01_final <- final_kde(Y, V_hat, "01", lambda01, h, j, n)
-      g00_final <- final_kde(Y, V_hat, "00", lambda00, h, j, n)
+      # g11_final <- final_kde(Y, V_hat, "11",  lambda11, h, j, n)
+      # g10_final <- final_kde(Y, V_hat, "10",  lambda10, h, j, n)
+      # g01_final <- final_kde(Y, V_hat, "01", lambda01, h, j, n)
+      # g00_final <- final_kde(Y, V_hat, "00", lambda00, h, j, n)
+      g1_final <- final_kde(Y, V_hat, "1",  lambda1, h, j, n)
+      g0_final <- final_kde(Y, V_hat, "0", lambda0, h, j, n)
       # txtplot(V_hat, g10_final)
 
       # Conditional Probabilities
-      p11 <- n11 / length(Y)
-      p10 <- n10 / length(Y)
-      p01 <- n01 / length(Y)
-      p00 <- n00 / length(Y)
-      P_j_est <- (p11 * g11_final + p10 * g10_final) / (p11 * g11_final + p10 * g10_final + p01 * g01_final + p00 * g00_final)
+      # p11 <- n11 / length(Y)
+      # p10 <- n10 / length(Y)
+      # p01 <- n01 / length(Y)
+      # p00 <- n00 / length(Y)
+      # P_j_est <- (p11 * g11_final + p10 * g10_final) / (p11 * g11_final + p10 * g10_final + p01 * g01_final + p00 * g00_final)
+
+      p1 <- sum(Y <= j) / n
+      p0 <- sum(Y > j) / n
+      P_j_est <- (p1 * g1_final) / (p1 * g1_final + p0 * g0_final)
+
       P_est_mat[(j + 1L), ] <- P_j_est
     }
     P_est_mat[1, ] <- rep(0, n)
@@ -275,22 +337,30 @@ ks_estimator <- function(formula, data, B=100) {
   opt <- function(data, ind) {
     Y <- as.numeric(factor(data[ind, y_lab]))
     X <- as.matrix(data[ind, x_lab])
-    D <- data[, d_lab]
+    # D <- data[ind, d_lab]
 
     s <- coef(lm(Y ~ X))[-1]
-    beta_opt <- optim(round(s, 1), fn=quasi_likelihood, method="BFGS", Y = Y, X = X, D = D)
+    beta_opt <- optim(round(s, 1), fn=quasi_likelihood, method="BFGS", Y = Y, X = X)
 
     i <- i + 1
     beta_hat <- beta_opt$par
+    # beta_hat/beta_hat[1]
     print(paste("#####", i, "th KS boot! #####"))
     return(beta_hat)
   }
   # }}}
+  # Y <- data[, y_lab]
+  # X <- as.matrix(data[, x_lab])
+  # D <- data[, d_lab]
+
+  # s <- coef(lm(Y ~ X))[-1]
+  # beta_opt <- optim(round(s, 1), fn=quasi_likelihood, method="BFGS", Y = Y, X = X)
 
   i <- 0 # bootstrap replication counter
   boot_obj <- boot::boot(data, opt, B)
   out <- list()
   # out$boot_raw <- boot_obj$t
+  # out$coef <- beta_opt$par
   out$coef <- boot_obj$t0
   out$bootstrap_se <- apply(boot_obj$t, sd, MARGIN=2) 
   out$bootstrap_mean <- apply(boot_obj$t, mean, MARGIN=2) 
@@ -428,7 +498,7 @@ simul <- function(n, pop) {
   idx = sample(N, n)
   sample_data <- pop[idx, ]
 
-  # formula <- ordered(y_ord) ~ x1 + T
+  formula <- ordered(y_ord) ~ x1 + T
   formula2 <- (y_ord) ~ x1 + T
 
   # # Ordered logit

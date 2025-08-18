@@ -229,28 +229,21 @@ This paper extends the ordinal regression approach, first by introducing a diagn
 \section{KDE-based Semiparametric Ordinal Regression}
 
 Instead of assuming the distribution of the error term, \citet{Klein2002a} suggested a method that can identify the treatment effect based on the estimated error distribution. This allow us to identify the ALTE only with Assumption 1 to 4 and following assumption on the distribution of covariates.
-
 \begin{assumption}{Differentiable Conditional Density}
     Conditional density of $X$ given $(\beta, \tau, D, Y)$ is strictly positive and differentiable. 
 \end{assumption}
 
 
-Let us denote the true log-likelihood as $Q$. Then if we can estimate the distribution of error term correctly, we can construct the quasi-log-likelihood $\hat{Q}$ based on the estimated error distribution, and this would give us consistent estimation of the ALTE through maximum likelihood. 
+Let us denote the true log-likelihood as $Q$. If we can estimate $Q$ consistently, then maximum likelihood would guarantee us consistent estimation of $\tau$. Define the quasi-log-likelihood function $\hat{Q}$ as following:
+\begin{equation}
+    \frac{1}{n} \sum_{i = 1}^{n} \hat{m}(X_{i}) \sum_{j = 0}^{J} 1_{\{ Y = j \}} \log \left[ \hat{\mathbb{P}}\left(Y \le j \mid X_{i}, \beta, D_{i}, \tau \right) - \hat{\mathbb{P}}\left( Y \le j-1 \mid X_{i}, \beta, D_{i}, \tau)\right) \right]
+\end{equation}
+where $\hat{P}_{-1} = 0$, $\hat{P}_{J+1} = 1$, $\hat{P}$ is a kernel regression estimator of the CDF of the error term, and the trimming function $\hat{m}$ is to rule out the extreme data points where kernel regressor may not work poorly. The only part that needs estimation in $\hat{Q}$ is $\hat{P}$, so we now focus on estimation of it.
 
-
-The method first estimate the error distribution based on kernel density estimation (KDE) and then construct a quasi-likelihood function based on it. Beginning with the standard latent variable space setting discussed in Section 2, recall that 
-
+For notational ease, let's denote $f(X, \beta) + D^{T}\tau$ as $V$. By the Bayes' rule, $\mathbb{P}\left(Y \le j \mid V) \right)$ can be expressed as:
 $$
-\begin{aligned}
-    \mathbb{P}\left(Y = j \mid X_{i}\right) &= \mathbb{P}\left(Y^\ast \le \alpha_j\right) - \mathbb{P}\left(Y^\ast > \alpha_j-1\right) \\
-    &=\mathbb{P}\left(Y \le j \mid (X_{i}^{T}\beta + D_{i}^{T}\tau) \right) - \mathbb{P}\left(Y \le j-1 \mid (X_{i}^{T}\beta + D_{i}^{T}\tau) \right)\\
-\end{aligned}
-$$
-
-Using the Bayes' rule, $\mathbb{P}\left(Y \le j \mid (X_{i}^T\beta + D_{i}^T \tau) \right)$ can be expressed as:
-$$
-    \mathbb{P}\left(Y \le j \mid (X_{i}^T\beta + D_{i}^T \tau) \right) = \frac{\mathbb{P}\left(Y \le j\right) \times g_{1}((X^T\beta + D^T\tau) \mid Y \le j)}{\mathbb{P}\left(Y \le j\right) \times g_{1}((X^T\beta + D^T\tau) \mid Y \le j) + \mathbb{P}\left(Y > j\right) \times g_{0}((X^T\beta + D^T\tau) \mid Y > j)}
-$$, where $g_{0}(\cdot)$ and $g_{0}(\cdot)$ denote conditional density of $(X^T\beta + D^T\tau)$ given $Y > j$ or $Y \le j$ respectively. 
+    \mathbb{P}\left(Y \le j \mid V) \right) = \frac{\mathbb{P}\left(Y \le j\right) \times g_{1}(V \mid Y \le j)}{\mathbb{P}\left(Y \le j\right) \times g_{1}(V \mid Y \le j) + \mathbb{P}\left(Y > j\right) \times g_{0}(V \mid Y > j)}
+$$, where $g_{0}(\cdot)$ and $g_{0}(\cdot)$ denote conditional density of $V$ given $(Y > j)$ or $(Y \le j)$ respectively. 
 
 Both $\mathbb{P}\left(Y \le j\right)$ and $\mathbb{P}\left(Y > j\right)$ are approximated as a sample probability, and based on local smoothing technique developed by \citet{Abramson1982a} and \citet{Silverman1986a}, they estimate the $g_{1}(\cdot)$ and $g_{0}(\cdot)$ density using KDE, and use them to approximate $\mathbb{P}\left(Y \le j \mid (X_{i}^T\beta + D_{i}^T \tau) \right)$. 
 
