@@ -238,63 +238,63 @@ Let us denote the true log-likelihood as $Q$. If we can estimate $Q$ consistentl
 \begin{equation}
     \frac{1}{n} \sum_{i = 1}^{n} \hat{m}(X_{i}) \sum_{j = 0}^{J} 1_{\{ Y = j \}} \log \left[ \hat{\mathbb{P}}\left(Y \le j \mid X_{i}, \beta, D_{i}, \tau \right) - \hat{\mathbb{P}}\left( Y \le j-1 \mid X_{i}, \beta, D_{i}, \tau)\right) \right]
 \end{equation}
-where $\hat{P}_{-1} = 0$, $\hat{P}_{J+1} = 1$, $\hat{P}$ is a kernel regression estimator of the CDF of the error term, and the trimming function $\hat{m}$ is to rule out the extreme data points where kernel regressor may not work poorly. The only part that needs estimation in $\hat{Q}$ is $\hat{P}$, so we now focus on estimation of it.
+where $\hat{\mathbb{P}}_{-1} = 0$, $\hat{\mathbb{P}}_{J+1} = 1$, $\hat{\mathbb{P}}$ is a kernel regression estimator of the CDF of the error term, and the trimming function $\hat{m}$ is to rule out the extreme data points where kernel regressor may not work poorly. The only part that needs estimation in $\hat{Q}$ is $\hat{\mathbb{P}}$, so we now focus on estimation of it.
 
 For notational ease, let's denote $f(X, \beta) + D^{T}\tau$ as $V$. By the Bayes' rule, $\mathbb{P}\left(Y \le j \mid V) \right)$ can be expressed as:
 $$
     \mathbb{P}\left(Y \le j \mid V) \right) = \frac{\mathbb{P}\left(Y \le j\right) \times g_{1}(V \mid Y \le j)}{\mathbb{P}\left(Y \le j\right) \times g_{1}(V \mid Y \le j) + \mathbb{P}\left(Y > j\right) \times g_{0}(V \mid Y > j)}
 $$, where $g_{0}(\cdot)$ and $g_{0}(\cdot)$ denote conditional density of $V$ given $(Y > j)$ or $(Y \le j)$ respectively. 
 
-Both $\mathbb{P}\left(Y \le j\right)$ and $\mathbb{P}\left(Y > j\right)$ are approximated as a sample probability, and based on local smoothing technique developed by \citet{Abramson1982a} and \citet{Silverman1986a}, they estimate the $g_{1}(\cdot)$ and $g_{0}(\cdot)$ density using KDE, and use them to approximate $\mathbb{P}\left(Y \le j \mid (X_{i}^T\beta + D_{i}^T \tau) \right)$. 
 
-The estimation of $g_{1}(\cdot)$ starts with pilot density estimation. Let $\hat{\sigma}_{1}$ be the sample standard deviation of the $(X_{k}^T\beta + D_{k}^T \tau 1_{\{ Y_{k} \le j \}}$ and $n_{1} = \sum_{k} 1_{\{ Y_{k} \le j \}}$. Fix $\delta \in (0, \frac{1}{3)}$, and define a pilot bandwidth $h_{p} = n^{\gamma}$, where $\frac{1}{10} < \gamma < \frac{1}{3(3 + \delta)}$. Then the pilot KDE of $g_{1}(\cdot)$ can be done in a leave-one-out estimation:
+While both $\mathbb{P}\left(Y \le j\right)$ and $\mathbb{P}\left(Y > j\right)$ can be approximated as a sample probability, we suggest to utilize kernel density estimation (KDE) in estimating $g_{1}(\cdot)$ and $g_{0}(\cdot)$. KDE is a non-parametric method to estimate the probability density function of a random variable based on selected kernel and bandwidth. Bandwidth selection is an important step in KDE, because both estimation quality and convergence rate are depend on bandwidth. In this paper, slightly modified version of the local smoothing bandwidth developed by \citet{Abramson1982a} and \citet{Silverman1986a} is used. As an overview, this bandwidth selection method calculates weights for each data points based on pilot KDE and the final KDE bandwidth are derived based on the weights. This process helps reducing bias in estimation. 
+
+All suggestions on the pilot bandwidth, weights function parameters, and final bandwidth are to guarantee the consistency of the $\hat{Q}$. To be more specific, $\hat{\mathbb{P}}$ should converge to the true $\mathbb{P}$ fast enough to ensure the performance in small sample, but also must not go too fast that the derivatives of it vanishes. If $\hat{P}$ converges too fast, then the derivatives may not exist which make it harder to establish the consistency of the $\hat{Q}$ based on maximum likelihood.
+
+The estimation of $g_{1}(\cdot)$ starts with pilot density estimation. Let $\hat{\sigma}_{1}$ be the sample standard deviation of the $V \cdot 1_{\{ Y_{k} \le j \}}$ and $n_{1} = \sum_{k} 1_{\{ Y_{k} \le j \}}$. Fix $\delta \in (0, \frac{1}{3})$, and define a pilot bandwidth $h_{p} = n^{\gamma}$, where $\frac{1}{10} < \gamma < \frac{1}{3(3 + \delta)}$. Then the pilot KDE of $g_{1}(\cdot)$ to be:
 
 $$
-    \hat{\pi}_{1 i} = \frac{1}{n_{1}} \sum_{k \neq i} \left[ 1_{\{ Y_{k} \le j \}} \cdot K\left(\frac{(X_{i}^T\beta + D_{i}^T \tau) - (X_{k}^T\beta + D_{k}^T \tau)}{\hat{\sigma}_{1} h_{p}}\right) \cdot \frac{1}{\hat{\sigma}_{1} h_{p}} \right]
+    \hat{\pi}_{1 i} = \frac{1}{n_{1}} \sum_{k \neq i} \left[ 1_{\{ Y_{k} \le j \}} \cdot K\left(\frac{V_{i} - V_{k}}{\hat{\sigma}_{1} h_{p}}\right) \cdot \frac{1}{\hat{\sigma}_{1} h_{p}} \right]
 $$ 
+This is essentially same as estimating the conditional density of $\mathbb{P}\left(V \mid Y \le j\right)$ based on the subsample of $V_{k}$, where $(Y_{k} \le j)$.
 
-Next, to make final KDE to be a smooth density function, local smoothing parameter $\hat{l}_{1 i}$ is defined as:
+Next, based on the pilot density weights for the final KDE bandwidth are calculated for each data points. These weights control the rate at which final bandwidth converges to 0 as $n \to \infty$. In other words, the weight functions can stretch the final bandwidth for some data points if data points around them are relatively scare area and thus need more smoothing (i.e. tail area), but at the same time prevent the final bandwidth from being too wide. 
+
+First, estimated local smoothing parameter $\hat{l}_{1 i}$ is defined as:
 $$
     \hat{l}_{1 i} = \frac{\hat{\pi}_{1 i}}{\hat{m}_{1}}
 $$, where $\hat{m}_{1}$ is a geometric mean of the $\hat{\pi}_{1 i}$. 
+This widens the final bandwidth in regions where the estimated pilot density is relatively low. This can be especially helpful in capturing tail regions.
 
-Then define $\hat{d}_{1}$ for $l > 0$ which approximates the indicator function $1_{\{ l > a_{n_{1}} \}}$, where $a_{n_{1}} \propto [\ln n_{1}]^{-1}$.
+To control the bandwidth to be too wide and thus converges too fast, define the estimated damping function, $\hat{d}_{1}$ for $l > 0$ which approximates the indicator function $1_{\{ l > a_{n_{1}} \}}$. Set $a_{n_{1}} \propto [\ln n_{1}]^{-1}$ and choose $\epsilon \in (0, \frac{1}{40} - \frac{\delta}{20})$ gives:
 $$
     \hat{d}_{1} = \frac{1}{1 + \exp \left( - n_{1}^\epsilon [l - a_{n_{1}}] \right)}
-$$, where $\epsilon \in (0, \frac{1}{40} - \frac{\delta}{20})$.
-
-Lastly, calculate the bandwidth for the final KDE, $h_{f}$ with parameters above:
-$$
-    h_{f} = \hat{\sigma_{1}} \left[ \hat{l}_{1 i} \hat{d}_{1 i} + a_{n_{1}} [1 - \hat{d}_{1 i}] \right]^{-\frac{1}{2}}
 $$
 
-Choose $ \alpha \in (\frac{3 + \delta}{20}, \frac{1}{6})$. Let $ h = n^{-\alpha}$. Define
+Lastly, calculate the weights for the final KDE, $w_{1i}$ with parameters above:
+$$
+    w_{1i} = \hat{\sigma_{1}} \left[ \hat{l}_{1 i} \hat{d}_{1 i} + a_{n_{1}} [1 - \hat{d}_{1 i}] \right]^{-\frac{1}{2}}
+$$
+
+Choose $ \alpha \in (\frac{3 + \delta}{20}, \frac{1}{6})$. Let $ h_{f} = n^{-\alpha}$, the base final bandwidth. Note that this base final bandwidth is designed to be smaller than the pilot bandwidth, since while capturing the whole data points is more important in pilot estimation, the final bandwidth should be small enough to capture more subtle details. Now calculate $\hat{g}_{1}(\cdot)$ based on above values:
 
 $$
-    \hat{g}_{1}(\cdot) = \frac{1}{n_{1}} \sum_{k} 1_{\{ Y_{k} \le j \}} \cdot K \left( \frac{(X_{i}^T\beta + D_{i}^T \tau) - f(X_{k} - \beta)}{\hat{h}_{f} \cdot h }\right) \cdot \frac{1}{\hat{h}_{f} \cdot h } 
+    \hat{g}_{1}(\cdot) = \frac{1}{n_{1}} \sum_{k} 1_{\{ Y_{k} \le j \}} \cdot K \left( \frac{(X_{i}^T\beta + D_{i}^T \tau) - f(X_{k} - \beta)}{\hat{w}_{1i} \cdot h_{f} }\right) \cdot \frac{1}{\hat{w}_{1i} \cdot h_{f} } 
 $$ 
 
-$\hat{g}(\cdot)$ is defined analogously, replacing $Y_k \leq j$ with $Y_k > j$.
+$\hat{g}(\cdot)$ can be defined analogously, replacing $Y_k \leq j$ with $Y_k > j$. Note again that the final kernel estimation of $g_{1}(\cdot)$ is depend on the subsample of $V$ where $Y \le j$.
 
-Since the KDE may not perform well on the edge cases, trimming out the data points that the absolute value is not within the range of $q$th quantile of $|X_{i}|$. Let $\hat{m}$ be the indicator of this trimming:
+Even if we used local smoothing technique in estimation of the $\hat{\mathbb{P}}$, there is still a concern that the some edge cases of $V$ may drag the estimation. In this situation trimming out some extreme data points can be a solution. Trimming function $\hat{m}$ does this by trimming out the data points whose absolute value are not within the range of $q$th quantile of $|X_{i}|$. 
 $$
     \hat{m}(X_{i}) = 1_{\{ |X_{i}| < q\text{th quantile of } |X| \}}
 $$ 
 
-The final quasi-likelihood function is:
-$$
-    \frac{1}{n} \sum_{i = 1}^{n} \hat{m}(X_{i}) \sum_{j = 0}^{J} 1_{\{ Y = j \}} \log \left[ \hat{\mathbb{P}}\left(Y \le j \mid f(X_{i, \beta})\right) - \hat{\mathbb{P}}\left( Y \le j-1 \mid (X_{i}^T\beta + D_{i}^T \tau)\right) \right]
-$$ 
-
-The maximum likelihood estimation using this quasi-likelihood function gives estimates for $\beta$ and $\tau$ up to scale. 
+The final quasi-likelihood function in Equation (2) can now be constructed with above estimated values and the trimming function.
 
 \begin{theorem}[Consistency of the estimator]
     For an consistent KDE, as $n \to \infty$, $\abs{\hat{\tau} - \tau} = o_{p}(1)$
 \end{theorem}
 
 The consistency of the estimates can be guaranteed by the fact that the KDE method is consistent. As the $n$ goes to infinity, the KDE estimates of $\hat{g}_{1}(\cdot)$ and $\hat{g}_{0}(\cdot)$ approach the true density and as the $\hat{\mathbb{P}\left(Y \le j\right)}$. Then the quasi-likelihood function approach the true likelihood function and the maximum likelihood then guarantees the consistency. The KDE method used in this estimator is locally smoothed KDE, and for the consistency of the locally smoothed KDE, see \citet{Klein1993a}, \citet{Abramson1982a}, and \citet{Silverman1986a}. 
-
-
 
 \section{Monte Carlo Simulation}
 
@@ -312,9 +312,9 @@ $$
     \end{cases}
 $$, where $\alpha_{-1} = -\infty$, and $\alpha_{2} = \infty$. 
 
-$D$ simulates treatment status, so each data point is randomly assigned $0$(control) or $1$(treatment), $X$ is drawn from $\mathcal{N}(0, 1)$ and $\tau$ set to be $0.5$. Since the estimators only identify $\tau$ up to scale, without lose of generality, I set $\beta$ to be $1$ for easier interpretation.
+$D$ simulates treatment status, so each data point is randomly assigned $0$(control) or $1$(treatment), $X$ is drawn from $\mathcal{N}(0, 5)$ and $\tau$ set to be $0.5$. Since the estimators only identify $\tau$ up to scale, without lose of generality, I set $\beta$ to be $1$ for easier interpretation.
 
-I tested for two different distribution for the error term, $\epsilon$, the lognormal distribution with $\log(sd) = 10$ (skewed right or positively skewed) and the negative lognormal distribution with the same parameter setting(skewed left or negatively skewed). Both distributions have relatively fat tailed and skewed compared to the standard normal distribution.Two sample sizes of 1,000 and 2,000 are considered. I first generate a population of size $1e+7$ and draw random samples for Monte Carlo replication from this population. The number of Monte Carlo replication is 100, and all estimations are the means of the 100 replication results. % Regarding the Klein and Sherman estimator, bootstrap 100 replications were employed to get the standard errors. 
+I tested for two different distribution for the error term, $\epsilon$, the standard normal distribution $\mathbb{N}(0, 1)$ and the t-distribution with degrees of freedom of 1. The t-distribution has heavier tail regions than both the standard logistic and the standard normal distribution. Four sample sizes of 250, 500, 750 and 1,000 are considered. I first generate a population of size $1e+5$ and draw random samples for Monte Carlo replication from this population. The number of Monte Carlo replication is 1,000, and all estimations are the means of these 1,000 replication results. Regarding the Klein and Sherman estimator, I set $\delta = \frac{1}{8}$ and fix other parameters to the middle points of the suggested intervals. For instance, the final bandwidth, $h_{f}$ for $n = 250$ is selected as $n^{ \frac{\frac{(3 + \delta)}{20} + \frac{1}{6}}{2} } \approx 0.41$.
 
 % \begin{figure}[!htb]
 %     \caption{Q-Q plots for Surrogate-based Residuals Calculate with Ordered Logit and Probit on Monte Carlo Sample}

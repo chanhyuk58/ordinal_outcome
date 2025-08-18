@@ -150,9 +150,9 @@ ks_estimator <- function(formula, data, B=100) {
   J <- max(data[, y_lab])
   n <- length(data[, y_lab])
 
-  delta <- 1/4
+  delta <- 1/8
   h_p <- n^( -(1/10 + (3 + delta)/3)/2 )           # Pilot bandwidth
-  h <- n^( ( (3 + delta)/20 + 1/6 ) /2 )             # Final bandwidth
+  h <- n^( -( (3 + delta)/20 + 1/6 ) /2 )             # Final bandwidth
 
   Kernel <- function(x) {return(dnorm(x))} # Gaussian Kernel
   # Kernel_prime <- function(u) {return(-u * dnorm(u))}  # derivative of standard normal density
@@ -471,7 +471,7 @@ for (n in ns) {
         out <- rbindlist(parReplicate(cl, n_sim, simul(n, pop), simplify=FALSE))
         print(paste("sample size:", n, "df:", par))
         estimates <- rbindlist(list(estimates, out))
-        fwrite(estimates, file="../data/estimates_tdisdf1_ks.csv", bom=T)
+        fwrite(estimates, file="../data/estimates_tdisdf1_ks(2).csv", bom=T)
         print(estimates[order(as.character(models), par), lapply(.(XT/X1, XT_se), mean), ,by=.(as.character(models), n, par, dist)])
         pop <- NA
     }
@@ -480,9 +480,11 @@ for (n in ns) {
 # -------------------------------
 # Simulation Results
 # -------------------------------
-# estimates <- fread("../data/estimates_tdist_df1to10.csv")
-# head(estimates)
-# print(estimates[order(as.character(models), loc), lapply(.(XT/X2), mean), ,by=.(as.character(models), n, loc, dist)])
+# estimates <- fread("../data/estimates_tdisdf1_others.csv")
+# estimates2 <- fread("../data/estimates_tdisdf1_ks.csv")
+# # head(estimates)
+# print(estimates[order(as.character(models), par), lapply(.(XT/X1), mean), ,by=.(as.character(models), n, par, dist)])
+# print(estimates2[order(as.character(models), par), lapply(.(XT/X1), mean), ,by=.(as.character(models), n, par, dist)])
 
 # -------------------------------
 # Graph
