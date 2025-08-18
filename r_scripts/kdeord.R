@@ -120,7 +120,7 @@ pilot_kde <- function(Y, V, l, h_p, sigma, j, n) {
 
 ## Smooth Damping weights {{{
 compute_local_bandwidth <- function(pilot_density, sigma, n, delta) {
-  # pilot_density <- g10_pilot
+  pilot_density <- g00_pilot
   # summary(log(pilot_density))
   # summary(pilot_density)
   m <- exp(sum(log(pilot_density)) / length(pilot_density))
@@ -153,7 +153,7 @@ final_kde <- function(Y, V, l, lambda, h, j, n) {
       for (i in 1:n) {
         kde_values[i] <- 1/n10 * 
           sum(
-            Kernel((V[i] - V[Y <= j & D == 0]) / (lambda[Y <= j & D == 0] * h)) / (lambda[Y <= j & D == 1] * h)
+            Kernel((V[i] - V[Y <= j & D == 0]) / (lambda[Y <= j & D == 0] * h)) / (lambda[Y <= j & D == 0] * h)
           )
       }
     }
@@ -175,7 +175,7 @@ final_kde <- function(Y, V, l, lambda, h, j, n) {
       for (i in 1:n) {
         kde_values[i] <- 1/n00 * 
           sum(
-            Kernel((V[i] - V[Y > j & D == 0]) / (lambda[Y > j & D == 1] * h)) / (lambda[Y > j & D == 0] * h)
+            Kernel((V[i] - V[Y > j & D == 0]) / (lambda[Y > j & D == 0] * h)) / (lambda[Y > j & D == 0] * h)
           )
       }
     }
@@ -200,7 +200,7 @@ ks_estimator <- function(formula, data, B=100) {
 
   delta <- 1/6
   # h_p <- n^( -(1/10 + (3 + delta)/3)/2 )           # Pilot bandwidth
-  h_p <- n^(-0.11)
+  h_p <- n^(-0.12)
   # h <- n^( -( (3 + delta)/20 + 1/6 ) /2 )             # Final bandwidth
   h <- n^( -0.15 )             # Final bandwidth
 
@@ -224,10 +224,11 @@ ks_estimator <- function(formula, data, B=100) {
       sigma01 <- sd(V_hat[Y > j & D == 1])
       sigma00 <- sd(V_hat[Y > j & D == 0])
 
-      g11_pilot <- pilot_kde(Y, V_hat, "11", n^(-0.12), sigma11, j, n)
+      g11_pilot <- pilot_kde(Y, V_hat, "11", h_p, sigma11, j, n)
       g10_pilot <- pilot_kde(Y, V_hat, "10", h_p, sigma10, j, n)
       g01_pilot <- pilot_kde(Y, V_hat, "01", h_p, sigma01, j, n)
       g00_pilot <- pilot_kde(Y, V_hat, "00", h_p, sigma00, j, n)
+      # txtplot(V_hat, g00_pilot)
 
       # Local bandwidths
       lambda11 <- compute_local_bandwidth(g11_pilot, sigma11, n11, delta)
@@ -240,6 +241,7 @@ ks_estimator <- function(formula, data, B=100) {
       g10_final <- final_kde(Y, V_hat, "10",  lambda10, h, j, n)
       g01_final <- final_kde(Y, V_hat, "01", lambda01, h, j, n)
       g00_final <- final_kde(Y, V_hat, "00", lambda00, h, j, n)
+      # txtplot(V_hat, g10_final)
 
       # Conditional Probabilities
       p11 <- n11 / length(Y)
@@ -297,92 +299,106 @@ ks_estimator <- function(formula, data, B=100) {
 }
 # }}}
 
-# KDE Based Estimator {{{
-kde_estimator <- function(formula, data, B=200) {
-  y_lab <- all.vars(formula)[1]
-  x_lab <- all.vars(formula)[-1]
-  # Y <- sample_data[, "y_ord"]
-  # X <- as.matrix(sample_data[, c("x1", "T")])
-
-  J <- max(data[, y_lab])
-  n <- length(data[, y_lab])
-
-  # Quasi-likelihood {{{
-  quasi_likelihood <- function(beta, Y, X) {
-    P_est_mat <- matrix(0, (J + 2L), n)
-    # beta <- coef(lm(as.numeric(Y) ~ X))[-1]
-    V_hat <- X %*% beta
-
-    for (j in 1:(J-1)) {
-      # g_hdrcde <- (hdrcde::cde(y=V_hat, x=as.numeric(Y <= j), rescale=FALSE,
-      # x.margin=c(0, 1), y.margin=V_hat, x.nmae="Y <= j", y.name="V_hat"))
-      # g0 <- g_hdrcde$z[1, match(V_hat, g_hdrcde$y)]
-      # g1 <- g_hdrcde$z[2, match(V_hat, g_hdrcde$y)]
-      # txtplot(V_hat, g1)
-
-      g1 <- np::npudens(tdat=V_hat[Y <= j], edat=V_hat)$dens
-      g11 <- np::npudens(tdat=V_hat[Y <= j & D == 1], edat=V_hat)$dens
-      g0 <- np::npudens(tdat=V_hat[Y > j], edat=V_hat)$dens
-      txtplot(V_hat, g11)
-
-      # Conditional Probabilities
-      p1 <- sum(Y <= j) / length(Y)
-      p0 <- sum(Y > j) / length(Y)
-      P_j_est <- (p1 * g1) / (p1 * g1 + p0 * g0)
-      P_est_mat[(j + 1L), ] <- P_j_est
-    }
-    P_est_mat[1, ] <- rep(0L, n)
-    P_est_mat[(J + 1L), ] <- rep(1, n) # - colSums(P_est_mat[1:J, ])
-    P_est_mat[(J + 2L), ] <- rep(1, n)
-
-    # Quasi-likelihood calculation
-    pr <- diag(P_est_mat[(Y + 1L), ]) - diag(P_est_mat[Y, ])
-    # summary(pr)
-
-    if (all(pr > 0 & !is.na(pr))) {
-      print("yes")
-      likelihood <- -sum(
-        # log(pr[(apply(abs(X) <= quantile(abs(X), 0.95), function(x) all(x), MARGIN=1))])
-        log(pr)
-      )
-    } else {
-      print("no")
-      likelihood <- 1e+100
-    }
-    return(likelihood)
-  }
-  # }}}
-  # Optimization {{{
-  opt <- function(data, ind) {
-    Y <- data[ind, y_lab]
-    X <- as.matrix(data[ind, x_lab])
-
-    beta_opt <- optim(
-      coef(lm(Y ~ X))[-1], 
-      fn=quasi_likelihood, 
-      method="BFGS",
-      Y = Y, X = X
-    )
-    beta_hat <- beta_opt$par
-    # beta_hat / beta_hat[1]
-
-    i <- i + 1
-    print(paste("#####", i, "th boot! #####"))
-    return(beta_hat)
-  }
-  # }}}
-
-  i <- 0 # bootstrap replication counter
-  boot_obj <- boot::boot(data, opt, B)
-  out <- list()
-  # out$boot_raw <- boot_obj$t
-  out$coef <- boot_obj$t0
-  out$bootstrap_se <- apply(boot_obj$t, sd, MARGIN=2) 
-  out$bootstrap_mean <- apply(boot_obj$t, mean, MARGIN=2) 
-
-  return(out)
-}
-# }}}
+# # KDE Based Estimator {{{
+# kde_estimator <- function(formula, data, B=200) {
+#   y_lab <- all.vars(formula)[1]
+#   x_lab <- all.vars(formula)[-1]
+#   d_lab <- "T"
+#   # Y <- sample_data[, "y_ord"]
+#   # X <- as.matrix(sample_data[, c("x1", "T")])
+#
+#   J <- max(data[, y_lab])
+#   n <- length(data[, y_lab])
+#
+#   # Quasi-likelihood {{{
+#   quasi_likelihood <- function(beta, Y, X, D) {
+#     P_est_mat <- matrix(0, (J + 2L), n)
+#     # beta <- coef(lm(as.numeric(Y) ~ X))[-1]
+#     V_hat <- X %*% beta
+#
+#     for (j in 1:(J-1)) {
+#       # g_hdrcde <- (hdrcde::cde(y=V_hat, x=as.numeric(Y <= j), rescale=FALSE,
+#       # x.margin=c(0, 1), y.margin=V_hat, x.nmae="Y <= j", y.name="V_hat"))
+#       # g0 <- g_hdrcde$z[1, match(V_hat, g_hdrcde$y)]
+#       # g1 <- g_hdrcde$z[2, match(V_hat, g_hdrcde$y)]
+#       # txtplot(V_hat, g1)
+#
+#       # g1 <- np::npudens(tdat=V_hat[Y <= j], edat=V_hat)$dens
+#       # g0 <- np::npudens(tdat=V_hat[Y > j], edat=V_hat)$dens
+#
+#       g11 <- np::npudens(tdat=V_hat[Y <= j & D == 1], edat=V_hat)$dens
+#       g10 <- np::npudens(tdat=V_hat[Y <= j & D == 0], edat=V_hat)$dens
+#       g01 <- np::npudens(tdat=V_hat[Y > j & D == 1], edat=V_hat)$dens
+#       g00 <- np::npudens(tdat=V_hat[Y > j & D == 0], edat=V_hat)$dens
+#       # txtplot(V_hat, g00)
+#
+#       # Conditional Probabilities
+#       p11 <- n11 / n
+#       p10 <- n10 / n
+#       p01 <- n01 / n
+#       p00 <- n00 / n
+#       P_j_est <- (p11 * g11_final + p10 * g10_final) / (p11 * g11_final + p10 * g10_final + p01 * g01_final + p00 * g00_final)
+#       P_est_mat[(j + 1L), ] <- P_j_est
+#
+#       # # Conditional Probabilities
+#       # p1 <- sum(Y <= j) / n
+#       # p0 <- sum(Y > j) / n
+#       # P_j_est <- (p1 * g1) / (p1 * g1 + p0 * g0)
+#       # P_est_mat[(j + 1L), ] <- P_j_est
+#     }
+#     P_est_mat[1, ] <- rep(0L, n)
+#     P_est_mat[(J + 1L), ] <- rep(1, n) # - colSums(P_est_mat[1:J, ])
+#     P_est_mat[(J + 2L), ] <- rep(1, n)
+#
+#     # Quasi-likelihood calculation
+#     pr <- diag(P_est_mat[(Y + 1L), ]) - diag(P_est_mat[Y, ])
+#     # summary(pr)
+#
+#     if (all(pr > 0 & !is.na(pr))) {
+#       print("yes")
+#       likelihood <- -sum(
+#         # log(pr[(apply(abs(X) <= quantile(abs(X), 0.95), function(x) all(x), MARGIN=1))])
+#         log(pr)
+#       )
+#     } else {
+#       print("no")
+#       likelihood <- 1e+100
+#     }
+#     return(likelihood)
+#   }
+#   # }}}
+#   # Optimization {{{
+#   opt <- function(data, ind) {
+#     Y <- data[ind, y_lab]
+#     X <- as.matrix(data[ind, x_lab])
+#     D <- data[ind, d_lab]
+#
+#     beta_opt <- optim(
+#       coef(lm(Y ~ X))[-1], 
+#       fn=quasi_likelihood, 
+#       method="BFGS",
+#       Y = Y, X = X, D = D
+#     )
+#     beta_hat <- beta_opt$par
+#     # beta_hat / beta_hat[1]
+#
+#     i <- i + 1
+#     print(paste("#####", i, "th boot! #####"))
+#     return(beta_hat)
+#   }
+#   # }}}
+#
+#   i <- 0 # bootstrap replication counter
+#   boot_obj <- boot::boot(data, opt, B)
+#   out <- list()
+#   # out$boot_raw <- boot_obj$t
+#   out$coef <- boot_obj$t0
+#   out$bootstrap_se <- apply(boot_obj$t, sd, MARGIN=2) 
+#   out$bootstrap_mean <- apply(boot_obj$t, mean, MARGIN=2) 
+#
+#   return(out)
+# }
+# # }}}
 
 # One Simulation {{{
 
