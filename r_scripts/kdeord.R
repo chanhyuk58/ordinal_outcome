@@ -21,7 +21,7 @@ parReplicate <- function(cl, rep, expr, simplify=TRUE, USE.NAMES=TRUE){
 generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist="logistic", 
                          par=1, negative=FALSE, location=0, sd=1, ncp=0) {
 
-  X <- matrix(rnorm(N*(xdim), 0, 2), ncol=xdim)
+  X <- matrix(rnorm(N*(xdim), 0, 5), ncol=xdim)
   X <- cbind(X, sample(c(0,1), N, replace=T))
   # X <- cbind(rep(1, N), sample(c(0,1), N, replace=T))
   colnames(X) <- c(paste0("x", 1:xdim), "T")
@@ -48,11 +48,14 @@ generate_pop <- function(N=10e+5, xdim=2, beta=c(1, 1), dist="logistic",
 
   thresholds <- quantile(y_star, c(0.3, 0.7))
   y_ord <- cut(y_star, breaks = c(-Inf, thresholds, Inf),
-    labels = FALSE, ordered_result = TRUE)
+    labels = c(1, 2, 3), ordered_result = TRUE)
   txtbarchart(factor(y_ord))
+  y_ord2 <- ifelse(y_ord == 1, 1, ifelse(y_ord == 2, 5, 25))
+  # txtbarchart(y_ord2)
 
   data <- as.data.frame(cbind(X, e))
   data$y_ord <- as.numeric(y_ord)
+  data$y_ord2 <- as.numeric(y_ord2)
   return(data)
 }
 # }}}
@@ -145,11 +148,11 @@ ks_estimator <- function(formula, data, B=100) {
   J <- max(data[, y_lab])
   n <- length(data[, y_lab])
 
-  delta <- 1/10
-  # h_p <- n^( -(1/10 + (3 + delta)/3)/2 )           # Pilot bandwidth
-  h_p <- n^(-0.11)
-  # h <- n^( -( (3 + delta)/20 + 1/6 ) /2 )             # Final bandwidth
-  h <- n^(-0.15)
+  delta <- 1/15
+  h_p <- n^( -2*(1/10 + (3 + delta)/3) /3 )           # Pilot bandwidth
+  # h_p <- n^(-0.11)
+  h <- n^( -2*( (3 + delta)/20 + 1/6 ) /5 )             # Final bandwidth
+  # h <- n^(-0.15)
 
   Kernel <- function(x) {return(dnorm(x))} # Gaussian Kernel
   # Kernel_prime <- function(u) {return(-u * dnorm(u))}  # derivative of standard normal density
@@ -354,6 +357,8 @@ simul <- function(n, pop) {
 
   formula <- ordered(y_ord) ~ x1 + T
   formula2 <- (y_ord) ~ x1 + T
+  formula3 <- y_ord2 ~ x1 + T
+  
 
   # # Ordered logit
   # fit_logit <- MASS::polr(formula, data=sample_data, method = "logistic", Hess=T)
@@ -369,14 +374,21 @@ simul <- function(n, pop) {
   # beta_hat_se_probit <- coef(summary(fit_probit))[1:(xdim + 1), 2]
   # print("oprobit done")
   #
-  # # OLS
-  # fit_ols <- lm(formula2, data=sample_data)
-  # beta_hat_ols <- coef(summary(fit_ols))[(2:(xdim + 2)), 1]
-  # # beta_hat_ols / beta_hat_ols[2]
-  # beta_hat_se_ols <- coef(summary(fit_ols))[(2:(xdim + 2)), 2]
-  # print("ols done")
-
-  # screenreg(list(fit_logit, fit_probit, fit_ols))
+  # # OLS 1 2 3
+  # fit_ols1 <- lm(formula2, data=sample_data)
+  # beta_hat_ols1 <- coef(summary(fit_ols1))[(2:(xdim + 2)), 1]
+  # # beta_hat_ols1 / beta_hat_ols1[2]
+  # beta_hat_se_ols1 <- coef(summary(fit_ols1))[(2:(xdim + 2)), 2]
+  # print("ols 1 done")
+  #
+  # # OLS 10 20 30
+  # fit_ols2 <- lm(formula3, data=sample_data)
+  # beta_hat_ols2 <- coef(summary(fit_ols2))[(2:(xdim + 2)), 1]
+  # # beta_hat_ols2 / beta_hat_ols2[2]
+  # beta_hat_se_ols2 <- coef(summary(fit_ols2))[(2:(xdim + 2)), 2]
+  # print("ols 2 done")
+  #
+  # # screenreg(list(fit_logit, fit_probit, fit_ols))
 
   # Klein and Sherman   
   fit_ks <- ks_estimator(formula2, data=sample_data, B=0)
@@ -406,7 +418,8 @@ simul <- function(n, pop) {
       rbind(
         # c(beta_hat_logit, beta_hat_se_logit),
         # c(beta_hat_probit, beta_hat_se_probit),
-        # c(beta_hat_ols, beta_hat_se_ols)
+        # c(beta_hat_ols1, beta_hat_se_ols1),
+        # c(beta_hat_ols2, beta_hat_se_ols2)
         c(beta_hat_ks, beta_hat_se_ks)
         # c(beta_hat_kde, beta_hat_se_kde)
       )  
@@ -414,10 +427,10 @@ simul <- function(n, pop) {
   
   names(out) <- c(paste0("X", 1:xdim), "XT", paste0("X", 1:xdim, "_se"), "XT_se")
   out <- out[, ":="(
-    # models = list("ologit", "oprobit", "OLS", "KS", "KDE"),
-    # models = list("ologit", "oprobit", "OLS", "KS"),
+    # models = list("ologit", "oprobit", "OLS1", "OLS2", "KS", "KDE"),
+    # models = list("ologit", "oprobit", "OLS1", "OLS2", "KS"),
     models = list("KS"),
-    # models = list("ologit", "oprobit", "OLS"),
+    # models = list("ologit", "oprobit", "OLS1", "OLS2"),
     n = n,
     par = par,
     dist = dist
@@ -429,31 +442,22 @@ simul <- function(n, pop) {
 # }}}
 
 # -------------------------------
-# Generate Population
+# Simulation
 # -------------------------------
 
 # Parameters
 n_sim <- 1000        # Number of simulations
-
-# -------------------------------
-# Simulation
-# -------------------------------
-# {{{
+# pairs <- list(c("tdis", 1))
+pairs <- list(c("normal", 1))
 ns <- c(250, 500, 750, 1000)
-# n <- ns[1]
-# pars <- c(0.2, 2.5)
-# pars <- c(T, F)
-# par <- pars[1]
-
+fname <- "../data/estimates_norm1_ks(1).csv"
 # distributions <- c("logistic", "normal", "snormal", "st", "tdis", "chisq", "exp", "lnormal")
 
-pairs <- list(c("tdis", 1))
-# pairs <- list(c("normal", 1))
-
+# {{{
 estimates <- data.table()
 for (n in ns) {
     for (pair in pairs) {
-        set.seed(42)
+        set.seed(63130)
         N <- 1e+5
         beta <- c(1, 0.5)
         xdim <- 1
@@ -470,7 +474,7 @@ for (n in ns) {
         out <- rbindlist(parReplicate(cl, n_sim, simul(n, pop), simplify=FALSE))
         print(paste("sample size:", n, "df:", par))
         estimates <- rbindlist(list(estimates, out))
-        fwrite(estimates, file="../data/estimates_tdis1_ks(3).csv", bom=T)
+        fwrite(estimates, file=fname, bom=T)
         print(estimates[order(as.character(models), par), lapply(.(XT/X1, XT_se), mean), ,by=.(as.character(models), n, par, dist)])
         pop <- NA
     }

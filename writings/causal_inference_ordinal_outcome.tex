@@ -39,46 +39,53 @@
     \maketitle
 
 \begin{abstract}
-    Many of the political science research aiming the identification of causal parameters also rely heavily on ordinal scales in measuring outcomes such as attitudes, preferences, or perceptions. While emphasis on causal identification increases, there has been less discussion on how we can do causal inference with these ordinal outcomes. Simple cardinalization only identifies the direction of the causal effect at best and generally cannot identify the causal effect directly. IRT based methods require multiple items of questions which is usually not the case in practice. Ordered logit and probit models are widely used but, they rely on strong and often untested assumptions about the distribution of unobserved error terms, and when these assumptions are violated, the estimates are inconsistent and biased, leading to incorrect inferences. This paper introduces a diagnosis for the distributional assumptions by utilizing surrogate-based residuals, and suggests a semiparametric identification strategy as an alternative model that is more robust than standard Ordered Probit or logit models. Through simulation studies and an empirical application to political attitude data, this paper shows how departures from assumed error distributions can lead to substantively misleading conclusions. 
+    Causal inference has become central to political science, yet a large share of empirical work relies on ordinal outcomes such as Likert-type survey responses or ratings. Standard approaches to these outcomes -- cardinalization, IRT based approach, or estimating ordered logit and probit models -- raise fundamental problems. Cardinalization introduces arbitrariness, IRT based approach is useful, but usually not available, and ordered regression models depend on strict distributional assumptions, leading to bias and potentially misleading substantive conclusions. This paper clarifies the limits of causal identification with ordinal outcomes, showing that treatment effects on the latent scale are only identifiable up to scale, even under common assumptions for causal inference. To address the shortcomings of existing methods, I propose a semiparametric kernel density estimation (KDE)-based estimator that avoids strong distributional assumptions while retaining interpretability. Monte Carlo simulations demonstrate that the KDE estimator remains unbiased across a wide range of error distributions, whereas OLS and ordered regression models fail under misspecification. An empirical application to survey data replicates results from Tomz (2020) and reveals that the proposed estimator produces substantively different conclusions, highlighting the risks of relying on conventional methods. These findings suggest that semiparametric approaches provide a more robust path forward for causal inference with ordinal outcomes in political science.
 \end{abstract}
 
 \newpage
 \section{Introduction}
 
-With growing emphasis on the causal inference framework, political science has sought on identifying the causal effect on policies and other political factors. Survey experiment, observational studies  with designs such as difference-in-difference and regression discontinuity become some of the prevalent empirical strategy in political science. For example, during the period from 2021 to 2024, about 20\% of articles published in top 3 general political science journals (\textit{American Journal of Political Science, American Political Science Journal, and Journal of Politics}) included survey experiment as one of their empirical strategy. 
+With growing emphasis on the causal inference framework, political science has sought on identifying the causal effect on policies and other political factors. Survey experiment, observational studies  with designs such as difference-in-difference and regression discontinuity become some of the prevalent empirical strategy in political science. Survey experiments are considered especially useful, due to the hope for clean causal identification, and during the period from 2021 to 2024, about 20\% of articles published in top 3 general political science journals (\textit{American Journal of Political Science, American Political Science Journal, and Journal of Politics}) included survey experiment as one of their empirical strategy.
 
-A lost of research with causal inference framework deal with attitudes, opinions and preferences as outcomes, and they often measured with ordinal scales. Researchers are interested in identifying causal effect on people's preferences such as politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, and foreign policy preferences \citep{Scheve2001r, Mayda2005a}. Researchers frequently rely on ordered responses, measured with Likert-type choices (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}). Ordinal scales, unlike interval or cardinal scales, carry only information on orders. The common operation with labels of $\{1, 2, 3, 4, 5\}$ is arbitrary and carries no numerical meaning, and the distances between each values are not necessarily equal. 
+Despite their appeal, however, survey experiments and related causal inference methods face challenges when the outcome of interest is measured on an ordinal scale. Many important political concepts, such as attitudes toward redistribution \citep{Alt2017a, Magni2021a}, approval of political leaders \citep{Canes-Wrone2002a, Kriner2009a}, or foreign policy preferences \citep{Scheve2001r, Mayda2005a, Tomz2020a}, are inherently latent and captured through ordered response categories. Likert-type questions with options such as \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree} are perhaps the most common example. Although such measures are designed to capture gradations of an underlying latent construct, they contain only information about ordering. As a result, standard causal inference tools, which typically assume cardinal or at least interval-scale outcomes, may not yield valid or interpretable estimates when applied to ordinal data.
 
-The problem is that commonly used causal inference tools mostly assumes cardinal or at least interval outcomes. Thus, it is not guarantees that tools and designs such as means-difference, difference-in-differences, and regression discontinuity to work on ordinal outcomes. One commonly used approach is ignoring the ordinal nature and treat ordinal outcomes as cardinal variables by assigning numeric labels to each responses. This enables us to use all causal inference tools as usual. However, since the numeric labels are arbitrary, this approach, at best, only can uncover the direction of the causal effect, and the size of the estimates are hard to interpret \citep{Schroder2017a, Bond2018a, Bloem2022a}. 
+The core of the problem lies in the relationship between the unobserved latent outcome and the observed ordinal response. Causal effects are naturally defined on the latent space, but researchers only observe the transformed ordinal categories. Without strong assumptions, treatment effects on the latent scale are identifiable only up to scale. This limitation implies that while directionality of effects can sometimes be recovered, the magnitude of estimates is not inherently meaningful. Nevertheless, much applied work in political science has proceeded without addressing this issue, thereby risking biased or misleading conclusions.
 
-Another approach is based on IRT. IRT based methods utilize multiple items of questions on one latent outcome variable to recover the latent outcome variable itself in the first step and then use causal inference tools with the recovered latent outcome variable. Recently developed hierarchical IRT method \citep{Zhou2019a, Stoetzer2025a} effectively merges the two steps with EM algorithm. Although this methods can identify the treatment effect up to scale, but in practice, it is hard to find multiple items on political concepts.
+A variety of strategies have been proposed to handle ordinal outcomes, each with important limitations. One commonly used approach to deal with problem caused by ordinal outcome is ignoring the ordinal nature and treat ordinal outcomes as cardinal variables by assigning numeric labels to each responses. This allows the use of OLS and difference-in-means estimators, but the labels are arbitrary, and the implied equal spacing between categories has no substantive justification. Consequently, such estimates can at best capture directionality, and their magnitudes are uninterpretable \citep{Schroder2017a, Bond2018a, Bloem2022a}. Item response theory (IRT) models provide an alternative by leveraging multiple survey items to recover the latent variable and then estimating treatment effects. Recent hierarchical extensions integrate these steps through EM algorithms \citep{Zhou2019a, Stoetzer2025a}. While theoretically appealing, these methods require multiple indicators of the same latent construct, which are rarely available in political science surveys. Even if we have multiple items measuring a similar concept, aggregating them into one latent trait with IRT will lose the nuanced information on each items. Moreover, they often rest on distributional assumptions that compromise consistency.
 
-Lastly, common ordered logit model and ordered probit model are built on a latent variable framework, and thus useful tool in identifying the causal parameter in latent space. They effectively incorporate the ordinal character of the outcome variable and also guarantees fast estimation through the maximum likelihood estimation (MLE). However, both models rely on strict distributional assumptions about the error term in the latent variable model -- logistic for ordered logit, and standard normal for ordered probit. When these assumptions are violated, estimates can be inconsistent and biased, even in large samples. Critically, this bias is not just a matter of inefficiency; in many cases, it can alter the sign of estimated treatment effects or covariate associations, leading to incorrect substantive conclusions \citep{Manski1988a, Greene2010a}.
+Ordered logit and probit models, grounded in a latent variable framework, are another common solution. These models respect the ordinal nature of outcomes and allow for efficient estimation via maximum likelihood. Yet they too rely on strict assumptions about the distribution of error terms—logistic for ordered logit, standard normal for ordered probit. When these assumptions are violated, the resulting estimates can be not just inefficient but also inconsistent and biased, even in large samples. If the true error distribution is far away from the distributional assumptions, such bias may flip the sign of estimated treatment effects, leading researchers to draw substantively incorrect conclusions \citep{Manski1988a, Greene2010a}.
 
-This paper makes two contributions regarding these problems. First, it introduces a practical and accessible framework for diagnosing distributional assumptions in ordinal regression models using surrogate residuals. These diagnostics allow researchers to detect skewness and other departures from assumed error distributions, implemented via the \lstinline{sure} package in R. Second, this paper also proposes a semiparametric alternative to conventional ordinal models when distributional assumptions appear to be violated. Specifically, I focus on the Klein–Spady estimator, which does not assume a specific error distribution and remains consistent under a broader set of conditions. Utilizing Kernel Density Estimation (KDE) this estimator offers a compelling balance between robustness and interpretability, making it a promising option for applied survey researchers.
+This paper makes several contributions regarding these problems. First, this paper demonstrates that the exact treatment effect on latent space is only identifiable up to scale with a set of assumptions including stable unit treatment value assumption (SUTVA), ignorability, positivity. This clarifies the inherent limits of causal inference with ordinal outcomes and highlights why interpretation must be approached with caution. Second, this paper also proposes a semiparametric alternative to conventional ordered logit and ordered probit model. When distributional assumptions are violated, both ordinal regression models fails to identify the causal effect consistently. As an alternative, this paper suggest a KDE-based estimator, which does not assume a specific error distribution but remains consistent. Utilizing Kernel Density Estimation (KDE) this estimator offers a compelling balance between robustness and interpretability, making it a promising option for applied researchers.
 
-To evaluate the performance of these methods, the paper presents Monte Carlo simulations that vary the shape of the latent error distribution and the precision of covariate measurement. The simulations show that ordered logit and probit estimators become biased under skewed distributions, while the semiparametric estimator maintains unbiasedness. Finally, this paper apply these tools to a real-world political survey, illustrating how distributional misspecification can meaningfully affect substantive conclusions and showing how semiparametric methods provide a more robust alternative.
+The paper evaluates the performance of these methods using Monte Carlo simulations that vary the distribution of the latent error term. The results demonstrate that OLS estimates are highly sensitive to the cardinalization scheme, and that ordered logit and probit become biased under distributional misspecification. In contrast, the KDE-based estimator remains unbiased across a wide range of scenarios. Finally, to illustrate the substantive importance of these issues, I apply the proposed method to a replication of Tomz (2020). Whereas the original study treated ordinal responses as cardinal and interpreted the results as average treatment effects (ATE), which can be misleading. My reanalysis compares ordered logit, ordered probit, and the KDE-based estimator. The results reveal striking differences, with conventional ordinal regression models substantially underestimating the average latent treatment effect (ALTE) potentially due to model misspecification.
 
-By offering both a diagnostic strategy and an estimation solution, this paper provides researchers with tools to improve inference in a wide class of models using ordinal outcomes—a common yet under-scrutinized challenge in political science.
+Taken together, these findings suggest that political science must pay greater attention to the challenges posed by ordinal outcomes. By clarifying the limits of identification and introducing a semiparametric estimator, this paper provides applied researchers with more reliable tools for causal inference when working with ordered responses—tools that are both methodologically rigorous and practically feasible.
+
+% By offering both a diagnostic strategy and an estimation solution, this paper provides researchers with tools to improve inference in a wide class of models using ordinal outcomes—a common yet under-scrutinized challenge in political science.
 
 % Improvement in survey design \citep{King2004a, King2007a, Chen2024a}, sensitivity analysis \citep{Bloem2022a}, and semiparametric approach \citep{Lee1992a, Lewbel2000a, Klein2002a, Liu2024a} have been proposed to mitigate some of the biases, but most of them only deal with one or two problems.
 
 \section{Causal Inference with Ordinal Outcomes}
 
 \subsection{Identification Problem}
-With growing emphasis on the causal inference framework, political science has sought on identifying the causal effect on policies and other political factors. Survey experiment, observational studies  with designs such as difference-in-difference and regression discontinuity become some of the prevalent empirical strategy in political science. For example, during the period from 2021 to 2024, about 20\% of articles published in top 3 general political science journals (\textit{American Journal of Political Science, American Political Science Journal, and Journal of Politics}) included survey experiment as one of their empirical strategy. 
+With the growing emphasis on causal inference, political science has increasingly focused on identifying the effects of policies, institutions, and political factors. Experimental and quasi-experimental methods—most prominently survey experiments, difference-in-differences, and regression discontinuity designs—have become standard empirical strategies across subfields.
 
-Many of political science research with causal inference framework target the causal effect on abstract and subjective concepts and preferences, and they often operationalized as ordinal variables.Researchers are interested in identifying causal effect of policies and other factors on people's preferences such as politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, and foreign policy preferences \citep{Scheve2001r, Mayda2005a}. We cannot observe these outcomes directly, but we believe many of them can be expressed on a uni-dimensional space; for example, we can imagine to line up people based on their opinion on pension reform. Researchers frequently rely on ordered responses, measured with Likert-type choices (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}). 
+Much of this research aims to estimate causal effects on abstract and subjective outcomes that cannot be observed directly. Scholars are often interested in preferences and attitudes, such as politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, or foreign policy orientations \citep{Scheve2001r, Mayda2005a}. These outcomes are inherently latent, yet researchers generally assume that they can be represented along a unidimensional continuum—for example, arranging individuals by the strength of their support for pension reform. To capture such constructs, survey instruments typically rely on ordered response categories, most often Likert-type items (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}).
 
-Although this combination of ordinal outcome and causal inference becomes more common, there has been less discussion on exactly what it means to do causal inference with ordinal outcome. Ordinal scales, unlike interval or cardinal scales, carry only information on orders. The common operational labels of $\{1, 2, 3, 4, 5\}$ are arbitrary and carry no numerical meaning, and the distances between each values are not necessarily equal. This unique characteristic of ordinal outcomes poses question on what should be the estimand, and which causal inference tools to be used to estimate, and what the estimates mean, because many of the causal inference tools assume that the outcomes are cardinal or at least interval. 
+The challenge is that ordinal scales contain far less information than interval or cardinal measures. They indicate only the relative ordering of responses, without conveying meaningful distances between categories. Consequently, when outcomes are ordinal, researchers face the task of recovering causal effects on the unobserved latent variable using only information about order. This limitation complicates both identification and interpretation, raising important questions about how causal inference should be conducted when the outcome of interest is measured on an ordinal scale.
 
-To be more specific, let us suppose a following simple model. There is a latent continuous outcome variable of $Y^{\ast}$ in a latent space. This can be thought as lining up people based on their preferences or opinion on a certain political issue. Then, assume following partially linear true data-generating process (DGP):
+To be more concrete, let us suppose a following simple model. Suppose a latent continuous outcome variable of $Y^{\ast}$. This can be thought as lining up people based on their preferences or opinion on a certain political issue.  Then, assume following partially linear true data-generating process (DGP):
 \begin{equation}
     Y^{\ast} = f(X, \beta) + D^{T}\tau + \varepsilon
 \end{equation}
 $D$ is a binary treatment indicator, where $1$ denotes a treatment group and $0$ denotes a control group, $X$ is a vector of regressors, and $\varepsilon$ is a latent error term and its density is defined with $f$, and its distribution is defined by $F$. 
 
-Now, borrowing from the potential outcome framework \citep{Rubin1974a}, let us denote the potential outcome in the latent space as $Y^{\ast}(d)$ and the potential outcome in observed data as $Y(d)$, where $d \in \{0, 1\}$ denotes the treatment status. We put following standard causal inference assumptions regarding the latent $Y^{\ast}$. 
+One natural causal estimand is the average treatment effect (ATE) in terms of $Y^{\ast}$, which equal to $\tau$ in Equation 1. Borrowing from the potential outcome framework \citep{Rubin1974a}, let us denote the potential outcome in the latent space as $Y^{\ast}(d)$, where $d \in \{0, 1\}$ denotes the treatment status. Then the ATE can be expressed as the difference between the expectations of the two potential outcomes:
+$$
+    \mathbb{E}\left[Y(1)\right] - \mathbb{E}\left[Y(0)\right]
+$$ 
+
+Now we put following standard causal inference assumptions regarding the latent $Y^{\ast}$. 
 
 \begin{assumption}{SUTVA}
     A unit's potential outcomes are not affected by the treatment given to other units. $Y^{\ast}_{i} = Y^{\ast}(D_{i})$
@@ -92,14 +99,12 @@ Now, borrowing from the potential outcome framework \citep{Rubin1974a}, let us d
     There is non-zero probability of being treated. $\mathbb{P}\left(D_i = 1\right) > 0$
 \end{assumption}
 
-The target causal estimand considered in this paper is the average treatment effect (ATE) in terms of the latent outcome $Y^{\ast}$. 
-
-If all above assumptions are met, ATE on $Y^{\ast}$ can be written as 
+If all above assumptions are met and if we can directly observe the $Y^{\ast}$, ATE on $Y^{\ast}$ can be written as 
 $$
-    \mathbb{E}\left[Y^{\ast}_{i}(1) \mid D_i = 1 \right] - \mathbb{E}\left[Y^{\ast}_{i}(0) \mid D_i = 0\right] = \tau
+    \mathbb{E}\left[Y(1)\right] - \mathbb{E}\left[Y(0)\right] = \mathbb{E}\left[Y^{\ast}_{i}(1) \mid D_i = 1 \right] - \mathbb{E}\left[Y^{\ast}_{i}(0) \mid D_i = 0\right] = \tau
 $$. 
 
-The problem arises from the fact that continuous $Y^{\ast}$ can not be observed directly, but we only can observe some (monotonic) transformation of it. Denote the observed ordinal outcome as $Y$ and the transformation (often called reporting function) as $g$.
+The problem is that we usually can not observe the continuous $Y^{\ast}$ directly, but only can observe the ordinal outcomes, the transformed version of $Y^{\ast}$. Denote the observed ordinal outcome as $Y$ and the transformation function (often called reporting function) as $g: \mathbb{R} \to \{1, 2, 3, \ldots, J\}$, which also cannot be observed directly.
 
 $$
     Y = g(Y^{\ast})
@@ -121,11 +126,13 @@ $$
     \end{cases}
 $$, where $\alpha_{k}$ denotes the threshold points for each ordinal category. 
 
-Under this settings, we only can observe $Y$ directly, and have no good knowledge on either $Y^{\ast}$ nor $g$. Thus, the naive estimator of ATE, $\mathbb{E}\left[Y^\ast(1)\right] - \mathbb{E}\left[Y^\ast(0)\right]$ cannot be obtained. Also, since $g$ is unknown, and scaling by positive constant would not change the ordering of $Y$, we only can identify the target causal parameter up to scale. In other words, we only can identify the size of the treatment effect relative to a coefficient of another covariate. Let us denote $\beta_{a}$ as a coefficient of the covariate that is going to work as an anchor. 
+Under this setting, we only can observe $Y$ directly, and have no good knowledge on either $Y^{\ast}$ nor $g$. Thus, the naive estimator of ATE, $\mathbb{E}\left[Y^\ast(1)\right] - \mathbb{E}\left[Y^\ast(0)\right]$ cannot be obtained. Also, since $g$ is unknown and scaling by positive constant would not change the ordering of $Y$, so we only can identify the target causal parameter up to scale. In other words, we only can identify the size of the treatment effect relative to a coefficient of another covariate. Let us denote $\beta_{a}$ as a coefficient of a covariate that is going to work as an anchor. Then we can define the anchored latent treatment effect as:
 
 \begin{definition}{Anchored Latent Treatment Effect}
     $\tau_{ALTE} = \tau_{0} / \beta_{a}$
 \end{definition}
+
+Since 
 
 \subsection{Estimation}
 
@@ -178,9 +185,6 @@ This paper extends the ordinal regression approach, first by introducing a diagn
 
 
 % In the next section, this paper introduces surrogate based residuals approach developed by \cite{Liu2018a}, which can be a useful diagnostic tool for detecting distributional assumption misspecification.
-
-
-
 
 % These models require strong distributional assumptions; for example, Ordered Probit assumes that the conditional distribution of outcomes follows a normal distribution. While these assumptions facilitate fast and efficient estimation using maximum likelihood, many researchers have criticized them for failing to account for three key challenges in survey data: (1) variations in individual interpretation of response scales, (2) misspecification of the true outcome distribution, and (3) uncertainty arising from imprecisely measured bracketed variables.
 
@@ -312,144 +316,92 @@ $$
     \end{cases}
 $$, where $\alpha_{-1} = -\infty$, and $\alpha_{2} = \infty$. 
 
-$D$ simulates treatment status, so each data point is randomly assigned $0$(control) or $1$(treatment), $X$ is drawn from $\mathcal{N}(0, 5)$ and $\tau$ set to be $0.5$. 
+$D$ simulates treatment status, so each data point is randomly assigned $0$(control) or $1$(treatment), $X$ is drawn from $\mathcal{N}(0, 25)$ and $\tau$ set to be $0.5$. 
 
-I compare the performance of the KDE-based estimator introduced in Section 3 with OLS, ordered logit, and probit model. Since the ordinal regression estimators only identify $\tau$ up to scale or $\tau_{ALTE}$, without lose of generality, I set $\beta$ to be $1$ for easier interpretation. Thus, $X$ works as an anchored point here. Thus, $\tau_{ALTE} = \frac{\tau}{\beta} = 0.5$, which is same as the exact true $\tau$. This setting enables comparison across ordinal regression models (ordered logit, ordered probit, and KDE-based estimator), which identify $\tau_{ALTE}$ and OLS, which targets the exact $\tau$ based on cardinalization. 
+I compare the performance of the KDE-based estimator introduced in Section 3 with OLS, ordered logit, and probit model. Since the ordinal regression estimators only identify $\tau$ up to scale or $\tau_{ALTE}$, without lose of generality, I set $\beta$ to be $1$ for easier interpretation. Thus, $X$ works as an anchored point here. Thus, $\tau_{ALTE} = \frac{\tau}{\beta} = 0.5$, which is same as the exact true $\tau$. This setting enables comparison across ordinal regression models (ordered logit, ordered probit, and KDE-based estimator), which identify $\tau_{ALTE}$ and OLS, which targets the exact $\tau$ based on cardinalization. For the OLS, a cardinalization of $Y$ is required. This paper follows the commonly used practice with labels of $\{1, 2, 3\}$. Bias ($\tau_{ALTE} - \hat{\tau}_{ALTE}$) and root mean squared error (RMSE, $\sqrt{\sum \frac{(\hat{\tau}_{ALTE} - \tau_{ALTE})^{2}}{n} }$) are used as performance metrics.
+% The second cardinalization uses the labels of $\{1, 5 ,25\}$. The second cardinalization is expected to effectively increase the size of the estimated causal effect compared to that from the first cardinalization. 
 
-For the OLS, a cardinalization of $Y$ is required. Here I used two different cardinalization scheme to demonstrate that arbitrary cardinalization can lead to very different conclusions. The first cardinalization follows the commonly used practice with labels of $\{1, 2, 3\}$. The second cardinalization multiplies the first labels by 10 times, $\{10, 20 ,30\}$. The second cardinalization would effectively increase the size of the estimated causal effect compared to that from the first cardinalization. 
-
-I tested for two different distribution for the error term, $\varepsilon$, the standard normal distribution $\mathbb{N}(0, 1)$ and the t-distribution with degrees of freedom of 1. The t-distribution has heavier tail regions than both the standard logistic and the standard normal distribution. Thus, by construction, the normal error represents the most favorable DGP for the ordered probit model, and the t-distribution error term case represents DGP where the distributional assumptions for both ordered logit and ordered probit models are violated. Four sample sizes of 250, 500, 750 and 1,000 are considered. I first generate a population of size $1e+5$ and draw random samples for Monte Carlo replication from this population. The number of Monte Carlo replication is 1,000, and all estimations are the means of these 1,000 replication results. Regarding the KDE-based estimator, I set $\delta = \frac{1}{6}$, pilot bandwidth $h_{p} = n^{-0.11}$, the final base bandwidth $h_{f} = n^{-0.15}$, and fix all other parameters to the middle points of the suggested intervals. For instance, $\epsilon$ in the damping function is set to be $\frac{0 + (\frac{1}{40}- \frac{\delta}{20})}{2} \approx 0.33$. Also, the trimming was done at the 0.05 level, so data points within 0.05 quantile and 0.95
+I tested for two different distribution for the error term, $\varepsilon$, the standard normal distribution $\mathbb{N}(0, 1)$ and the t-distribution with degrees of freedom of 1. The t-distribution has heavier tail regions than both the standard logistic and the standard normal distribution. Thus, by construction, the normal error represents the most favorable DGP for the ordered probit model, and the t-distribution error term case represents DGP where the distributional assumptions for both ordered logit and ordered probit models are violated. Four sample sizes of 250, 500, 750 and 1,000 are considered. I first generate a population of size $1e+5$ and draw random samples for Monte Carlo replication from this population. The number of Monte Carlo replication is 1,000, and all estimations are the means of these 1,000 replication results. Regarding the KDE-based estimator, I used standard normal kernel and set $\delta = \frac{1}{15}$, pilot bandwidth to be 2/3th point of the suggested interval, the final base bandwidth to be the 2/5 point of the suggested interval, and fix all other parameters to the middle points of the suggested intervals. For instance, $\epsilon$ in the damping function is set to be $\frac{0 + (\frac{1}{40}- \frac{\delta}{20})}{2} \approx 0.33$. Also, the trimming was done at the 0.05 level, so data points within 0.05 quantile and 0.95. 
 
 \begin{figure}
     \begin{tabular}{cc}
         \includegraphics[width=0.45\textwidth]{../figures/bias_norm.pdf} & \includegraphics[width=0.45\textwidth]{../figures/rmse_norm.pdf}\\
-        (a) Bias & (b) MSRE
+        (a) & (b)
     \end{tabular}
+    \caption{Monte Carlo Simulation Results: Standard Normal Error}
 \end{figure}
 
 Figure 1 summarizes the Monte Carlo simulation results for the standard normal error term case.
-First, in terms of root mean squared error (RMSE), Panel (b) shows that all models are comparably doing well, meaning that as the sample size increases all the models converges to certain values. Panel (a) shows the mean bias from 10,000 simulations of two OLS, ordered logit model, ordered probit model, and KDE-based estimator. The one notable thing is that OLS with common cardinalization of $\{1, 2, 3\}$ is significantly underestimating the $\tau$. However, OLS may also overestimate the effect if other cardinalization scheme is used, and this is shown by the result from OLS with $\times 10$ model. OLS with $\{10, 20, 30\}$ cardinalization would blow up the coefficient and thus lead to overestimation. Thus, the results from OLS models are highly dependent on the cardinalization schemes, and thus unreliable.
+First, in terms of root mean squared error (RMSE), Panel (b) shows that KDE-based estimator demonstrates only slight larger RMSE than other parametric ordinal regression models and comparable to that of OLS. Panel (a) shows the mean bias from 1,000 simulations of two OLS, ordered logit model, ordered probit model, and KDE-based estimator. The one notable thing is that OLS with common cardinalization of $\{1, 2, 3\}$ is significantly underestimating the $\tau$. However, OLS may also overestimate the effect if other cardinalization scheme is used. For example, OLS with $\{1, 5, 25\}$ cardinalization would blow up the coefficient and may lead to overestimation. Thus, the results from OLS models are highly dependent on the cardinalization schemes, and thus unreliable.
 
-Both ordered probit model and ordered logit model show low estimated bias, but KDE-based estimator shows much smaller bias across all sample sizes. Considering that the standard normal error case meets the distributional assumption for ordered probit model, the great performance of the ordered probit model is expected. Also, the CDF of standard logistic is not too different from that of standard normal, ordered logit model also performs comparably well. However, KDE-based approach shows almost 0 bias across the sample sizes, performing the best.
+Both ordered probit model and ordered logit model show low estimated bias, and KDE-based estimator also shows comparably small bias across all sample sizes. Considering that the standard normal error case meets the distributional assumption for ordered probit model, the great performance of the ordered probit model is expected. Also, the CDF of standard logistic is not too different from that of standard normal, ordered logit model also retains small bias. KDE-based estimator also performs comparable to ordered probit model, only having slightly large bias when sample size is small.
 
 \begin{figure}
     \begin{tabular}{cc}
         \includegraphics[width=0.45\textwidth]{../figures/bias_tdis.pdf} & \includegraphics[width=0.45\textwidth]{../figures/rmse_tdis.pdf}\\
-        (a) Bias & (b) MSRE
+        (a) & (b)
     \end{tabular}
+    \caption{Monte Carlo Simulation Results: t-distribution Error}
 \end{figure}
 
-Figure 2 describes the results from the t-distribution error term case. Again, two OLS shows large bias and depending on the cardinalization scheme, the bias can be positive and negative. Ordered logit and ordered probit model also suffers some bias, while KDE estimator shows the best performance.
+Figure 2 describes the results from the t-distribution error term case. Again, Panel (b) reports the RMSE for the four models, and KDE-based estimator shows relatively larger RMSE. On Panel (a),
+OLS results show large underestimating bias. Ordered logit and ordered probit model suffer significant overestimation which is up to almost 10\% of the treatment effect. KDE estimator shows the best performance by controlling the bias at the lowest level.
 
-% These are somewhat expected from the previous diagnosis using surrogate-based residuals. Since the models cannot aptly capture the true error distribution, the coefficient estimates become biased and inconsistent. Considering the standard errors, these coefficients would not carry statistically significant meanings. Klein and Sherman estimator generally does well, although it overestimates the coefficients of the treatment variable and fails to achieve statistically significant results. 
+Overall, the Monte Carlo simulation demonstrates that cardinalization approach depends on arbitrary labels and thus unreliable to capture the causal effect, standard ordered regression models may perform poorly when the distributional assumptions are violated. KDE-based estimator, however, demonstrates mostly better performance across two cases and different sample sizes.
 
-% \begin{figure}[!htb]
-%     \caption{Q-Q plots for Surrogate-based Residuals Calculate with Ordered Logit and Probit on Monte Carlo Sample}
-%     \begin{tabular}{ccc}
-%         Ordered Logit  &  \includegraphics[width=0.4\textwidth]{../figures/qqplot_logit_lnorm10.pdf} & \includegraphics[width=0.4\textwidth]{../figures/qqplot_logit_neg_lnorm10.pdf} \\
-%         Ordered Probit  &  \includegraphics[width=0.4\textwidth]{../figures/qqplot_probit_lnorm10.pdf} & \includegraphics[width=0.4\textwidth]{../figures/qqplot_probit_neg_lnorm10.pdf} \\
-%         & Log-normal Distribution & Negative Log-normal Distribution  \\
-%     \end{tabular}
-% \end{figure}
+\section{Applications: \citet{Tomz2020a}}
+The example replicates the analysis by \citet{Tomz2020a}. The study looked into the question of how the human rights practices of foreign adversaries affect domestic public support for war through survey experiments. The main argument was that in democracies with well-established human rights, people are less willing to go to war with other countries that also respect human rights than with comparable countries that violate them. Thus they are focusing on two factors that can impact people's support for war: the political system of the foreign country and how much the foreign country respect human rights.
 
-% First, to test the distributional assumption for ordered logit and probit model, surrogate-based residuals derived using the suggested method in Section 3. Figure 1 shows Q-Q plots for both ordered logit and probit models on Monte Carlo samples described above. The panels on the first row correspond to the Q-Q plots of the surrogate-based residuals from the ordered logit models, and the panels on the second row correspond to the surrogate-based residuals from the ordered probit models. Both surrogate-based residuals form ordered logit and probit models when the error term is log-normal distribution are skewed to the right compared to the standard logistic and normal distributions respectively. On the other hand, when the error term follows negative log-normal distribution, the residuals are generally skewed to the left. Considering the relatively small size of the treatment effect ($0.01$) these skewness may significantly change the coefficient in size and direction. 
+The paper uses total of 5 surveys, but this paper focus on the first survey, which contains an experiment for their main result. The survey was conducted by YouGov to a nationally representative sample of 1,430 US adults in October 2012. The treatment was given as in a form of vignettes on a country that is developing nuclear weapons. The vignettes also include trade and military relationship of the country and the US, and its conventional military strength which is set to the half of that of the US. In the vignettes, information about the political system (democracy = 1, not = 0) and human rights practices (respect = 1, not = 0) were binary treatments and they were randomized independently. 
 
+The outcome of interest here is the support for physical strike of the US armed forces to the country. Specifically, respondents were asked to answer in 5-point scale: \textit{Favor strongly, Favor somewhat, Neither favor nor oppose, Oppose somewhat}, and \textit{Oppose strongly}. In the paper, the authors take the cardinalization approach and OLS. They first recode the outcome into binary variable, and assign numerical value of 0 if the answer was oppose and 100 otherwise. Then they used this to run OLS. They justify the cardinalization scheme by arguing that with the cardinalization, we can interpret the ATE as the percentage change in public support for a military strike as a result of learning the country's political system and human rights practices. However, as discussed in Section 2, the cardinalization is arbitrary and we only can interpret the ATE as suggested by authors when the cardinalization is capturing the unknown transformation function, which is untestable.
 
-% \begin{figure}[!htb]
-%     \caption{Cumulative p-values from 50 Kolmogorov-Smirnov tests on Surrogate-based Residuals Calculate with Ordered Logit and Probit on Monte Carlo Sample}
-%     \begin{tabular}{ccc}
-%         Ordered Logit  &  \includegraphics[width=0.4\textwidth]{../figures/ks_logit_lnorm10.pdf} & \includegraphics[width=0.4\textwidth]{../figures/ks_logit_neg_lnorm10.pdf} \\
-%         Ordered Probit  &  \includegraphics[width=0.4\textwidth]{../figures/ks_probit_lnorm10.pdf} & \includegraphics[width=0.4\textwidth]{../figures/ks_probit_neg_lnorm10.pdf} \\
-%         & Log-normal Distribution & Negative Log-normal Distribution  \\
-%     \end{tabular}
-% \end{figure}
+The model they used in their main results (model 2 of their Table 1) can be expressed as following:
+$$
+    Y^{\ast} = \tau_{DEM} \cdot DEM + \tau_{HR} \cdot HR + X^{T}\beta + \varepsilon 
+$$ 
+$$
+    Y = \begin{cases}
+        0 & \text{if \textit{Favor Strongly and Favor somewhat}} 
+        100 & \text{Otherwise} 
+    \end{cases}
+$$ 
+where $Y^{\ast}$ is the support for the military strike in latent scale and $Y$ is the observed outcome with their cardinalization, $DEM$ and $HR$ are binary variables indicating political system treatment and human rights practices treatment respectively, $X$ for the control variables and $\varepsilon$ for the error term.
 
-% We can also run standard test for distributional assumption. Figure 2 reports the cumulative p-values from 50 iterations of Kolmogorov-Smirnov test for both ordered regression models with the Monte Carlo samples. Again, The panels on the first row correspond to the Q-Q plots of the surrogate-based residuals from the ordered logit models, and the panels on the second row correspond to the surrogate-based residuals from the ordered probit models. As expected from the Q-Q plot, the p-values are concentrated in the areas very close to 0. The mean of the p-values are indistinguishable from 0 for all four cases. This strongly against the distributional assumptions of both ordered logit and probit models. 
-
-% \clearpage
-% \begin{table}[!htb]
-%     \caption{Monte Carlo Simulation Results}
-%     \begin{tabular}{c|cccc|cccc}
-%         \           & \multicolumn{4}{c}{log-normal}  &  \multicolumn{4}{c}{negative log-normal} \\
-%         \           & OLS & O Logit & O Probit & Klein-Sherman & OLS & O Logit & O Probit & Klein-Sherman \\
-%         \hline \\
-%         \multicolumn{3}{l}{Sample Size = 1,000} & & & & & & \\
-%         \hline \\
-%         $\beta_{1} / \beta_{2}$ & $-0.2556$ & $-1.057$ & $-1.061$ & $-0.987$ & $-0.233$ & $-1.055$ & $-1.050$ & $-1.042$ \\
-%         \           & $(0.033)$ & $(0.061)$ & $(0.034)$ & $(0.042)$ & $(0.033)$ &  $(0.061)$ & $(0.034)$ & $(0.034)$ \\
-%         $\beta_{D} / \beta_{2}$ & $0.005$ & $-0.005 $ & $0.025$ & $0.025$ & $-0.001$ & $-0.014$ & $-0.014$ & $0.018$\\
-%         \           & $(0.066)$ & $(0.1155)$ & $(0.066)$ & $(0.072)$ & $(0.066)$ & $(0.115)$ & $(0.067)$ & $(0.034)$ \\
-%         \hline \\
-%         \multicolumn{3}{l}{Sample Size = 2,000} & & & & & & \\
-%         \hline \\
-%         $\beta_{1} / \beta_{2}$ & $-0.251$ & $-1.080 $ & $-1.079$ & & $-0.249$ & $-1.042$ & $-1.033$ & \\
-%         \           & $(0.032)$ & $(0.043)$ & $(0.024)$ & & $(0.023)$ & $(0.043)$ & $(0.024)$ & \\
-%         $\beta_{D} / \beta_{2}$ & $0.009$ & $0.037$ & $0.036$ & & $0.005$ & $0.014$ & $0.018$ & \\
-%         \           & $(0.047)$ & $(0.081)$ & $(0.047)$ & & $(0.047)$ & $(0.082)$ & $(0.047)$ & \\
-%     \end{tabular}
-% \end{table}
-
-
-
-\section{Applications: \citet{Ballard-Rosa2024a}}
-The example replicates the analysis by \citet{Ballard-Rosa2024a}. The main argument of the study was that the exposure to the framing linking globalization and reduced American Dream would lower the support for trade expansion, and the effect would be larger among the citizens who believe in meritocratic values. The treatment group was shown a statement that some of the US's foreign policy reduces chances of achieving American Dreams, while control group was given that some of the US's foreign policy increases the domestic economic inequality. The outcome of interest is the view on the expansion of trade relationship, and this was measured with 5 point Likert-type choices. 
-
-The authors 
-
-The authors utilized OLS and the results generally confirmed their claim; that the American Dream framing greatly reduce individual's support for trade expansion and the effect was larger if a respondent believes more in meritocratic values. 
-
-Even though the outcome variable is measured in ordinal scales, the authors analyze the data using OLS, which assumes that the outcome to be at least interval. This may lead to potential bias due to model misspecification, so I retest their main models in Table 2 (column 1 and 2) with ordered regression models. The results reported in Table 2. The first two columns show the replicated result of their original analysis and columns 3 to 6 report the ordered logit and probit model results. 
-
+Since they are interested in whether citizens living in democracy where human rights are respected (the US, to be more specific) are more reluctant to support military strike to a country who is developing nuclear weapons if the country also respecting human rights, the causal parameter we are interested in the above equation is $\tau_{HR}$. We only can observe the ordinal outcome, so only can identify the ALTE, thus I use the $DEM$ variable as an anchor. Thus our goal is to identify $\tau_{HR ALTE} = \frac{\tau_{HR}}{\tau_{DEM}}$. I replicate their result on Table 1 of their paper, and use ordered logit, ordered probit and KDE-based estimator as a comparison.
 
 \begin{table}[!htb]
-    \caption{Replication of \citet{Ballard-Rosa2024a} Table 2}
-\begin{center}
-\begin{tabular}{l c c c c c c}
-\hline
-    &\multicolumn{2}{c}{Original -- OLS} &\multicolumn{2}{c}{Ordered Logit} & \multicolumn{2}{c}{Ordered Probit} \\
- & Model 1 & Model 2 & Model 1 & Model 2 & Model 1 & Model 2 \\
-\hline
-American Dream Treatment  & $-0.05$     & $-0.08$      & $-0.13$     & $-0.18$     & $-0.06$      & $-0.09$      \\
-                          & $(0.05)$    & $(0.05)$     & $(0.09)$    & $(0.10)$    & $(0.06)$     & $(0.06)$     \\
-meritocrat                & $0.04$      & $0.06$       & $-0.04$     & $-0.00$     & $-0.00$      & $0.02$       \\
-                          & $(0.08)$    & $(0.09)$     & $(0.14)$    & $(0.15)$    & $(0.08)$     & $(0.08)$     \\
-AD Treatment x meritocrat & $-0.29^{*}$ & $-0.33^{**}$ & $-0.44^{*}$ & $-0.52^{*}$ & $-0.30^{**}$ & $-0.35^{**}$ \\
-                          & $(0.12)$    & $(0.12)$     & $(0.20)$    & $(0.21)$    & $(0.11)$     & $(0.12)$     \\
-\hline
-Deviance                  & $1929.01$   & $1927.39$    & $5322.79$   & $5321.19$   & $5327.36$    & $5325.32$    \\
-Dispersion                & $0.99$      & $0.99$       & $$          & $$          & $$           & $$           \\
-Num. obs.                 & $1954$      & $1954$       & $1954$      & $1954$      & $1954$       & $1954$       \\
-AIC                       & $$          & $$           & $5366.79$   & $5367.19$   & $5371.36$    & $5371.32$    \\
-BIC                       & $$          & $$           & $5489.49$   & $5495.47$   & $5494.07$    & $5499.61$    \\
-Log Likelihood            & $$          & $$           & $-2661.39$  & $-2660.59$  & $-2663.68$   & $-2662.66$   \\
-\hline
-\multicolumn{7}{l}{\scriptsize{$^{***}p<0.001$; $^{**}p<0.01$; $^{*}p<0.05$}}
-\end{tabular}
-\end{center}
+    \begin{center}
+        \begin{tabular}{l c | c c c }
+            \\ [-1.8ex]\hline\\ [-1.8ex]
+            & ATE & \multicolumn{3}{c}{ALTE} \\
+            \\ [-1.8ex]\cline{2-5} \\ [-1.8ex]
+            & Original -- OLS & Ordered Logit & Ordered Probit & KDE-based \\
+            \\ [-1.8ex] \hline\\ [-1.8ex]
+            Respect HR & $-16.7$     & $-1.49$     & $-1.42$      & $-2.17$      \\
+            & $(2.40)$     & $(0.10)$    & $(0.06)$     & $(0.27)$     \\
+            \\ [-1.8ex] \hline\\ [-1.8ex]
+            \multicolumn{5}{l}{\scriptsize{$^{***}p<0.001$; $^{**}p<0.01$; $^{*}p<0.05$}}
+        \end{tabular}
+    \end{center}
+    \caption{Replication of \citet{Tomz2020a} Table 3}
 \end{table}
 
-To further confirm the results from the ordered logit and probit model, diagnostic test on distributional assumptions using surrogate-based residuals are employed. Figure 3 graphically depicts the tests for the distributional assumptions. The panels on the first column shows the Q-Q plot of the surrogate-based residuals and the assumed distributions and two seem to be aligned well. The panels on the second column further confirm that the violation of the distributional assumption is not an issue in these models. The p-values from 50 Kolmogorov-Smirnov tests are almost uniformly distributed in both models. However, the ordered logit model aligns more tightly with the $45^{\circ}$ line, thus it might be the best fitted model in this case. 
+Table 1 reports the results from OLS, ordered logit, ordered probit and KDE-based method. Overall, all methods agree on the direction of the treatment, that learning that a nuclear weapon developing country is respecting human rights decreases the over all support for the military attack. However, the interpretations of the estimated treatment effect are different. Since the original OLS with binarized outcome is assuming cardinalization mentioned above the coefficient is aiming to estimate the ATE directly. The authors interpret the coefficient of $-16.7$ as respondents become on average 16.7 percentage points less likely to support the military attack when they were told that the country is respecting human rights. However, this is only true when the cardinalization is true. 
 
-Need to include Klein and Sherman Results
+Other models identifies the ALTE of learning human rights practices with respect to that of the political system of the country, but the estimated sizes of ALTE vary across models. The results from ordered logit model and ordered probit model suggest somewhat similar size of ALTE; $- 1.49$ and $-1.42$ respectively. However, since both models rely on strong distributional assumption on the error term, $\varepsilon$, and thus the estimation may inconsistent and biased. This seems indeed true for this case, that the result from KDE-based method suggest that the ALTE may be much larger as $-2.17$. 
 
-% \begin{figure}[!htb]
-%     \caption{Q-Q plots, P-values from Kolmogorov-Smirnov test resutls using Surrogate-based Residuals Calculate with Ordered Logit and Probit}
-%     \begin{tabular}{ccc}
-%         Ordered Logit  &  \includegraphics[width=0.4\textwidth]{../figures/Ballad_partisan_logit_qq.pdf} & \includegraphics[width=0.4\textwidth]{../figures/Ballad_partisan_logit_ks.pdf} \\
-%         Ordered Probit  &  \includegraphics[width=0.4\textwidth]{../figures/Ballad_partisan_probit_qq.pdf} & \includegraphics[width=0.4\textwidth]{../figures/Ballad_partisan_probit_ks.pdf}\\
-%         & Q-Q Plot & Kolmogorov-Smirnov Test  \\
-%     \end{tabular}
-% \end{figure}
-
-\clearpage
 \section{Conclusion}
-This paper underscores the importance of scrutinizing distributional assumptions in ordinal regression models, particularly in the context of survey-based causal inference. While ordered logit and probit models have become standard tools in political science, their reliance on specific error distributions poses significant risks when those assumptions do not hold. The violation of distributional assumptions leads to the biased and inconsistent estimation which may lead to inappropriate inference. This point has been demonstrated through simulation studies and empirical analysis. Although it is not statistically meaningful, the ordered regression models show misleading signs of treatment effects in simulation settings.
 
-To address this challenge, I introduced a diagnostic approach using surrogate residuals, offering researchers a practical means to assess the validity of distributional assumptions in ordinal models. The suggested method approximates the residuals in latent variable space in continuous manner, which enables further diagnosis using graphical tools such as Q-Q plot and standard tests for distributional similarity such as Kolmogorov-Smirnov test and Anderson-Darling test. 
+This paper has examined the challenge of identifying causal effects when outcomes are measured on ordinal scales, a setting that arises frequently in political science research. Survey experiments, opinion polls, and observational studies routinely rely on ordinal measures such as Likert responses, approval ratings, and policy preferences. Despite their prevalence, the methodological implications of ordinal data for causal inference have often been overlooked. Researchers commonly treat ordinal responses as cardinal or employ ordered logit and probit models, but both strategies can be problematic. Cardinalization imposes arbitrary structure on the data, obscuring the true magnitude of treatment effects, while ordered regression models rely on strong distributional assumptions that, when violated, yield biased or even misleading results.
 
-When diagnostics suggest substantial departures, this paper recommends a semiparametric alternative -- the Klein and Sherman estimator -- which avoids reliance on a fully specified error distribution and performs robustly under a wide range of conditions. Monte Carlo simulation reaffirms that Klein and Sherman estimator can outperform standard ordered regression models when distributional assumptions are violated. 
+This study makes two contributions to addressing these issues. First, it clarifies the limits of identification in the ordinal setting: even under standard assumptions such as SUTVA, ignorability, and positivity, treatment effects on the latent variable can only be identified up to scale. This insight is important not just technically, but also substantively -- it underscores that researchers must be cautious about interpreting the estimated quantity from regressions with ordinal outcomes, as what is being estimated is inherently restricted. Second, the paper proposes a semiparametric alternative to conventional ordered models. By employing a kernel density estimation (KDE)–based  approach, the estimator avoids restrictive distributional assumptions while maintaining interpretability in terms of treatment effects on the latent scale.
 
-These tools empower researchers to move beyond mechanical application of ordered logit and probit models and to make informed modeling choices that better reflect the structure of their data. By integrating diagnostics and semiparametric methods into the applied researcher’s toolkit, this work contributes to more reliable causal inference and better empirical practice in the analysis of ordinal survey outcomes.
+The evidence presented here suggests that semiparametric methods can meaningfully improve inference in practice. Monte Carlo simulations reveal that the KDE estimator remains robust to misspecification of the error distribution, while OLS and ordered regression models fail under such conditions. The empirical application further illustrates that reliance on conventional approaches can substantively alter conclusions about treatment effects. Specifically, the reanalysis of Tomz (2020) shows the limitation of OLS, and suggest possible underestimation of causal effects in ordered logit and probit models compared to the proposed estimator. This highlights how methodological choices in handling ordinal outcomes can shape the interpretation of politically relevant findings.
+
+For applied researchers, these results carry two main lessons. First, the pervasiveness of ordinal outcomes in political science makes it essential to acknowledge their limitations for causal inference. Treating ordinal measures as cardinal should be avoided, and researchers should be mindful of the strict assumptions embedded in ordered regression models. Second, semiparametric methods such as the KDE estimator offer a viable and accessible alternative, allowing for robust estimation without sacrificing interpretability. In this way, the approach provides a bridge between the need for causal identification and the practical realities of working with ordinal data.
+
+At the same time, this paper opens several avenues for further work. One obvious direction is to explore the other methods of density estimation that can be an alternative to KDE in suggested estimator. The performance of semiparametric estimator depends highly on the quality of the density estimation, so if one can come up with a density estimation method with better properties, this would greatly improve the whole estimation process. Another is to extend these tools to settings with multilevel data, treatment effect heterogeneity, or dynamic outcomes, which are common in political science applications. Finally, while this paper has emphasized the estimation of average treatment effects, future work could investigate the identification of other causal quantities -- such as distributional shifts -- when outcomes are ordinal.
 
 \bibliographystyle{apsr}
 \bibliography{/Users/chanhyuk/Documents/MyLibrary}
