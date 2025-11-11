@@ -30,7 +30,7 @@
 % }}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Title & Author %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\title{Causal Inference with Ordinal Outcome: Semiparametric Approach}
+\title{Causal Inference with Ordinal Outcomes: A Semiparametric Approach}
 \author{Chanhyuk Park}
 \date{}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,7 +39,7 @@
     \maketitle
 
 \begin{abstract}
-    Causal inference has become central to political science, yet a large share of empirical work relies on ordinal outcomes such as Likert-type survey responses or ratings. Standard approaches to these outcomes -- cardinalization, IRT based approach, or estimating ordered logit and probit models -- raise fundamental problems. Cardinalization introduces arbitrariness, IRT based approach is useful, but usually not available, and ordered regression models depend on strict distributional assumptions, leading to bias and potentially misleading substantive conclusions. This paper clarifies the limits of causal identification with ordinal outcomes, showing that treatment effects on the latent scale are only identifiable up to scale, even under common assumptions for causal inference. To address the shortcomings of existing methods, I propose a semiparametric kernel density estimation (KDE)-based estimator that avoids strong distributional assumptions while retaining interpretability. Monte Carlo simulations demonstrate that the KDE estimator remains unbiased across a wide range of error distributions, whereas OLS and ordered regression models fail under misspecification. An empirical application to survey data replicates results from Tomz (2020) and reveals that the proposed estimator produces substantively different conclusions, highlighting the risks of relying on conventional methods. These findings suggest that semiparametric approaches provide a more robust path forward for causal inference with ordinal outcomes in political science.
+    Causal inference has become central to political science, yet much empirical research relies on ordinal outcomes such as Likert-type survey responses. This paper shows that, without strong assumptions, ordinal outcomes only allows up to scale identification of causal effects. It further demonstrates that common estimation strategies, including OLS, ordered probit, and ordered logit, generally fail to recover causal effects under model misspecification. To address this challenge, the paper introduces a new causal parameter, anchored treatment effect (ALTE), which measures effects relative to another covariate serving as an anchor. A semiparametric kernel density estimation (KDE) approach is proposed to estimate ALTE without imposing restrictive assumptions. Monte Carlo simulations show that the KDE estimator remains unbiased across diverse error distributions, whereas conventional methods fail under misspecification. An empirical application to survey data replicates results from Tomz (2020) and demonstrates that standard approaches significantly underestimate the treatment effect.
 \end{abstract}
 
 \newpage
@@ -49,13 +49,13 @@ With growing emphasis on the causal inference framework, political science has s
 
 Despite their appeal, however, survey experiments and related causal inference methods face challenges when the outcome of interest is measured on an ordinal scale. Many important political concepts, such as attitudes toward redistribution \citep{Alt2017a, Magni2021a}, approval of political leaders \citep{Canes-Wrone2002a, Kriner2009a}, or foreign policy preferences \citep{Scheve2001r, Mayda2005a, Tomz2020a}, are inherently latent and captured through ordered response categories. Likert-type questions with options such as \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree} are perhaps the most common example. Although such measures are designed to capture gradations of an underlying latent construct, they contain only information about ordering. As a result, standard causal inference tools, which typically assume cardinal or at least interval-scale outcomes, may not yield valid or interpretable estimates when applied to ordinal data.
 
-The core of the problem lies in the relationship between the unobserved latent outcome and the observed ordinal response. Causal effects are naturally defined on the latent space, but researchers only observe the transformed ordinal categories. Without strong assumptions, treatment effects on the latent scale are identifiable only up to scale. This limitation implies that while directionality of effects can sometimes be recovered, the magnitude of estimates is not inherently meaningful. Nevertheless, much applied work in political science has proceeded without addressing this issue, thereby risking biased or misleading conclusions.
+This paper shows that due to this problem, the exact causal effects cannot be identified with the set of standard assumptions, and suggest an alternative causal parameter of anchored latent treatment effect (ALTE). Causal effects are naturally defined on the latent space, but researchers only observe the transformed ordinal categories. Due to this problem, even with a set of standard assumptions for causal inference including stable unit treatment value assumption (SUTVA), ignorability and positivity, treatment effects on the latent scale cannot be identified exactly. Thus, this paper suggests to use another covariate as an anchor and gauge the size and direction of the causal effect relative to the anchor.
 
-A variety of strategies have been proposed to handle ordinal outcomes, each with important limitations. One commonly used approach to deal with problem caused by ordinal outcome is ignoring the ordinal nature and treat ordinal outcomes as cardinal variables by assigning numeric labels to each responses. This allows the use of OLS and difference-in-means estimators, but the labels are arbitrary, and the implied equal spacing between categories has no substantive justification. Consequently, such estimates can at best capture directionality, and their magnitudes are uninterpretable \citep{Schroder2017a, Bond2018a, Bloem2022a}. Item response theory (IRT) models provide an alternative by leveraging multiple survey items to recover the latent variable and then estimating treatment effects. Recent hierarchical extensions integrate these steps through EM algorithms \citep{Zhou2019a, Stoetzer2025a}. While theoretically appealing, these methods require multiple indicators of the same latent construct, which are rarely available in political science surveys. Even if we have multiple items measuring a similar concept, aggregating them into one latent trait with IRT will lose the nuanced information on each items. Moreover, they often rest on distributional assumptions that compromise consistency.
+A variety of strategies have been proposed to estimate causal effects with ordinal outcomes, but each comes with important limitations. One commonly used approach to deal with problem caused by ordinal outcome is ignoring the ordinal nature and treat ordinal outcomes as cardinal variables by assigning numeric labels to each responses. This allows the use of OLS and difference-in-means estimators, but the labels are arbitrary, and the implied equal spacing between categories has no substantive justification. Consequently, such estimates can at best capture directionality, and their magnitudes are uninterpretable \citep{Schroder2017a, Bond2018a, Bloem2022a}. Item response theory (IRT) models provide an alternative by leveraging multiple survey items to recover the latent variable and then estimating treatment effects. Recent hierarchical extensions integrate these steps through EM algorithms \citep{Zhou2019a, Stoetzer2025a}. While theoretically appealing, these methods require multiple indicators of the same latent construct, which are rarely available in political science surveys. Even if we have multiple items measuring a similar concept, aggregating them into one latent trait with IRT will lose the nuanced information on each items. Moreover, they often rest on distributional assumptions that compromise consistency.
 
 Ordered logit and probit models, grounded in a latent variable framework, are another common solution. These models respect the ordinal nature of outcomes and allow for efficient estimation via maximum likelihood. Yet they too rely on strict assumptions about the distribution of error terms—logistic for ordered logit, standard normal for ordered probit. When these assumptions are violated, the resulting estimates can be not just inefficient but also inconsistent and biased, even in large samples. If the true error distribution is far away from the distributional assumptions, such bias may flip the sign of estimated treatment effects, leading researchers to draw substantively incorrect conclusions \citep{Manski1988a, Greene2010a}.
 
-This paper makes several contributions regarding these problems. First, this paper demonstrates that the exact treatment effect on latent space is only identifiable up to scale with a set of assumptions including stable unit treatment value assumption (SUTVA), ignorability, positivity. This clarifies the inherent limits of causal inference with ordinal outcomes and highlights why interpretation must be approached with caution. Second, this paper also proposes a semiparametric alternative to conventional ordered logit and ordered probit model. When distributional assumptions are violated, both ordinal regression models fails to identify the causal effect consistently. As an alternative, this paper suggest a KDE-based estimator, which does not assume a specific error distribution but remains consistent. Utilizing Kernel Density Estimation (KDE) this estimator offers a compelling balance between robustness and interpretability, making it a promising option for applied researchers.
+This paper makes several contributions regarding the causal inference with ordinal outcomes. First, this paper demonstrates that the exact treatment effect on latent space is only identifiable up to scale with a set of assumptions including stable unit treatment value assumption (SUTVA), ignorability, positivity. This clarifies the inherent limits of causal inference with ordinal outcomes and highlights why interpretation must be approached with caution. Second, this paper also proposes a semiparametric alternative to conventional ordered logit and ordered probit model. When distributional assumptions are violated, both ordinal regression models fails to identify the causal effect consistently. As an alternative, this paper suggest a KDE-based estimator, which does not assume a specific error distribution but remains consistent. Utilizing Kernel Density Estimation (KDE) this estimator offers a compelling balance between robustness and interpretability, making it a promising option for applied researchers.
 
 The paper evaluates the performance of these methods using Monte Carlo simulations that vary the distribution of the latent error term. The results demonstrate that OLS estimates are highly sensitive to the cardinalization scheme, and that ordered logit and probit become biased under distributional misspecification. In contrast, the KDE-based estimator remains unbiased across a wide range of scenarios. Finally, to illustrate the substantive importance of these issues, I apply the proposed method to a replication of Tomz (2020). Whereas the original study treated ordinal responses as cardinal and interpreted the results as average treatment effects (ATE), which can be misleading. My reanalysis compares ordered logit, ordered probit, and the KDE-based estimator. The results reveal striking differences, with conventional ordinal regression models substantially underestimating the average latent treatment effect (ALTE) potentially due to model misspecification.
 
@@ -67,25 +67,39 @@ Taken together, these findings suggest that political science must pay greater a
 
 \section{Causal Inference with Ordinal Outcomes}
 
+Political scientists has long been interested in how people form their policy preferences. In the field of international relations, determinants of domestic support for interstate conflict is one the important and widely studied topic. Recent works have found an empirical pattern between respecting human rights at home and maintaining peaceful relations abroad. That said, countries are less likely to have war if both uphold human rights compared to pairs who do not. In this vein, \cite{Tomz2020a} investigated how the human rights records of potential adversaries affect public support for war, through survey experiments in both the U.S. and the U.K.. As in usual survey experiments, individual respondents are believed to have their true opinion on using an armed forces on a unidimensional continuum, and they test if their treatment, which contains information about human rights practices of potential adversaries, can alter this opinion on average. The key dependent variable was measured with a survey question that asked respondents to answer their support for use of armed weapons against the country in 5 ordered categories: \textit{Strongly Opppose} to \textit{Strongly Favor}. This means that individual respondents should internally transformed their opinion on a continuum to one of the 5 categories.
+
+When analyzing the data, the authors took the most common approach that cardinalization of the 5 ordered categories by putting that each categories holds numeric values from 1 to 5. By taking this common practice, the authors implicitly assume that they know how individual respondents map their true continuous opinion to the 5 categories, and that mapping looks just like \textit{Strongly Oppose} means 1 and so on. However, this assumption is problematic in 2 ways. First, the decision to use the set of numeric value of 1 to 5 is completely arbitrary and can hardly justified. Second, if the assumption is violated, than the authors conclusion on the average effect of their treatment can be ill-fated. Even if one is only interested in altering the answers themselves, meaning they only intended to change the average answer from one level to the other level, this cardinalization assumption is still problematic because the change from \textit{Strongly Oppose} to \textit{Somewhat Oppose} can hardly have equal meaning as the numerical change from 1 to 2. This paper will show that we may still have some causal parameter without this strong assumption.
+
 \subsection{Identification Problem}
-With the growing emphasis on causal inference, political science has increasingly focused on identifying the effects of policies, institutions, and political factors. Experimental and quasi-experimental methods—most prominently survey experiments, difference-in-differences, and regression discontinuity designs—have become standard empirical strategies across subfields.
+% With the growing emphasis on causal inference, political science has increasingly focused on identifying the effects of policies, institutions, and political factors. Experimental and quasi-experimental methods—most prominently survey experiments, difference-in-differences, and regression discontinuity designs—have become standard empirical strategies across subfields.
+%
+% Much of this research aims to estimate causal effects on abstract and subjective outcomes that cannot be observed directly. Scholars are often interested in preferences and attitudes, such as politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, or foreign policy orientations \citep{Scheve2001r, Mayda2005a}. These outcomes are inherently latent, yet researchers generally assume that they can be represented along a unidimensional continuum—for example, arranging individuals by the strength of their support for pension reform. To capture such constructs, survey instruments typically rely on ordered response categories, most often Likert-type items (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}).
+%
+% The challenge is that ordinal scales contain far less information than interval or cardinal measures. They indicate only the relative ordering of responses, without conveying meaningful distances between categories. Consequently, when outcomes are ordinal, researchers face the task of recovering causal effects on the unobserved latent variable using only information about order. This limitation complicates both identification and interpretation, raising important questions about how causal inference should be conducted when the outcome of interest is measured on an ordinal scale.
 
-Much of this research aims to estimate causal effects on abstract and subjective outcomes that cannot be observed directly. Scholars are often interested in preferences and attitudes, such as politicians’ approval ratings \citep{Canes-Wrone2002a, Kriner2009a}, support for redistribution \citep{Alt2017a, Magni2021a}, or foreign policy orientations \citep{Scheve2001r, Mayda2005a}. These outcomes are inherently latent, yet researchers generally assume that they can be represented along a unidimensional continuum—for example, arranging individuals by the strength of their support for pension reform. To capture such constructs, survey instruments typically rely on ordered response categories, most often Likert-type items (e.g., \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}).
-
-The challenge is that ordinal scales contain far less information than interval or cardinal measures. They indicate only the relative ordering of responses, without conveying meaningful distances between categories. Consequently, when outcomes are ordinal, researchers face the task of recovering causal effects on the unobserved latent variable using only information about order. This limitation complicates both identification and interpretation, raising important questions about how causal inference should be conducted when the outcome of interest is measured on an ordinal scale.
-
-To be more concrete, let us suppose a following simple model. Suppose a latent continuous outcome variable of $Y^{\ast}$. This can be thought as lining up people based on their preferences or opinion on a certain political issue.  Then, assume following partially linear true data-generating process (DGP):
+Let us denote a binary treatment with $D$ and a latent continuous outcome variable of $Y^{\ast}$. This can be thought as people's true opinion or preference on a certain political issue or policy that may lie on a unidimensional continuous space. We can think of this as individuals internally decided support for using an armed forces in the case of \cite{Tomz2020a}. Then, inside individuals mind, this latent true opinion can be assumed to follow the partially linear true data-generating process (DGP) suggested below:
 \begin{equation}
     Y^{\ast} = f(X, \beta) + D^{T}\tau + \varepsilon
 \end{equation}
-$D$ is a binary treatment indicator, where $1$ denotes a treatment group and $0$ denotes a control group, $X$ is a vector of regressors, and $\varepsilon$ is a latent error term and its density is defined with $f$, and its distribution is defined by $F$. 
+$X$ is a vector of factors that influence the preference or opinion other that the treatment $D$, and $\varepsilon$ is a latent error term where $\varepsilon \sim f(\cdot)$ and has a CDF of $F(\cdot)$. 
 
-One natural causal estimand is the average treatment effect (ATE) in terms of $Y^{\ast}$, which equal to $\tau$ in Equation 1. Borrowing from the potential outcome framework \citep{Rubin1974a}, let us denote the potential outcome in the latent space as $Y^{\ast}(d)$, where $d \in \{0, 1\}$ denotes the treatment status. Then the ATE can be expressed as the difference between the expectations of the two potential outcomes:
+When asked to express their opinion or preference in a set of ordered categories, individuals may use their internal process to transform their true latent opinion or preference, $Y^{\ast}$, to the set of ordered categories. Let's denote such internal transformation process as $g$ \footnote{One may concern the inter- and intra-personal differences in $g$. In other words, each respondent may use different internal process in transforming $Y^{\ast}$ into $Y$. This hampers the identification, but the concern may be attenuated by careful survey design utilizing anchored vignettes suggested in \citep{King2004a, King2007a}. Throughout the paper, I assume everyone shares same $g$, ignoring the additional problems arising from inter- and intra-personal differences.}, and the outcome of the transformation or the observed categories as $Y = \{1, 2, \ldots, J\}$. In the usual case the categories will have labels such as \textit{Strongly Disagree / Oppose} to \textit{Strongly Favor / Agree}. We can express this relationship as:
+$$
+    Y = g(Y^{\ast}) = \begin{cases}
+        0 & \text{if } \alpha_{-1} < Y^{\ast} \le \alpha_{0} \\
+        1 & \text{if } \alpha_{0} < Y^{\ast} \le \alpha_{1} \\
+        \vdots & \vdots  \\
+        J & \text{if } \alpha_{J-1} < Y^{\ast} \le \alpha_{J} \\
+    \end{cases}
+$$, where $\alpha_{k}$ denotes the threshold points for each ordinal category. 
+
+In this setting, one natural causal estimand is the average treatment effect (ATE) in terms of $Y^{\ast}$, which equal to $\tau$ in Equation (1). Borrowing from the potential outcome framework \citep{Rubin1974a}, let us denote the potential outcome in the latent space as $Y^{\ast}(d)$, where $d \in \{0, 1\}$ denotes the treatment status. Then the ATE can be expressed as the difference between the expectations of the two potential outcomes:
 $$
     \mathbb{E}\left[Y(1)\right] - \mathbb{E}\left[Y(0)\right]
 $$ 
 
-Now we put following standard causal inference assumptions regarding the latent $Y^{\ast}$. 
+If we can directly observe the $Y^{\ast}$, ATE on $Y^{\ast}$ can be identified, with the following set of standard causal inference assumptions regarding the latent $Y^{\ast}$. 
 
 \begin{assumption}{SUTVA}
     A unit's potential outcomes are not affected by the treatment given to other units. $Y^{\ast}_{i} = Y^{\ast}(D_{i})$
@@ -99,61 +113,134 @@ Now we put following standard causal inference assumptions regarding the latent 
     There is non-zero probability of being treated. $\mathbb{P}\left(D_i = 1\right) > 0$
 \end{assumption}
 
-If all above assumptions are met and if we can directly observe the $Y^{\ast}$, ATE on $Y^{\ast}$ can be written as 
-$$
-    \mathbb{E}\left[Y(1)\right] - \mathbb{E}\left[Y(0)\right] = \mathbb{E}\left[Y^{\ast}_{i}(1) \mid D_i = 1 \right] - \mathbb{E}\left[Y^{\ast}_{i}(0) \mid D_i = 0\right] = \tau
-$$. 
+The problem is that we usually \textit{do not} observe the continuous $Y^{\ast}$ directly, but only can observe the ordinal outcomes, the transformed version of $Y^{\ast}$. Thus, the naive estimator of ATE, $\mathbb{E}\left[Y^\ast(1)\right] - \mathbb{E}\left[Y^\ast(0)\right]$ cannot be obtained directly, unless strong assumptions on $g$ or $Y^{\ast}$ are imposed.
 
-The problem is that we usually can not observe the continuous $Y^{\ast}$ directly, but only can observe the ordinal outcomes, the transformed version of $Y^{\ast}$. Denote the observed ordinal outcome as $Y$ and the transformation function (often called reporting function) as $g: \mathbb{R} \to \{1, 2, 3, \ldots, J\}$, which also cannot be observed directly.
+One common practice to overcome this inability to have ATE is cardinalization. If we can safely assume that the latent variable $Y^{\ast}$ has numeric values that have the same length as the categories for $Y$, and that numeric values match with each category of $Y$, then we can recover $Y^{\ast}$ from $Y$ using this relationship. To clarify further, cardinalization using 1 to 5 of categories \textit{Strongly Disagree / Oppose} to \textit{Strongly Agree / Favor} can be expressed as following:
 
-$$
-    Y = g(Y^{\ast})
-$$ 
-
-One may concern the inter- and intra-personal differences in $g$. In other words, each respondent may use different internal process in transforming $Y^{\ast}$ into $Y$. This hampers the identification, but the concern may be attenuated by careful survey design utilizing anchored vignettes suggested in \citep{King2004a, King2007a}. Throughout the paper, I assume everyone shares same $g$, ignoring the additional problems arising from inter- and intra-personal differences. 
-
-\begin{assumption}{Uniform Monotonic Reporting function}
-    The monotonic reporting function $g$ is invariant across units.
+\begin{assumption}{Common Cardinalization}
+    $$
+        Y = g(Y^{\ast}) = \begin{cases}
+            \text{Stronlgy Disagree} \quad & Y^\ast = 1 \\
+            \vdots \\
+            \text{Stronlgy Agree} \quad & Y^\ast = 5 \\
+        \end{cases}
+    $$ 
 \end{assumption}
 
-$g$ can also be thought of as a function that cuts $Y^{\ast}$ into $Y$ with some thresholds,
-$$
-    Y = \begin{cases}
-        0 & \text{if } \alpha_{-1} < g(Y^{\ast}) \le \alpha_{0} \\
-        1 & \text{if } \alpha_{0} < g(Y^{\ast}) \le \alpha_{1} \\
-        \vdots & \vdots  \\
-        J & \text{if } \alpha_{J-1} < g(Y^{\ast}) \le \alpha_{J} \\
-    \end{cases}
-$$, where $\alpha_{k}$ denotes the threshold points for each ordinal category. 
 
-Under this setting, we only can observe $Y$ directly, and have no good knowledge on either $Y^{\ast}$ nor $g$. Thus, the naive estimator of ATE, $\mathbb{E}\left[Y^\ast(1)\right] - \mathbb{E}\left[Y^\ast(0)\right]$ cannot be obtained. Also, since $g$ is unknown and scaling by positive constant would not change the ordering of $Y$, so we only can identify the target causal parameter up to scale. In other words, we only can identify the size of the treatment effect relative to a coefficient of another covariate. Let us denote $\beta_{a}$ as a coefficient of a covariate that is going to work as an anchor. Then we can define the anchored latent treatment effect as:
+Cardinalization enables researcher to use usual causal inference tools such as means-difference, least squares, and difference-in-differences, because now the numerical values are assumed to capture the latent variable $Y^{\ast}$. One critical downside for this approach comes from the fact that the numerical labels are arbitrary, and theoretically any labels should work if they preserve the order. In some problems, researchers may find some numerical labels that can is believed to be the true values on the latent space, but in many cases it is hard to justify one labels to the other. For example, labeling \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree} as $\{1, 2, 3, 4, 5\}$ is no more reasonable than labeling them as $\{-1, 3, 15, 50, 100\}$. Thus, the size of the difference between expectations are hardly interpretable, since they depend on the labeling scheme. For example, in case of 5 point Likert scale, if we assign $\{2, 4, 6, 8, 10\}$, instead of $\{1, 2, 3, 4, 5\}$, the size of the difference will be doubled. This may significantly misleading, since the estimates we have only have very loose link with the treatment effects, and may over- or under-estimate them. Even worse, as discussed in \citet{Bond2018a} and \citet{Schroder2017a}, in most cases, there exists at least one labeling scheme that can flip the sign of the estimated causal effect. \citet{Bloem2022a} partly deals with this problem by providing a sensitivity test and a partial identification method based on the test. 
+
+Another problem by cardinalization is it imposes strong assumption on $g$. Therefore, if $g$ is not like in Equation (2), ATE can not be identified. To see this more clearly, suppose we have conducted same experiment as \cite{Tomz2020a} but in a much smaller scale with sample of 5. Let us further assume that we know the true potential outcome on latent space $Y^{\ast}(0)$ and $Y^{\ast}(1)$ of the respondents, and there are two candidates for $g$, $g_{a}$ and $g_{b}$ such that:
+$$
+    Y = g_{a}(Y^{\ast}) = \begin{cases}
+        \text{Strongly Disagree} &\quad -\infty < Y^\ast \le -3 \\
+        \text{Somewhat Disagree} &\quad -3 < Y^\ast \le -1 \\
+        \text{Neither} &\quad -1 < Y^\ast \le 0 \\
+        \text{Somewhat Agree} &\quad 0 < Y^\ast \le 2 \\
+        \text{Strongly Agree} &\quad 2 < Y^\ast < \infty \\
+    \end{cases}
+$$ 
+
+$$
+    Y = g_{b}(Y^{\ast}) = \begin{cases}
+        \text{Strongly Disagree} &\quad -\infty < Y^\ast \le -5 \\
+        \text{Somewhat Disagree} &\quad -5 < Y^\ast \le 0.2 \\
+        \text{Neither} &\quad 0.2 < Y^\ast \le 1 \\
+        \text{Somewhat Agree} &\quad 1 < Y^\ast \le 5 \\
+        \text{Strongly Agree} &\quad 5 < Y^\ast < \infty \\
+    \end{cases}
+$$ 
+
+    \begin{table}[ht]
+        \centering
+        \begin{tabular}{c|ll|ll|ll}
+            \hline
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{g_{a}}(0)$ & $Y_{g_{a}}(1)$ & $Y_{g_{b}}(0)$ & $Y_{g_{b}}(1)$\\
+            \hline
+            A & 1.37 & 0.09 & Agree Somewhat & Agree Somewhat & Agree Somewhat & Disagree Somewhat \\
+            B & -0.56 & 1.71  & Neither & Agree Somewhat & Disagree Somewhat & Agree Somewhat\\
+            C & 0.36 & 0.11  & Agree Somewhat & Agree Somewhat & Neither & Disagree Somewhat\\
+            D & 0.63 & 2.22 & Agree Somewhat & Strongly Agree & Neither & Agree Somewhat \\
+            E & 0.4 & 0.14 & Agree Somewhat & Agree Somewhat & Neither & Disagree Somewhat \\
+            \hline
+        \end{tabular}
+    \end{table}
+
+Table 1 shows the example data. The first column denote each respondents, the second and third columns show the latent potential outcomes $Y^{\ast}(0)$ and $Y^{\ast}(1)$, and the last four columns show observed potential outcomes generated by $g_{a}$ and $g_{b}$. Since we know both $Y^{\ast}(0)$ and $Y^{\ast}(1)$, we can calculate the ATE. 
+$$
+    \mathbb{E}\left[Y^\ast(1)\right] - \mathbb{E}\left[Y^\ast(0)\right] =  \frac{1.37 + (-0.56) + 0.36 + 0.63 + 0.4}{5} - \frac{0.09 + 1.71 + 0.11 + 2.22 + 0.14}{5} = 0.41
+$$ 
+
+Now suppose the data was generated based on $g_{a}$, and we put usual numeric values of 1 to 5 to each categories as in the Assumption 4. Then, the ATE based on this:
+$$
+    \frac{4 + 4 + 4 + 5 + 4}{5} - \frac{4 + 3 + 4 + 4 + 4}{5} = 0.4
+$$ 
+which is very close to the true ATE of $0.41$.
+
+However, what if the true $g$ is not $g_{a}$ but actually $g_{b}$? Then we would have observed $Y_{g_{b}}(0)$ and $Y_{g_{b}}(1)$ and the ATE calculation with the same numeric assignment of 1 to 5 as in Assumption 4:
+$$
+    \frac{4 + 2 + 3 + 3 + 3}{5} - \frac{2 + 4 + 2 + 4 + 2}{5} = -0.02
+$$ which is far off from the true ATE of $0.41$. 
+
+
+
+
+% However, the more serious problem of cardinalization approach is the interpretation of the estimates. For instance, means-difference and difference-in-differences are comparing numerical expectations of outcomes from different groups. However, if the observed outcomes are \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}, even though we have transformed them into numbers, what does the expectations of these responses, mean in terms of the latent variable $Y^{\ast}$? In a potential outcome framework, the relationship between $\mathbb{E}\left[l(Y(d)) \mid X \right]$ and $\mathbb{E}\left[Y^\ast(d) \mid X \right]$ is not clear. Furthermore, even if we safely put some meanings to the expectations, 
+
+% Under this setting, we can still identify the ATE like we did in Theorem 1, if we have good knowledge on the transformation function $g$. This is because if we know $g$, then we can easily recover the latent outcome $Y^{\ast}$ form the observed outcome $Y$, by using the inverse of $g$. 
+
+% \begin{theorem}{Identification of ATE when $g$ is known}
+%     When the transformation function $g$ is known, we can identify ATE by recovering the latent outcome based on $g$ and the observed outcome.
+%     $$
+%         \mathbb{E}\left[Y^\ast(1)\right] - \mathbb{E}\left[Y^\ast(0)\right] = \mathbb{E}\left[g^{-1}(Y(1))\right] - \mathbb{E}\left[g^{-1}(Y(0))\right]
+%     $$ 
+% \end{theorem}
+%
+
+
+The example above demonstrate that, in case we do not know $g$, the identification of ATE from the common cardinalization as in Equation (2) depends almost purely on luck. However, this does not mean that we should give up on causal inference in this setting as a whole. In fact, we can still identify the causal effect up to scale. If we know the distribution of the error term in Equation (1), $\varepsilon$. Let us denote the distribution of $\varepsilon$ as $F$. Using the threshold points $\alpha_{k}$, we can write ATE as:
+
+$$
+\begin{aligned}
+    \mathbb{E}\left[Y^{\ast}(0)\right] - \mathbb{E}\left[Y^{\ast}(1))\right] &= F^{-1}(\mathbb{P}\left(Y(1) \le j \right)) - F^{-1}(\mathbb{P}\left(Y(0) \le j \right)) \\
+    &=F^{-1} ( \mathbb{P}\left(Y^{\ast}(0) \le \alpha_j  \right) ) - F^{-1} ( \mathbb{P}\left( Y^{\ast}(1) \le  \alpha_j \right) ) \\
+    &=F^{-1} ( \mathbb{P}\left(\varepsilon +  f(X, \beta) \le \alpha_j  \right) ) - F^{-1} ( \mathbb{P}\left( \varepsilon +  f(X, \beta) +  \tau \le  \alpha_j \right) ) \\
+    &=F^{-1} ( \mathbb{P}\left( \varepsilon \le \alpha_j -  f(X, \beta) \right) ) - F^{-1} ( \mathbb{P}\left(\varepsilon \le \alpha_j -  f(X, \beta) - \tau \right) ) \\
+    &= \tau \\
+\end{aligned}
+$$ 
+
+We can easily see that this only identify $\tau$ up to scale by multiplying $Y^{\ast}$ and $\alpha_{k}$ by $c > 0$. This can be thought of as changing the transformation function $g$, and does not change the probability $\mathbb{P}\left(Y(d) \le j\right)$.
+
+$$
+\begin{aligned}
+    &F^{-1}(\mathbb{P}\left(Y(0) \le j \right)) - F^{-1}(\mathbb{P}\left(Y(1) \le j \right)) \\
+    &=F_{c}^{-1} ( \mathbb{P}\left(c\cdot \varepsilon \le c\cdot\alpha_j - c\cdot f(X, \beta) \right) ) - F_{c}^{-1} ( \mathbb{P}\left(c\cdot\varepsilon \le c\cdot\alpha_j - c\cdot f(X, \beta) - c\cdot \tau \right) ) \\
+    &= c\cdot\tau \\
+\end{aligned}
+$$ 
+
+Thus, we only can identify the size of the treatment effect relative to a positive constant $c$. Thankfully, all the coefficients should be scaled by the same constant for the equation to be hold. This means that the treatment effect can be identified proportion to another covariate. Let us denote such covariate as an \textit{anchor}, and further denote $\beta_{a}$ as a coefficient of the anchor. Then we can define the anchored latent treatment effect as:
 
 \begin{definition}{Anchored Latent Treatment Effect}
-    $\tau_{ALTE} = \tau_{0} / \beta_{a}$
+    $$
+        \tau_{ALTE} = \frac{c\cdot \tau}{c \cdot \beta_{a}} =  \frac{\tau}{\beta_{a}}
+    $$
 \end{definition}
-
-Since 
 
 \subsection{Estimation}
 
-Regarding the setting, there have been three common approaches in political science: 1) ignore the ordinal nature and regard it as cardinal value 2) IRT based approaches, and 3) ordered regression.
+To estimate the ALTE, two common approaches can be taken: 1) IRT based approaches and 2) ordered regression.
 
-The first approach assigns numerical values to ordinal outcome $Y$. The assumption here is that the numerical labels would be a proper representation of the inverse of the unobserved reporting function, $g^{-1}$. Let us denote this cardinalization scheme as $l$
 
-\begin{assumption}{Proper Cardinalization}
-    Researchers can properly assign numerical values to the ordinal outcome $Y$ which can then approximate the inverse of the reporting function. $l \sim g^{-1}$
-\end{assumption}
-
-This enables researcher to use usual causal inference tools such as means-difference, least squares, and difference-in-differences, because now the numerical values are assumed to capture the latent variable $Y^{\ast}$. One critical downside for this approach comes from the fact that the numerical labels are arbitrary, and theoretically any labels should work if they preserve the order. In some problems, researchers may find some numerical labels that can is believed to be the true values on the latent space, but in many cases it is hard to justify one labels to the other. For example, labeling \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree} as $\{1, 2, 3, 4, 5\}$ is no more reasonable than labeling them as $\{-1, 3, 15, 50, 100\}$. Thus, the size of the difference between expectations are hardly interpretable, since they depend on the labeling scheme. For example, in case of 5 point Likert scale, if we assign $\{2, 4, 6, 8, 10\}$, instead of $\{1, 2, 3, 4, 5\}$, the size of the difference will be doubled. This may significantly misleading, since the estimates we have only have very loose link with the treatment effects, and may over- or under-estimate them. Even worse, as discussed in \citet{Bond2018a} and \citet{Schroder2017a}, in most cases, there exists at least one labeling scheme that can flip the sign of the estimated causal effect. \citet{Bloem2022a} partly deals with this problem by providing a sensitivity test and a partial identification method based on the test. 
-
-% However, the more serious problem of cardinalization approach is the interpretation of the estimates. For instance, means-difference and difference-in-differences are comparing numerical expectations of outcomes from different groups. However, if the observed outcomes are \textit{strongly disagree, disagree, neither agree nor disagree, agree, strongly agree}, even though we have transformed them into numbers, what does the expectations of these responses, mean in terms of the latent variable $Y^{\ast}$? In a potential outcome framework, the relationship between $\mathbb{E}\left[l(Y(d)) \mid X \right]$ and $\mathbb{E}\left[Y^\ast(d) \mid X \right]$ is not clear. Furthermore, even if we safely put some meanings to the expectations, 
 
 Another approach in estimating causal effect with ordinal variable is through IRT. IRT based Two-step approach first estimate the latent variable using the serious of items that were designed to measure the same concept in different angles. In the context of the model setting above, using multiple $Y$, IRT estimates the $Y^{\ast}$. After we get the estimate for the latent variable $Y^{\ast}$, then we can employ the usual causal inference tools to identify $\tau$ up to scale since it is now have numerical meanings. The second variant of IRT based approach, the hierarchical IRT is recent discussed in \citet{Stoetzer2025a}. Instead of estimating the latent variable in the first step, they effectively merge the two steps in to EM algorithm, and produces more consistent estimates of the causal effects. Since IRT based methods do not put any numerical meaning to the ordinal outcomes themselves, the estimates from the methods can be interpreted as the target causal effect up to scale. One downside of the approach is that it is advised to have at least 3 different items for IRT to work properly, but most of the political science research rely on 1 or 2 items in measuring their outcomes. Therefore, when researcher is focusing on the treatment effect on specific dimension such as opinion on gender inequality or immigrant issue, where outcomes are not usually measured with multiple items, IRT might not be a good choice.
 
 The third approach is using ordinal regression, and by far the most common methods are ordered logit and probit regressions. Similar to the IRT based methods, both ordered logit and probit utilize the ordered nature of the outcomes measured in ordinal scales, and designed to identify the actual target causal effect in unobserved, latent space up to scale. However, these models require strong distributional assumptions on the error term in the latent space, $\varepsilon$.
 
-\begin{assumption}{Distributional Assumption on Error Term}
-     The error term, $\varepsilon$ follows certain distribution. For example, ordered logit model assumes standard logistic distribution and ordered probit model assumes standard normal. 
+\begin{assumption}{Distributional Assumption for Ordered Logit Model and Ordered Probit Model}
+
+    The error term, $\varepsilon$ follows standard logistic distribution (ordered logit model) or standard normal distribution (ordered probit model). 
 \end{assumption}
 
 While these assumptions facilitate fast and efficient estimation through maximum likelihood, when the distributional assumptions fail, the estimates are statistically inconsistent and biased. 
@@ -162,21 +249,21 @@ Let $i$ be the index for $i$th data. To construct likelihood function, the proba
 $$
 \begin{aligned}
     \mathbb{P}\left(Y = j \mid X_{i}\right) &= \mathbb{P}\left(Y^\ast \le \alpha_j\right) - \mathbb{P}\left(Y^\ast > \alpha_{j-1}\right) \\
-    &=\mathbb{P}\left(\varepsilon \le \alpha_j - (X_{i}^{T}\beta + D_{i}^{T}\tau) \right) - \mathbb{P}\left(\varepsilon > \alpha_{j-1} - (X_{i}^{T}\beta + D_{i}^{T}\tau) \right)\\
-    &= F(\alpha_{j} - (X_{i}^{T}\beta + D_{i}^{T}\tau) ) - F(\alpha_{j-1} - (X_{i}^{T}\beta + D_{i}^{T}\tau))
+    &=\mathbb{P}\left(\varepsilon \le \alpha_j - (f(X_{i}, \beta) + D_{i}^{T}\tau) \right) - \mathbb{P}\left(\varepsilon > \alpha_{j-1} - (f(X_{i}, \beta) + D_{i}^{T}\tau) \right)\\
+    &= F(\alpha_{j} - (f(X_{i}, \beta) + D_{i}^{T}\tau) ) - F(\alpha_{j-1} - (f(X_{i}, \beta) + D_{i}^{T}\tau))
 \end{aligned}
 $$
 , where $F(\cdot)$ is a unknown but assumed distributional function (CDF). 
 
 Based on this, the parameters can be easily estimated with maximum likelihood.
 $$
-    (\beta, \tau) = \arg\max_{\beta, \tau} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( F(\alpha_{j} - (X_{i}^{T}\beta + D_{i}^{T}\tau)) - F(\alpha_{j-1} - (X_{i}^{T}\beta + D_{i}^{T}\tau)) \right) \right]
+    (\beta, \tau) = \arg\max_{\beta, \tau} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( F(\alpha_{j} - (f(X_{i}, \beta) + D_{i}^{T}\tau)) - F(\alpha_{j-1} - (f(X_{i}, \beta) + D_{i}^{T}\tau)) \right) \right]
 $$ 
 
 To solve this MLE, standard ordered logit and probit models put assumption on $F(\cdot)$. For example, Ordered Probit model assume that the error term ($\varepsilon$) follows the standard normal distribution. Let $\Phi(\cdot)$ denote the standard normal distribution function. Then the MLE becomes:
 
 $$
-    (\beta, \tau) = \arg\max_{\beta, \tau} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( \Phi(\alpha_{j} - (X_{i}^{T}\beta + D_{i}^{T}\tau)) - \Phi(\alpha_{j-1} - (X_{i}^{T}\beta + D_{i}^{T}\tau)) \right) \right]
+    (\beta, \tau) = \arg\max_{\beta, \tau} \mathbb{E}\left[\frac{1}{n} \sum_{i=1}^{n} \log \left( \Phi(\alpha_{j} - (f(X_{i}, \beta) + D_{i}^{T}\tau)) - \Phi(\alpha_{j-1} - (f(X_{i}, \beta) + D_{i}^{T}\tau)) \right) \right]
 $$ 
 
 However, it is not guaranteed that the distributional assumption that $F(\cdot) = \Phi(\cdot)$, and if they are different, the estimators from ordered probit model are to be biased and inconsistent, because it will converge to some value $(\tilde{\beta}, \tilde{\alpha}) \neq (\beta, \alpha)$ and increase in sample size does not make the two distributions closer, and therefore the estimators from two MLE will not converge to the true values \citep{Manski1988a, Greene2010a, Bond2018a}. Considering ordered logit model, logistic distribution is assumed and exactly same logic will lead to the biased and inconsistent estimation of parameters. The size and direction of the bias depend on the difference between $F(\cdot)$ and the assumed distribution, but in recent empirical works, right (positively) skewed error distributions would generally attenuate the size of the $\beta$ estimations \citep{Johnston2020a, Smits2020a}. Theoretically, the estimates from a misspecified model may have opposite sign to the true treatment effect, leading researchers toward substantially different inferences \citep{Manski1988a, Greene2010a}. This issue even harder to detect because ordered logit and ordered probit models often produce similar results. 
@@ -240,9 +327,9 @@ Instead of assuming the distribution of the error term, \citet{Klein2002a} sugge
 
 Let us denote the true log-likelihood as $Q$. If we can estimate $Q$ consistently, then maximum likelihood would guarantee us consistent estimation of $\tau$. Define the quasi-log-likelihood function $\hat{Q}$ as following:
 \begin{equation}
-    \frac{1}{n} \sum_{i = 1}^{n} \hat{m}(X_{i}) \sum_{j = 0}^{J} 1_{\{ Y = j \}} \log \left[ \hat{\mathbb{P}}\left(Y \le j \mid X_{i}, \beta, D_{i}, \tau \right) - \hat{\mathbb{P}}\left( Y \le j-1 \mid X_{i}, \beta, D_{i}, \tau)\right) \right]
+    \frac{1}{n} \sum_{i = 1}^{n} \hat{m}(X_{i}) \sum_{j = 0}^{J} 1_{\{ Y = j \}} \log \left[ \hat{p}\left(Y \le j \mid X_{i}, \beta, D_{i}, \tau \right) - \hat{p}\left( Y \le j-1 \mid X_{i}, \beta, D_{i}, \tau)\right) \right]
 \end{equation}
-where $\hat{\mathbb{P}}_{-1} = 0$, $\hat{\mathbb{P}}_{J+1} = 1$, $\hat{\mathbb{P}}$ is a kernel regression estimator of the CDF of the error term, and the trimming function $\hat{m}$ is to rule out the extreme data points where kernel regressor may not work poorly. The only part that needs estimation in $\hat{Q}$ is $\hat{\mathbb{P}}$, so we now focus on estimation of it.
+where $\hat{p}_{-1} = 0$, $\hat{p}_{J+1} = 1$, $\hat{p}$ is a kernel regression estimator of the CDF of the error term, and the trimming function $\hat{m}$ is to rule out the extreme data points where kernel regressor may not work poorly. The only part that needs estimation in $\hat{Q}$ is $\hat{p}$, so we now focus on estimation of it.
 
 For notational ease, let's denote $f(X, \beta) + D^{T}\tau$ as $V$. By the Bayes' rule, $\mathbb{P}\left(Y \le j \mid V) \right)$ can be expressed as:
 $$
@@ -252,7 +339,7 @@ $$, where $g_{0}(\cdot)$ and $g_{0}(\cdot)$ denote conditional density of $V$ gi
 
 While both $\mathbb{P}\left(Y \le j\right)$ and $\mathbb{P}\left(Y > j\right)$ can be approximated as a sample probability, we suggest to utilize kernel density estimation (KDE) in estimating $g_{1}(\cdot)$ and $g_{0}(\cdot)$. KDE is a non-parametric method to estimate the probability density function of a random variable based on selected kernel and bandwidth. Bandwidth selection is an important step in KDE, because both estimation quality and convergence rate are depend on bandwidth. In this paper, slightly modified version of the local smoothing bandwidth developed by \citet{Abramson1982a} and \citet{Silverman1986a} is used. As an overview, this bandwidth selection method calculates weights for each data points based on pilot KDE and the final KDE bandwidth are derived based on the weights. This process helps reducing bias in estimation. 
 
-All suggestions on the pilot bandwidth, weights function parameters, and final bandwidth are to guarantee the consistency of the $\hat{Q}$. To be more specific, $\hat{\mathbb{P}}$ should converge to the true $\mathbb{P}$ fast enough to ensure the performance in small sample, but also must not go too fast that the derivatives of it vanishes. If $\hat{P}$ converges too fast, then the derivatives may not exist which make it harder to establish the consistency of the $\hat{Q}$ based on maximum likelihood.
+All suggestions on the pilot bandwidth, weights function parameters, and final bandwidth are to guarantee the consistency of the $\hat{Q}$. To be more specific, $\hat{p}$ should converge to the true $\mathbb{P}$ fast enough to ensure the performance in small sample, but also must not go too fast that the derivatives of it vanishes. If $\hat{P}$ converges too fast, then the derivatives may not exist which make it harder to establish the consistency of the $\hat{Q}$ based on maximum likelihood.
 
 The estimation of $g_{1}(\cdot)$ starts with pilot density estimation. Let $\hat{\sigma}_{1}$ be the sample standard deviation of the $V \cdot 1_{\{ Y_{k} \le j \}}$ and $n_{1} = \sum_{k} 1_{\{ Y_{k} \le j \}}$. Fix $\delta \in (0, \frac{1}{3})$, and define a pilot bandwidth $h_{p} = n^{-\gamma}$, where $\frac{1}{10} < \gamma < \frac{1}{3(3 + \delta)}$. Then the pilot KDE of $g_{1}(\cdot)$ to be:
 
@@ -282,12 +369,12 @@ $$
 Choose $ \alpha \in (\frac{3 + \delta}{20}, \frac{1}{6})$. Let $ h_{f} = n^{-\alpha}$, the base final bandwidth. Note that this base final bandwidth is designed to be smaller than the pilot bandwidth, since while capturing the whole data points is more important in pilot estimation, the final bandwidth should be small enough to capture more subtle details. Now calculate $\hat{g}_{1}(\cdot)$ based on above values:
 
 $$
-    \hat{g}_{1}(\cdot) = \frac{1}{n_{1}} \sum_{k} 1_{\{ Y_{k} \le j \}} \cdot K \left( \frac{(X_{i}^T\beta + D_{i}^T \tau) - f(X_{k} - \beta)}{\hat{w}_{1i} \cdot h_{f} }\right) \cdot \frac{1}{\hat{w}_{1i} \cdot h_{f} } 
+    \hat{g}_{1}(\cdot) = \frac{1}{n_{1}} \sum_{k} 1_{\{ Y_{k} \le j \}} \cdot K \left( \frac{V_{i} - V_{k}}{\hat{w}_{1i} \cdot h_{f} }\right) \cdot \frac{1}{\hat{w}_{1i} \cdot h_{f} } 
 $$ 
 
 $\hat{g}(\cdot)$ can be defined analogously, replacing $Y_k \leq j$ with $Y_k > j$. Note again that the final kernel estimation of $g_{1}(\cdot)$ is depend on the subsample of $V$ where $Y \le j$.
 
-Even if we used local smoothing technique in estimation of the $\hat{\mathbb{P}}$, there is still a concern that the some edge cases of $V$ may drag the estimation. In this situation trimming out some extreme data points can be a solution. Trimming function $\hat{m}$ does this by trimming out the data points whose absolute value are not within the range of $q$th quantile of $|X_{i}|$. 
+Even if we used local smoothing technique in estimation of the $\hat{p}$, there is still a concern that the some edge cases of $V$ may drag the estimation. In this situation trimming out some extreme data points can be a solution. Trimming function $\hat{m}$ does this by trimming out the data points whose absolute value are not within the range of $q$th quantile of $|X_{i}|$. 
 $$
     \hat{m}(X_{i}) = 1_{\{ |X_{i}| < q\text{th quantile of } |X| \}}
 $$ 
