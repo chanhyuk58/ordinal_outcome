@@ -64,7 +64,8 @@ def simulate_data(n=1000, seed=2025):
     beta_true = np.array([0.1, 0.2])
     # X can be binary or continuous: choose binary if requested
     # For the example we'll simulate binary X
-    X = np.random.binomial(1, 0.5, size=(n, 2)).astype(float)
+    # X = np.random.binomial(1, 0.5, size=(n, 2)).astype(float)
+    X = np.random.normal(size=(n,2))
     eps = logistic.rvs(size=n)  # logistic(0,1) true error
     y_star = X.dot(beta_true) + eps
     # thresholds
@@ -203,8 +204,30 @@ def observed_loglik(flow, beta_vec, mu_param, X_tensor, Y_tensor):
         cdf_low = torch_normal_cdf(z_low)
         cdf_high = torch_normal_cdf(z_high)
         p = torch.clamp(cdf_high - cdf_low, min=1e-12)
-        ll += torch.log(p)
+        ll = ll + torch.log(p)
     return ll.item()
+
+# def observed_loglik(flow, beta_vec, alphas, X_tensor, Y_tensor):
+#     """
+#     Compute observed-data log-likelihood sum_i log( F(alphas_j - V_i) - F(alphas_{j-1} - V_i) )
+#     where F(u) = Phi( T^{-1}(u) ).
+#     """
+#     with torch.no_grad():
+#         V = X_tensor.matmul(beta_vec)  # (n,)
+#         loglik_sum = 0.0
+#         for i in range(X_tensor.shape[0]):
+#             j = int(Y_tensor[i].item())
+#             u_low = torch.tensor(alphas[j-1], dtype=torch.float32, device=device) - V[i]
+#             u_high = torch.tensor(alphas[j], dtype=torch.float32, device=device) - V[i]
+#             # map to z-space via inverse transform: z = T^{-1}(u)
+#             z_low, _ = flow._transform.inverse(u_low.view(1,1))
+#             z_high, _ = flow._transform.inverse(u_high.view(1,1))
+#             # compute Phi(z_high) - Phi(z_low)
+#             cdf_high = 0.5 * (1.0 + torch.erf(z_high / torch.sqrt(torch.tensor(2.0, device=device))))
+#             cdf_low  = 0.5 * (1.0 + torch.erf(z_low / torch.sqrt(torch.tensor(2.0, device=device))))
+#             p = torch.clamp(cdf_high - cdf_low, min=1e-12)
+#             loglik_sum += torch.log(p)
+#     return loglik_sum.item()
 
 # -----------------------------
 # MC-EM alternating algorithm
@@ -255,7 +278,6 @@ def run_mc_em(
     history = {'loglik': [], 'beta': [], 'mu': []}
 
     for it in range(n_iterations):
-        t0 = time.time()
         if verbose: print(f"\n--- MC-EM iteration {it+1}/{n_iterations} ---")
 
         # ---------- E-step: sample surrogate residuals ----------
@@ -263,6 +285,7 @@ def run_mc_em(
         mu_full = torch.cat([torch.tensor([-1e6], device=device), mu_param, torch.tensor([1e6], device=device)])
 
         for i in range(n):
+            t0 = time.time()
             j = int(Y[i])
             V_i = (X_tensor[i] @ beta_vec).unsqueeze(0)
             u_low = mu_full[j-1] - V_i
@@ -351,13 +374,13 @@ def run_mc_em(
         flow.eval()
         obs_ll = observed_loglik(flow, beta_vec, mu_param, X_tensor, Y_tensor)
         history['loglik'].append(obs_ll)
-        history['beta'].append(beta_vec.cpu().numpy().copy())
+        history['beta'].append(beta_vec.detach().cpu().numpy().copy())
         history['mu'].append(mu_param.detach().cpu().numpy().copy())
 
         if verbose:
-            print(f"Iteration {it+1} done in {time.time()-t0:.2f}s, observed loglik = {obs_ll:.4f}")
+            print(f"Iteration {it+1} done in {time.time()-t0:.2f}s, observed loglik = {obs_ll:.4f}, beta = {beta_vec.detach().cpu().numpy()}")
 
-    return beta_vec.cpu().numpy(), mu_param.detach().cpu().numpy(), flow, history
+    return beta_vec.detach().cpu().numpy(), mu_param.detach().cpu().numpy(), flow, history
 
 
 # -----------------------------
@@ -383,6 +406,7 @@ if __name__ == "__main__":
             mu_init = np.append(mu_init, [-np.inf, np.inf])
             mu_init = np.sort(mu_init)
             print("Ordered-probit warm start beta_init:", beta_init)
+            print("Ordered-probit warm start mu_init:", mu_init)
         except Exception as e:
             print("OrderedModel warm start failed:", e)
             beta_init = np.zeros(X.shape[1], dtype=float)
@@ -407,10 +431,10 @@ if __name__ == "__main__":
         X, Y, flow,
         beta_init=beta_init,
         mu_init=mu_init,
-        m_draws=8,
-        flow_steps=40,   # small for demo; increase 200+ in practice
+        m_draws=10,
+        flow_steps=20,   # small for demo; increase 200+ in practice
         flow_lr=1e-3,
-        index_steps=80,
+        index_steps=30,
         index_lr=5e-3,
         n_iterations=6,
         normalize_index=True,
@@ -432,4 +456,4 @@ if __name__ == "__main__":
     plt.plot(xs_np, logistic.pdf(xs_np), '--', label="True logistic")
     plt.title("Estimated error density (flow) vs true logistic")
     plt.legend()
-    plt.show()
+    plt.savefig("flow.pdf")
