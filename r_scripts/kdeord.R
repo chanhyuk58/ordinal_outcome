@@ -1,10 +1,5 @@
 # Required Libraries
-library("MASS")  # For multivariate normal data generation
-# library("sn")
-# library("np")    # For Non-parametric KDE
 library("data.table")
-# library("sure")
-# library("texreg")
 library("txtplot")
 
 # -------------------------------
@@ -251,19 +246,6 @@ ks_estimator <- function(formula, data, B=100) {
 #     V_hat <- X %*% beta
 #
 #     for (j in 1:(J-1)) {
-#       # g_hdrcde <- (hdrcde::cde(y=V_hat, x=as.numeric(Y <= j), rescale=FALSE,
-#       # x.margin=c(0, 1), y.margin=V_hat, x.nmae="Y <= j", y.name="V_hat"))
-#       # g0 <- g_hdrcde$z[1, match(V_hat, g_hdrcde$y)]
-#       # g1 <- g_hdrcde$z[2, match(V_hat, g_hdrcde$y)]
-#       # txtplot(V_hat, g1)
-#
-#       # g1 <- lpdensity::lpdensity(data=V_hat[Y <= j], grid=V_hat)
-#       # head(g1$Estimate)
-#       # txtplot(g1$Estimate[, 1], g1$Estimate[, 5])
-#       # g1$BW[, 2]
-#       # $Estimate[, 5]
-#       # g0 <- lpdensity::lpdensity(data=V_hat[Y > j], grid=V_hat, bwselect = "mse-dpi", kernel="epanechnikov")$Estimate[, 5]
-#       # # plot(g1)
 #       g1 <- np::npudens(tdat=V_hat[Y <= j], edat=V_hat)$dens
 #       g0 <- np::npudens(tdat=V_hat[Y > j], edat=V_hat)$dens
 #       # txtplot(as.vector(g1$eval$frame), g1$dens)
@@ -359,21 +341,6 @@ simul <- function(n, pop) {
   formula2 <- (y_ord) ~ x1 + T
   formula3 <- y_ord2 ~ x1 + T
   
-
-  # # Ordered logit
-  # fit_logit <- MASS::polr(formula, data=sample_data, method = "logistic", Hess=T)
-  # beta_hat_logit <- coef(summary(fit_logit))[1:(xdim + 1), 1]
-  # # beta_hat_logit / beta_hat_logit[1]
-  # beta_hat_se_logit <- coef(summary(fit_logit))[1:(xdim + 1), 2]
-  # print("ologit done")
-  #
-  # # Ordered probit
-  # fit_probit <- MASS::polr(formula, data=sample_data, method = "probit", Hess=T)
-  # beta_hat_probit <- coef(summary(fit_probit))[1:(xdim + 1), 1]
-  # # beta_hat_probit / beta_hat_probit[1]
-  # beta_hat_se_probit <- coef(summary(fit_probit))[1:(xdim + 1), 2]
-  # print("oprobit done")
-  #
   # # OLS 1 2 3
   # fit_ols1 <- lm(formula2, data=sample_data)
   # beta_hat_ols1 <- coef(summary(fit_ols1))[(2:(xdim + 2)), 1]
@@ -480,3 +447,5 @@ for (n in ns) {
     }
 }
 # }}}
+out <- fread(fname)
+print(out[order(as.character(models), par), lapply(.(XT/X1, XT_se), mean), ,by=.(as.character(models), n, par, dist)])

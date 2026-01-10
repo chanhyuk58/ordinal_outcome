@@ -7,7 +7,7 @@
 \usepackage{tikz}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Title & Author %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \title{Causal Inference with Ordinal Outcomes}
-\subtitle{A Semiparametric Approach}
+\subtitle{Density Estimation Based Approach}
 \author{Chanhyuk Park}
 \institute{Washington University in St. Louis}
 \date{}
@@ -18,37 +18,50 @@
 
 \begin{frame}{Motivation}
     \begin{itemize}
-        \item There has been growing emphasis on causal identification in political science
-        \item In the mean time, many research measures their outcome with ordinal scales
+        \item Growing emphasis on causal identification in political science
+        \item Outcomes are measured in Ordinal scale 
             \begin{itemize}
                 \item Approval ratings {\tiny\citep{Canes-Wrone2002a, Kriner2009a}}
                 \item Trade policy {\tiny\citep{Scheve2001r, Mayda2005a, Wu2022a}}
             \end{itemize}
         \item The Problem: 
             \begin{itemize}
-                \item[a] The usual causal inference tools are designed to serve cardinal or at least interval outcomes
-                \item[b] Standard ordinal regression based on strong distributional assumption
+                \item The usual causal inference tools are designed to serve cardinal or at least interval outcomes
             \end{itemize}
-        \item This paper to suggest an alternative estimand and estimation process
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{The Goal}
+    \begin{itemize}
+        \item Treatment effect can only be identified up to scale
+            \begin{itemize}[<+->]
+                \item ATE resides in the unknown latent space
+                \item Consistent normalization may help comparison and interpretation
+            \end{itemize}
+        \item Flexible density estimation based estimators
+            \begin{itemize}[<+->]
+                \item Standard parametric approaches rely on strong distributional assumptions, inconsistent
+                \item Density estimation techniques can help
+            \end{itemize}
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Problem Setting}
-    \begin{itemize}
+    \begin{itemize}[<+->]
         \item Suppose a DGP 
             $$
-                Y^{\ast} = \tau D + \beta X + \epsilon
+            Y_i^\ast = f(X_i,\beta) + D_i^\top\tau + \varepsilon_i,
             $$
-        \item $Y^{\ast}$ is outcome in unidimensional space that we cannot observe
-        \item $D$ denotes a binary treatment
-        \item We only can observe the transformed version of it, $Y \in \{1, \ldots, j, \ldots, J \}$
+        \item $Y_{i}^{\ast}$ is outcome in unidimensional space that we cannot observe
+        \item $D_{i}$ denotes a binary treatment
+        \item We only can observe the transformed version of it, $Y_{i} \in \{1, \ldots, j, \ldots, J \}$
             $$
-                Y = \begin{cases}
-                    0 & \text{if } \alpha_{-1} < Y^{\ast} \le \alpha_{0} \\
+                Y_{i} = \begin{cases}
+                    0 & \text{if } \alpha_{-1} < Y_{i}^{\ast} \le \alpha_{0} \\
                     \vdots & \vdots  \\
-                    J & \text{if } \alpha_{J-1} < Y^{\ast} \le \alpha_{J} \\
+                    J & \text{if } \alpha_{J-1} < Y_{i}^{\ast} \le \alpha_{J} \\
                 \end{cases}
-            $$, where $\alpha_{k}$ denotes the threshold points for each ordinal category 
+            $$, where $\alpha_{j}$ denotes the threshold points for each ordinal category 
     \end{itemize}
 \end{frame}
 
@@ -76,12 +89,12 @@
 \end{frame}
 
 \begin{frame}{Potential Outcome Framework}
-    \begin{itemize}
-        \item Denote the binary treatment status of individual $d_{i} \in \{0, 1\}$
-        \item Denote the potential outcomes in latent preference scale as $Y_{i}^{\ast}(d_{i})$
+    \begin{itemize}[<+->]
+        \item Denote the binary treatment status of individual $D_{i} \in \{0, 1\}$
+        \item Denote the potential outcomes in latent preference scale as $Y_{i}^{\ast}(D_{i})$
             \begin{itemize}
-                \item $Y_{i}^{\ast}(1) = \tau + \beta X_{i} + \epsilon_{i}$
-                \item $Y_{i}^{\ast}(0) = \beta X_{i} + \epsilon_{i}$
+                \item $Y_{i}^{\ast}(1) = \tau + f(\beta, X_{i}) + \epsilon_{i}$
+                \item $Y_{i}^{\ast}(0) = f(\beta, X_{i}) + \epsilon_{i}$
             \end{itemize}
         \item Denote the potential outcomes in observed ordinal scale (POO) as $Y_{i}(d_{i}) = g(Y_{i}^{\ast}(d_{i})) \in \{1, \ldots, j,\ldots J\}$
         \item We are interested in the average treatment effect in the latent space (LTE)
@@ -94,28 +107,28 @@
     \end{itemize}
 \end{frame}
 
-\begin{frame}{LTE with $Y(d_{i})$}
+\begin{frame}{LTE with $Y_{i}(D_{i})$}
 \begin{itemize}
-    \item If we knew $Y^{\ast}$, there is not problem
-    \item If we knew $g$ and it maps one value of $Y^{\ast}$ to $Y$, then we may get LTE, but this not true in most settings
+    \item If $Y_{i}^{\ast}$ is known, there is not problem
+    \item If $g$ is known and it maps one value of $Y_{i}^{\ast}$ to $Y_{i}$, then we may get LTE, but this not true in most settings
         $$
             \mathbb{E}\left[g^{-1}(Y_{i}(1))\right] - \mathbb{E}\left[g^{-1}(Y_{i}(0))\right] \neq LTE
         $$ 
-    \item Instead, we may identify it up to scale
+    \item Should we give up?
 \end{itemize}
 \end{frame}
 
-\begin{frame}{ALTE}
-    \begin{itemize}
-        \item We can identify the LTE up to scale of a constant if we know or can estimate the distribution of the $\epsilon_{i}$
-        \item Suppose the error term has a cdf of $F$
-        \item From the model,
+\begin{frame}{Up To Scale Identification}
+    \begin{itemize}[<+->]
+        \item We can identify LTE up to scale (Theorem 1)
+        \item From the model and data we know:
             $$
             \begin{aligned}
                 \mathbb{P}\left(Y(D) \le j\right) &= \mathbb{P}\left(Y^{\ast} \le \alpha_j \right) \\
             \end{aligned}
             $$  
-        \item However, if we scale $Y^{\ast}$ side by a constant, $c$, we still get the same probability
+        \item We can construct MLE with using this probability.
+        \item However, if we scale $Y^{\ast}$ side by a constant, $c > 0$, we still get the same probability
             $$
             \begin{aligned}
                 \mathbb{P}\left(Y(D) \le j\right) &= \mathbb{P}\left(Y^{\ast} \le \alpha_j \right) \\
@@ -125,301 +138,242 @@
     \end{itemize}
 \end{frame}
 
-\begin{frame}{ALTE}
-    \begin{itemize}
-        \item Taking account the constant $c$, we can get
-            $$
-            \begin{aligned}
-                F^{-1} ( \mathbb{P}\left( Y (0) & \le j \right) )) - F^{-1} \left( \mathbb{P}\left( Y(1) \le j\right) \right) \\ 
-                &= F^{-1}\left( \mathbb{P}\left(c Y^{\ast}(0) \le c\alpha_j\right) \right) - F^{-1} (\mathbb{P}\left(c Y^{\ast}(1) \le c \alpha_{j}\right)) \\
-                &= F^{-1}\left( F(c \alpha_j - c \beta X) \right) - F^{-1}_{c \epsilon} (F(c\alpha_{j} - c\beta X - c\tau)\right)) \\
-                &= c\tau \\
-            \end{aligned}
-            $$ 
-        \item Good news is similarly we can identify $\beta$ up to the same constant scale too
-        \item This enable us to identify LTE anchored on $\beta$ (ALTE)
-            $$
-                ALTE = \frac{\tau}{\beta}
-            $$ 
-
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Common Approach}
-    \begin{itemize}
-        \item Cardinalization of the ordinal outcome
-        \item Ordered Logit and Probit
+\begin{frame}{Normalization}
+    \begin{itemize}[<+->]
+        \item Up to scale identification is disappointing
+        \item Proper normalization helps interpretation and comparison across models and across samples
+        \item Fixing $Var(\varepsilon_{i}) = 1$ is one way
+        \item This works as mapping $Y_{i}^{\ast}$ to the space where the variance of the error is a unit / probit space
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Cardinalization}
+\begin{frame}{Common Transformation: Cardinalization and Binarization}
     \begin{itemize}
-        \item Assume that each responses came from certain numeric value
-        \item In other words, the transformation function $g$ will look just like:
-            $g = \begin{cases}
-                \text{Strongly Diagree} &\quad \text{if } Y^{\ast} = 1\\
-                \text{Disagree Somewhat} &\quad \text{if } Y^{\ast} = 2\\
-                \text{Neither} &\quad \text{if } Y^{\ast} = 3\\
-                \text{Agree Somewhat} &\quad \text{if } Y^{\ast} = 4\\
-                \text{Strongly Agree} &\quad \text{if } Y^{\ast} = 5\\
-            \end{cases}$
-        \item If this is true, we can calculate the average treatment effect by taking the inverse of $g$.
-            $$
-            \begin{aligned}
-                LTE &= \mathbb{E}\left[g^{-1}(Y(1))\right] - \mathbb{E}\left[g^{-1}(Y(0))\right]\\
-                &= \mathbb{E}\left[Y^{\ast}(1)\right] - \mathbb{E}\left[Y^\ast(0)\right]
-            \end{aligned}
-            $$ 
-        \item The problem is, the assumption is unlikely and arbitrary
+        \item Cardinalization
+            \begin{itemize}
+                \item Relies on luck
+            \end{itemize}
+        \item Binarization
+            \begin{itemize}
+                \item Lose significant efficiency
+                \item Estimate may be sensitive to how you group the ordinal outcomes
+            \end{itemize}
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Small Example}
     \begin{table}[ht]
         \centering
-        \begin{tabular}{rllll}
+        \begin{tabular}{c|cc}
             \hline
-            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y(0)$ & $Y(1)$ \\
+             & $Y_i^\ast(0)$ & $Y_i^\ast(1)$ \\
             \hline
-            A & 1.37 & 0.09 & Agree Somewhat & Disagree Somewhat \\
-            B & -0.56 & 1.71 & Disagree Somewhat & Agree Somewhat \\
-            C & 0.36 & 0.11 & Neither & Disagree Somewhat \\
-            D & 0.63 & 2.22 & Neither & Agree Somewhat \\
-            E & 0.4 & 0.14 & Neither & Disagree Somewhat \\
+            A &  1.37 & 0.09 \\
+            B & -0.56 & 1.71 \\
+            C &  0.36 & 0.11 \\
+            D &  0.63 & 2.22 \\
+            E &  0.40 & 0.14 \\
             \hline
         \end{tabular}
+        \label{tab:latent_example}
     \end{table}
     \begin{itemize}
         \item The LTE in the latent preference space is: $0.41$
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Small Example}
+\begin{frame}{Small Example -- Cardinalization}
     \begin{itemize}
-        \item Average Joe may assign 1 to 5 to each responses
+        \item Suppose two transformation functions: $g_{a}$ and $g_{b}$
+        \item Both are monotone, but with different thresholds ($\alpha_{j}$)
     \end{itemize}
     \begin{table}[ht]
         \centering
-        \begin{tabular}{rllll}
+        \begin{tabular}{c|cc|cc}
             \hline
-            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{Joe}(0)$ & $Y_{Joe}(1)$ \\
+            & \multicolumn{2}{c|}{$g_a$} & \multicolumn{2}{c}{$g_b$} \\
+            & $Y_{i,g_a}(0)$ & $Y_{i,g_a}(1)$ & $Y_{i,g_b}(0)$ & $Y_{i,g_b}(1)$ \\
             \hline
-            A & 1.37 & 0.09 & 4 & 2 \\
-            B & -0.56 & 1.71 & 2 & 4 \\
-            C & 0.36 & 0.11 & 3 & 2 \\
-            D & 0.63 & 2.22 & 3 & 4 \\
-            E & 0.4 & 0.14 & 3 & 2 \\
+            A & Agree          & Agree          & Agree          & Disagree \\
+            B & Neither        & Agree          & Disagree       & Agree    \\
+            C & Agree          & Agree          & Neither        & Disagree \\
+            D & Agree          & Strongly Agree & Neither        & Agree    \\
+            E & Agree          & Agree          & Neither        & Disagree \\
             \hline
         \end{tabular}
+        \label{tab:g_example}
     \end{table}
+\end{frame}
+
+\begin{frame}{Small Example -- Cardinalization}
     \begin{itemize}
-        \item The LTE based on the Joe's cardinalization: $-0.2 \neq 0.41$
+        \item A researcher impose common cardinalization of 1 to 5,
+        \item In case the true transformation is $g_{a}$, the estimate is $-0.4$
+        \item In case the true transformation is $g_{b}$, the estimate is $0.2$
+        \item Without compelling reason to impose such numeric labels, cardinalization relies on pure luck
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Small Example}
+\begin{frame}{Estimation}
     \begin{itemize}
-        \item Bold Soyeon comes in and argue that it should be -5, -2, 0, 8, 10 to each responses
-    \end{itemize}
-    \begin{table}[ht]
-        \centering
-        \begin{tabular}{rllll}
-            \hline
-            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{Soyeon}(0)$ & $Y_{Soyeon}(1)$ \\
-            \hline
-            1 & 1.37 & 0.09 & 8 & -2 \\
-            2 & -0.56 & 1.71 & -2 & 8 \\
-            3 & 0.36 & 0.11 & 0 & -2 \\
-            4 & 0.63 & 2.22 & 0 & 8 \\
-            5 & 0.4 & 0.14 & 0 & -2 \\
-            \hline
-        \end{tabular}
-    \end{table}
-    \begin{itemize}
-        \item The LTE based on the Soyeon's cardinalization: $0.8 \neq 0.41$
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Small Example}
-    \begin{itemize}
-        \item Smart Jacob finally argue that it should be -5, -2, 0, 8, 10 to each responses
-    \end{itemize}
-    \begin{table}[ht]
-        \centering
-        \begin{tabular}{rllll}
-            \hline
-            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{Jacob}(0)$ & $Y_{Jacob}(1)$ \\
-            \hline
-            1 & 1.37 & 0.09 & 6 & -2 \\
-            2 & -0.56 & 1.71 & -2 & 6 \\
-            3 & 0.36 & 0.11 & 0 & -2 \\
-            4 & 0.63 & 2.22 & 0 & 6 \\
-            5 & 0.4 & 0.14 & 0 & -2 \\
-            \hline
-        \end{tabular}
-    \end{table}
-    \begin{itemize}
-        \item The LTE based on the Jacob's cardinalization: $0.4 \approx 0.41$
+        \item There has been tools for ordinal outcomes
+        \item Standard parametric approaches such as Ordered Probit and Ordered Logit
+        \item Two estimators based on density estimation techniques
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Ordered Logit and Probit}
     \begin{itemize}
-        \item Ordered Logit and Probit assume specific $F$ (Logistic and Standard Normal)
+        \item Assume that the error term follows a specific distribution (Logistic and Standard Normal)
         \item And use maximum likelihood to estimate the coefficients
-        \item As we discussed, even we assume the $F$, we only can identify coefficients up to scale
-        \item The problem is if $F$ is different from Logistic or Standard Normal, the MLE becomes inconsistent
+        \item Identify coefficients up to scale
+        \item Once distributional assumption is violated, inconsistent
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Alternative: Semiparametric Approach}
+\begin{frame}{Ordered Logit and Probit}
+\begin{itemize}
+    \item The true log-likelihood is:
+
+    \[
+    \begin{aligned}
+    \ell(\alpha,\beta,\tau)
+    =\;
+    &\sum_{i=1}^n \sum_{j=0}^J  
+        1_{\{Y_i = j\}}
+        \Bigg\{
+            \log F\!\left(
+                \alpha_j 
+                - f(X_i,\beta)
+                + D_i^\top \tau
+            \right)
+    \\
+    &\qquad\qquad\qquad
+            -\;
+            \log F\!\left(
+                \alpha_{j-1}
+                - f(X_i,\beta)
+                + D_i^\top \tau
+            \right)
+        \Bigg\}
+    \end{aligned}
+    \]
+
+    \item $F$ is the CDF of the true error.
+    \item If $F$ is not standard normal or standard logistic, MLE is inconsistent.
+    \item The error is never known, and omitted or unobserved confounder may also distort the error
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Alternative: Estimate the $F$}
     \begin{itemize}
-        \item Instead of assuming a specific $F$, we can estimate it from the data using kernel density estimation
-        \item For notational ease, let's denote $f(X, \beta) + D^{T}\tau$ as $V$. By the Bayes' rule, $\hat{F}\left(Y \le j \mid V) \right)$ can be expressed as:
-        $$
-            \hat{F}(Y \le j \mid V) = \frac{\mathbb{P}\left(Y \le j\right) \times g_{1}(V \mid Y \le j)}{\mathbb{P}\left(Y \le j\right) \times g_{1}(V \mid Y \le j) + \mathbb{P}\left(Y > j\right) \times g_{0}(V \mid Y > j)}
-        $$, where $g_{0}(\cdot)$ and $g_{0}(\cdot)$ denote conditional density of $V$ given $(Y > j)$ or $(Y \le j)$ respectively. 
-
-        \item Then we can construct a quasi log likelihood function based on $\hat{F}$
-
-    \begin{equation}
-        \frac{1}{n} \sum_{i = 1}^{n} \hat{m}(X_{i}) \sum_{j = 0}^{J} 1_{\{ Y = j \}} \log \left[ \hat{\mathbb{P}}\left(Y \le j \mid X_{i}, \beta, D_{i}, \tau \right) - \hat{\mathbb{P}}\left( Y \le j-1 \mid X_{i}, \beta, D_{i}, \tau)\right) \right]
-    \end{equation}
+        \item Instead of assuming a specific $F$, we can estimate as $\hat{F}$
+        \item Then the log-likelihood becomes:
+            \[
+            \begin{aligned}
+                \hat{\ell}(\alpha,\beta,\tau)
+            =\;
+            &\sum_{i=1}^n \sum_{j=0}^J  
+                1_{\{Y_i = j\}}
+                \Bigg\{
+                    \log \hat{F}\!\left(
+                        \alpha_j 
+                        - f(X_i,\beta)
+                        + D_i^\top \tau
+                    \right)
+            \\
+            &\qquad\qquad\qquad
+                    -\;
+                    \log \hat{F}\!\left(
+                        \alpha_{j-1}
+                        - f(X_i,\beta)
+                        + D_i^\top \tau
+                    \right)
+                \Bigg\}
+            \end{aligned}
+            \]
+        \item I propose to use two density estimation methods: KDE and Normalizing Flows
     \end{itemize}
-
 \end{frame}
 
-%\begin{frame}{Problem 1: Interpretation}
-%    Q: (Respondent’s country) should limit the import of foreign products in order to protect its national economy.”
-%        \includegraphics[width=0.95\textwidth]{../figures/interpretation1.pdf}
-%\end{frame}
-%
-%\begin{frame}{Problem 1: Interpretation}
-%    Q: (Respondent’s country) should limit the import of foreign products in order to protect its national economy.”
-%        \includegraphics[width=0.95\textwidth]{../figures/interpretation2.pdf}
-%\end{frame}
-%
-%\begin{frame}{Problem 1: Interpretation}
-%    Q: (Respondent’s country) should limit the import of foreign products in order to protect its national economy.”
-%        \includegraphics[width=0.95\textwidth]{../figures/interpretation3.pdf}
-%\end{frame}
-%
-%\begin{frame}{Problem 2: Distribution}
-%        \includegraphics[width=0.95\textwidth]{../figures/distribution0.pdf}
-%\end{frame}
-%
-%\begin{frame}{Problem 2: Distribution}
-%        \includegraphics[width=0.95\textwidth]{../figures/distribution1.pdf}
-%\end{frame}
-%
-%\begin{frame}{Problem 2: Distribution}
-%        \includegraphics[width=0.95\textwidth]{../figures/distribution2.pdf}
-%\end{frame}
-%
-%\begin{frame}{Problem 2: Distribution}
-%        \includegraphics[width=0.95\textwidth]{../figures/distribution3.pdf}
-%\end{frame}
-%
-%\begin{frame}{Problem 2: Distribution}
-%        \includegraphics[width=0.95\textwidth]{../figures/distribution4.pdf}
-%\end{frame}
-%
-%\begin{frame}{Problem 2: Distribution}
-%        \includegraphics[width=0.95\textwidth]{../figures/distribution5.pdf}
-%\end{frame}
-%
-%\begin{frame}{Problem 3: Imprecise Measure}
-%    \begin{itemize}[<+->]
-%        \item Usually, education (years of schooling), income, assets are included in the regression either as independent variables or as control variables
-%        \item For privacy issues these are usually measured in brackets
-%        \item Researchers do not know the exact value, but only observe the lower and the upper bounds
-%            \\ INCOME
-%            \\ \textit{\$5,000 -- \$10,000}
-%    \end{itemize}
-%\end{frame}
+\begin{frame}{Kernel Density Estimation}
+    \begin{itemize}
+        \item Nonparametric method
+        \item Smooth each observation using a kernel (usually Gaussian)
+            $$
+                \hat f(x)
+= \frac{1}{n h} \sum_{i=1}^n K\!\left( \frac{x - X_i}{h} \right)
+            $$ 
+        \item Generally, the moderate bandwidth ensures enough convergence rate for $\sqrt{n}$ consistency for the main estimator (semiparametric efficiency)
+    \end{itemize}
+\end{frame}
 
+\begin{frame}{Normalizing Flows}
+    \begin{itemize}
+        \item A flexible class of models that transform complex continuous density to simple base density (usually Gaussian)
+        \item Use the change-of-variable formula
+            $$
+                f_\theta(h)
+                = f_Z\bigl(T_\theta^{-1}(h)\bigr)
+                \left|\det \D T_\theta^{-1}(h)\right|,
+            $$
+        \item $T_{\theta}$ is a set of \textit{invertible} transformation
+        \item Rational Quadratic Spline Flow
+        \item Since this is fully parametric, for finite $\theta$, MLE ensures $\sqrt{n}$ consistency
+    \end{itemize}
+\end{frame}
 
-% \begin{frame}{Previous Works}
-%         \begin{tabular}{|c|c|c|c|}
-%             \hline
-%             & Interpretation & Distribution & Imprecise \\ \hline
-%             \begin{tabular}[c]{@{}c@{}} Anchored Vignettes \\ {\tiny \citep{King2004a, King2007a}}
-%             \end{tabular}  & $\checkmark$ &   &  \\ \hline
-%             \begin{tabular}[c]{@{}c@{}}Semiparametric\\ {\tiny \citep{Lewbel2000a, Lee1992a, Liu2024a}}  \\ Sensitivity Analysis \\ {\tiny \citep{Bloem2022a}}\end{tabular} & $\checkmark$     & $\checkmark$   &                     \\ \hline
-%         \end{tabular}
-% \end{frame}
-%
-% \begin{frame}{This Paper}
-%     \begin{table}[]
-%         \begin{tabular}{|c|c|c|c|}
-%             \hline
-%             & Interpretation & Distribution & Imprecise \\ \hline
-%             Anchored Vignettes                                                             & $\checkmark$     &              &                     \\ \hline
-%             \begin{tabular}[c]{@{}c@{}}Semiparametric\\ Sensitivity Analysis\end{tabular} & $\checkmark$     & $\checkmark$   &                     \\ \hline
-%                 \begin{tabular}[c]{@{}c@{}}Semiparametric\\ Partial Identification \\ {\tiny\cite{Manski2002a, Wang2022a}} \end{tabular} & $\checkmark$     & $\checkmark$   & $\checkmark$          \\ \hline
-%         \end{tabular}
-%     \end{table}
-% \end{frame}
-%
-% \begin{frame}{Problem Setting}
-%     True DGP:
-%     \begin{equation}
-%         Y^{\ast} = X^{T}\beta_{1} + v^{T}\beta_{2} + \epsilon
-%     \end{equation}
-%     Observation:
-% \begin{equation}
-%     Y = \begin{cases}
-%         0 & Y^{\ast} \le 0 \\
-%         1 & 0 \le Y^{\ast} \le \alpha_{1} \\
-%         \vdots &  \\
-%         k & \alpha_{k-1} \le Y^{\ast} \le \alpha_{k} \\
-%     \end{cases}
-% \end{equation}
-% Also, we do not observe $v$ directly, the lower bound of $v_{0}$ and the upper bound of $v_{1}$ 
-% \end{frame}
-%
-% \begin{frame}{Assumptions}
-%     \begin{assumption}[1]
-%         $Q_{\tau}(\epsilon \mid X, v) = 0$
-%     \end{assumption}
-%
-%     \begin{assumption}[2]
-%         $\mathbb{P}\left(\epsilon \mid X, v, v_{0}, v_{1}\right) = \mathbb{P}\left(\epsilon \mid X, v\right)$
-%     \end{assumption}
-%
-%     \begin{assumption}[3]
-%         $\beta_{2} > 0$
-%     \end{assumption}
-% \end{frame}
-%
-% \begin{frame}{GMMS Estimator}
-%     Let $\lambda_{mn}(\cdot) = \mathbb{1}_{\{ \mathbb{P}\left( Y_i > m \mid X_i, V_{1 i}, V_{0 i}\right) > (1 - \tau)\}}$
-% \begin{equation*}
-%     \begin{aligned}
-%         \Theta_n &= \{ b: S_{n}(b) \ge \max_{C \in \mathcal{B}} S_{n}(c) - \varepsilon_{n}\}\\
-%     \end{aligned}
-% \end{equation*}
-% , where
-%
-% \begin{multline*}
-% %\begin{equation}
-%     S_n(b^s) = \frac{1}{n} \sum_{i=1}^n \sum_{m=1}^{M-1} \biggl(\mathbb{P}(Y_i > m \mid X_i, V_{0i}, V_{1i}) - (1 - \tau)\biggl) \\
-%     \biggl[ \lambda_{mn}(X_i, V_{0i}, V_{1i}) \cdot \text{sgn}(\tilde{X}'_i b + V^1_i + b_{1m}) + \\
-%     (1 - \lambda_{mn}(X_i, V_{0i}, V_{1i})) \cdot \text{sgn}(\tilde{X}'_i b + V_{0i} + b_{1m}){\biggl]}
-% %\end{equation}
-% \end{multline*}
-%     , for some $\varepsilon_{n} = \frac{\ln(n)}{n} > 0$.
-%
-% \end{frame}
+\begin{frame}{Simulation}
+    \begin{itemize}
+        \item Ordered Probit Ordered Logit and NF based only
+        \item Errors: Standard Normal and Log Normal distribution
+        \item A binary treatment randomized 
+        \item Covariates: One binary and three continuous (following normal distribution)
+        \item Thresholds: $-2, -1, 1, 2.5$ $\rightarrow$ 5 categories
+        \item Sample sizes: 200, 500, 1000, 2000
+        \item 200 Replications
+    \end{itemize}
+\end{frame}
 
 \begin{frame}{Simulation}
 \begin{figure}
     \begin{tabular}{cc}
-        \includegraphics[width=0.45\textwidth]{../figures/bias_tdis.pdf} & \includegraphics[width=0.45\textwidth]{../figures/rmse_tdis.pdf}\\
-        (a) & (b)
+        \includegraphics[width=0.45\textwidth]{../figures/latent_space_normal_N1000000.png} & \includegraphics[width=0.45\textwidth]{../figures/latent_space_lognormal_N1000000.png}\\
     \end{tabular}
-    \caption{Monte Carlo Simulation Results: t-distribution Error}
 \end{figure}
+\end{frame}
+
+\begin{frame}{Simulation -- Normal Case}
+    \begin{itemize}
+        \item True treatment size: 1.0
+    \end{itemize}
+\begin{figure}
+    \begin{tabular}{cc}
+        \includegraphics[width=0.45\textwidth]{../figures/bias_oprobit_ologit_flow_normal.pdf} & \includegraphics[width=0.45\textwidth]{../figures/rmse_oprobit_ologit_flow_normal.pdf}\\
+    \end{tabular}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Simulation -- Lognormal Case}
+    \begin{itemize}
+        \item True treatment size: 0.46
+    \end{itemize}
+\begin{figure}
+    \begin{tabular}{cc}
+        \includegraphics[width=0.45\textwidth]{../figures/bias_oprobit_ologit_flow_lognormal.pdf} & \includegraphics[width=0.45\textwidth]{../figures/rmse_oprobit_ologit_flow_lognormal.pdf}\\
+    \end{tabular}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Conclusion}
+    \begin{itemize}
+        \item With ordinal outcomes, treatment effects can only be identified up to scale
+        \item Cardinalization and Binarization have its pitfalls
+        \item Standard parametric approaches relies on strong distributional assumption
+        \item KDE and NF based approaches may provide flexible ways to estimate the true effects
+        \item For KDE, the normalization of coefficients is an issue...
+        \item For NF, Hyperparameter selection is an issue, trying to automatically adjust it while traing
+    \end{itemize}
 \end{frame}
 
 \end{document}

@@ -4,7 +4,7 @@ library('texreg')
 library('MASS')
 
 # Load data
-df <- read_dta("study1_2.dta")
+df <- read_dta("~/Dropbox/projects/ordinal_outcome/replications/Carlin2021a/study1_2.dta")
 dim(df)
 
 df <- df %>% filter(tasa2 != 88)
