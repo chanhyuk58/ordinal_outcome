@@ -1,120 +1,86 @@
-// ks_kde.cpp
-// [[Rcpp::depends(Rcpp)]]
-
 #include <Rcpp.h>
+#include <cmath>
 
 using namespace Rcpp;
 
-// Pilot KDE with leave-one-out
-// side = 1 => group Y <= j
-// side = 0 => group Y > j
-// [[Rcpp::export]]
-NumericVector pilot_kde_cpp(const NumericVector& Y,
-                            const NumericVector& V,
-                            int j,
-                            double h_p,
-                            double sigma,
-                            int side) {
-  int n = V.size();
-  NumericVector out(n);
+// Pre-define the Normal PDF constant for speed
+const double INV_SQRT_2PI = 0.3989422804014327;
 
-  if (n == 0) return out;
-  if (!R_finite(sigma) || sigma <= 0.0) return out;
-
-  double denom_base = sigma * h_p;
-  if (!R_finite(denom_base) || denom_base <= 0.0) return out;
-
-  if (side == 1) {
-    // group: Y <= j
-    int n1 = 0;
-    for (int i = 0; i < n; ++i) {
-      if (Y[i] <= j) n1++;
-    }
-    if (n1 == 0) return out;
-
-    for (int i = 0; i < n; ++i) {
-      double s = 0.0;
-      for (int k = 0; k < n; ++k) {
-        if (k == i) continue;
-        if (Y[k] > j) continue;
-        double u = (V[i] - V[k]) / denom_base;
-        s += R::dnorm(u, 0.0, 1.0, false) / denom_base;
-      }
-      out[i] = s / n1;
-    }
-
-  } else {
-    // group: Y > j
-    int n0 = 0;
-    for (int i = 0; i < n; ++i) {
-      if (Y[i] > j) n0++;
-    }
-    if (n0 == 0) return out;
-
-    for (int i = 0; i < n; ++i) {
-      double s = 0.0;
-      for (int k = 0; k < n; ++k) {
-        if (k == i) continue;
-        if (Y[k] <= j) continue;
-        double u = (V[i] - V[k]) / denom_base;
-        s += R::dnorm(u, 0.0, 1.0, false) / denom_base;
-      }
-      out[i] = s / n0;
-    }
-  }
-
-  return out;
+// Helper: Vectorized Normal Kernel evaluation
+inline double gaussian_kernel(double u) {
+    return INV_SQRT_2PI * std::exp(-0.5 * u * u);
 }
 
-// Final KDE with local bandwidths (no leave-one-out)
-// side = 1 => group Y <= j
-// side = 0 => group Y > j
+// Optimized Final KDE Logic 
+// This calculates the density at points 'V_eval' using data 'V_data'
+// Used for both Likelihood estimation and Post-Estimation Grid evaluation
 // [[Rcpp::export]]
-NumericVector final_kde_cpp(const NumericVector& Y,
-                            const NumericVector& V,
-                            int j,
-                            double h,
-                            const NumericVector& lambda,
-                            int side) {
-  int n = V.size();
-  NumericVector out(n);
+NumericVector ks_kde_eval_cpp(const NumericVector& V_eval,
+                              const NumericVector& V_data,
+                              const NumericVector& lambda,
+                              double h) {
+    int n_eval = V_eval.size();
+    int n_data = V_data.size();
+    NumericVector out(n_eval);
 
-  if (n == 0) return out;
-  if (lambda.size() != n) {
-    stop("lambda must have length equal to length(V).");
-  }
-
-  int count = 0;
-  if (side == 1) {
-    for (int k = 0; k < n; ++k) {
-      if (Y[k] <= j) count++;
+    for (int i = 0; i < n_eval; ++i) {
+        double sum_k = 0.0;
+        double val_i = V_eval[i];
+        
+        for (int k = 0; k < n_data; ++k) {
+            double denom = lambda[k] * h;
+            double u = (val_i - V_data[k]) / denom;
+            sum_k += gaussian_kernel(u) / denom;
+        }
+        out[i] = sum_k / n_data;
     }
-  } else {
-    for (int k = 0; k < n; ++k) {
-      if (Y[k] > j) count++;
-    }
-  }
-  if (count == 0) {
     return out;
-  }
+}
 
-  for (int i = 0; i < n; ++i) {
-    double s = 0.0;
-    for (int k = 0; k < n; ++k) {
-      if (side == 1) {
-        if (Y[k] > j) continue;
-      } else {
-        if (Y[k] <= j) continue;
-      }
-      double lam = lambda[k];
-      if (!R_finite(lam) || lam <= 0.0) continue;
-      double denom = lam * h;
-      if (!R_finite(denom) || denom <= 0.0) continue;
-      double u = (V[i] - V[k]) / denom;
-      s += R::dnorm(u, 0.0, 1.0, false) / denom;
+// Optimized CDF Logic
+// Essential for the link function F(v) calculation
+// [[Rcpp::export]]
+NumericVector ks_cdf_eval_cpp(const NumericVector& V_eval,
+                              const NumericVector& V_data,
+                              const NumericVector& lambda,
+                              double h) {
+    int n_eval = V_eval.size();
+    int n_data = V_data.size();
+    NumericVector out(n_eval);
+
+    for (int i = 0; i < n_eval; ++i) {
+        double sum_k = 0.0;
+        double val_i = V_eval[i];
+        
+        for (int k = 0; k < n_data; ++k) {
+            double denom = lambda[k] * h;
+            double u = (val_i - V_data[k]) / denom;
+            // R::pnorm is faster than manual erf implementation
+            sum_k += R::pnorm(u, 0.0, 1.0, true, false);
+        }
+        out[i] = sum_k / n_data;
     }
-    out[i] = s / count;
-  }
+    return out;
+}
 
-  return out;
+// Pilot KDE (Leave-one-out version) 
+// Optimized for the initial bandwidth estimation
+// [[Rcpp::export]]
+NumericVector pilot_kde_loo_cpp(const NumericVector& V,
+                                double h_p,
+                                double sigma) {
+    int n = V.size();
+    NumericVector out(n);
+    double denom_base = sigma * h_p;
+
+    for (int i = 0; i < n; ++i) {
+        double sum_k = 0.0;
+        for (int k = 0; k < n; ++k) {
+            if (i == k) continue;
+            double u = (V[i] - V[k]) / denom_base;
+            sum_k += gaussian_kernel(u);
+        }
+        out[i] = sum_k / ((n - 1) * denom_base);
+    }
+    return out;
 }
