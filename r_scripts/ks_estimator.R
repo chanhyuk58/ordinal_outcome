@@ -144,6 +144,55 @@ compute_local_bandwidth <- function(pilot_density, sigma, n_group, delta) {
 }
 
 # -------------------------------------------------------------------
+# Extract Link Function and Calculate Variance
+# -------------------------------------------------------------------
+calculate_ks_variance <- function(V_hat, Y, J, lambda_list, h, n_grid = 1000) {
+  # We define a grid over the possible values of the latent error.
+  # The 'support' is roughly the range of the thresholds - index.
+  grid_range <- range(V_hat)
+  grid <- seq(grid_range[1] - 3 * stats::sd(V_hat), 
+              grid_range[2] + 3 * stats::sd(V_hat), 
+              length.out = n_grid)
+  
+  # In KS, the link function F is estimated per threshold.
+  # We take the average density across thresholds to get the 'global' error density.
+  pdf_accum <- numeric(n_grid)
+  
+  for (j in 1:J) {
+    # Data for the j-th boundary
+    V_j1 <- V_hat[Y <= j]
+    V_j0 <- V_hat[Y > j]
+    
+    if (length(V_j1) < 2 || length(V_j0) < 2) next
+    
+    p1 <- length(V_j1) / length(V_hat)
+    p0 <- length(V_j0) / length(V_hat)
+    
+    # Calculate density on the grid for both groups
+    g1 <- ks_kde_eval_cpp(grid, V_j1, lambda_list[[j]]$l1, h)
+    g0 <- ks_kde_eval_cpp(grid, V_j0, lambda_list[[j]]$l0, h)
+    
+    # The weighted density at this threshold
+    pdf_accum <- pdf_accum + (p1 * g1 + p0 * g0)
+  }
+  
+  # Average PDF across J thresholds
+  pdf_avg <- pdf_accum / J
+  
+  # Numerical integration (Trapezoidal rule)
+  dx <- grid[2] - grid[1]
+  
+  # Normalize PDF (ensure it integrates to 1)
+  pdf_avg <- pdf_avg / (sum(pdf_avg) * dx)
+  
+  # Mean and Variance
+  mean_eps <- sum(grid * pdf_avg) * dx
+  var_eps  <- sum(((grid - mean_eps)^2) * pdf_avg) * dx
+  
+  return(list(var = var_eps, pdf = pdf_avg, grid = grid))
+}
+
+# -------------------------------------------------------------------
 # Quasi-likelihood and optimization helpers
 # -------------------------------------------------------------------
 
@@ -158,100 +207,57 @@ compute_local_bandwidth <- function(pilot_density, sigma, n_group, delta) {
   if (b[1] < 0) b <- -b
   b
 }
-
-quasi_likelihood <- function(beta_raw, Y, X, J, h_p, h, delta, trim, verbose = FALSE) {
+quasi_likelihood <- function(beta_raw, Y, X, J, h_p, h, delta, trim) {
   n <- length(Y)
-
-  # Enforce normalization of beta (unit norm, beta[1] > 0)
   beta <- .normalize_beta(beta_raw)
-  if (any(is.na(beta))) {
-    return(1e100)
-  }
+  if (any(is.na(beta))) return(1e100)
 
   V_hat <- as.numeric(X %*% beta)
-  P_est_mat <- array(0, dim = c(J + 2L, n))
+  P_est_mat <- matrix(0, nrow = J + 1, ncol = n) # Store probabilities
 
   for (j in 1:J) {
-    n1 <- sum(Y <= j)
-    n0 <- n - n1
+    V1 <- V_hat[Y <= j]; V0 <- V_hat[Y > j]
+    n1 <- length(V1); n0 <- length(V0)
+    
+    if (n1 == 0) { P_est_mat[j, ] <- 0; next }
+    if (n0 == 0) { P_est_mat[j, ] <- 1; next }
 
-    # Degenerate cases: all <= j or all > j
-    if (n1 == 0L) {
-      P_est_mat[j + 1L, ] <- 0
-      next
-    }
-    if (n0 == 0L) {
-      P_est_mat[j + 1L, ] <- 1
-      next
-    }
+    # Pilot KDE (using optimized LOO function)
+    s1 <- max(stats::sd(V1), n1^(-0.5)); s0 <- max(stats::sd(V0), n0^(-0.5))
+    g1_p <- pilot_kde_loo_cpp(V1, h_p, s1)
+    g0_p <- pilot_kde_loo_cpp(V0, h_p, s0)
+    
+    # Map back to full size for lambda calculation
+    # (Easier to do in R to keep track of indices)
+    g1_full <- numeric(n); g1_full[Y <= j] <- g1_p; g1_full[Y > j] <- 1e-6
+    g0_full <- numeric(n); g0_full[Y > j] <- g0_p; g0_full[Y <= j] <- 1e-6
 
-    # Pilot KDE
-    sigma1 <- stats::sd(V_hat[Y <= j])
-    if (!is.finite(sigma1) || sigma1 <= 0) {
-      sigma1 <- max(stats::sd(V_hat), n1^(-1/2))
-      if (!is.finite(sigma1) || sigma1 <= 0) sigma1 <- n1^(-1/2)
-    }
+    l1 <- compute_local_bandwidth(g1_full[Y <= j], s1, n1, delta)
+    l0 <- compute_local_bandwidth(g0_full[Y > j], s0, n0, delta)
 
-    sigma0 <- stats::sd(V_hat[Y > j])
-    if (!is.finite(sigma0) || sigma0 <= 0) {
-      sigma0 <- max(stats::sd(V_hat), n0^(-1/2))
-      if (!is.finite(sigma0) || sigma0 <= 0) sigma0 <- n0^(-1/2)
-    }
+    # Final KDE using data groups to evaluate ALL indices
+    g1_f <- ks_kde_eval_cpp(V_hat, V1, l1, h)
+    g0_f <- ks_kde_eval_cpp(V_hat, V0, l0, h)
 
-    g1_pilot <- pilot_kde(Y, V_hat, l = 1L, h_p = h_p, sigma = sigma1, j = j)
-    g0_pilot <- pilot_kde(Y, V_hat, l = 0L, h_p = h_p, sigma = sigma0, j = j)
-
-    # Local bandwidths (use group sizes for n_group)
-    lambda1 <- compute_local_bandwidth(g1_pilot, sigma1, n1, delta)
-    lambda0 <- compute_local_bandwidth(g0_pilot, sigma0, n0, delta)
-
-    # Final KDE
-    g1_final <- final_kde(Y, V_hat, l = 1L, lambda = lambda1, h = h, j = j)
-    g0_final <- final_kde(Y, V_hat, l = 0L, lambda = lambda0, h = h, j = j)
-
-    # Conditional probabilities
-    p1 <- n1 / n
-    p0 <- n0 / n
-    denom <- p1 * g1_final + p0 * g0_final
-
-    # n-dependent floor for denominators (asymptotically negligible)
-    denom_floor <- n^(-3)
-    bad_denom <- !is.finite(denom) | (denom < denom_floor)
-    denom_adj <- denom
-    denom_adj[bad_denom] <- denom_floor
-
-    P_j_est <- numeric(n)
-    ok <- denom_adj > 0 & is.finite(denom_adj)
-    P_j_est[ok] <- (p1 * g1_final[ok]) / denom_adj[ok]
-
-    P_est_mat[j + 1L, ] <- P_j_est
+    p1 <- n1 / n; p0 <- n0 / n
+    denom <- p1 * g1_f + p0 * g0_f
+    denom[denom < n^-3] <- n^-3 # Robustness floor
+    
+    P_est_mat[j, ] <- (p1 * g1_f) / denom
   }
 
-  # Boundary rows: P(Y <= 0) = 0, P(Y <= J) = 1
-  P_est_mat[1L, ] <- 0
-  P_est_mat[J + 2L, ] <- 1
-
-  # Probability of actual category for each observation
-  cols <- seq_len(n)
-  pr <- P_est_mat[cbind(Y + 1L, cols)] - P_est_mat[cbind(Y, cols)]
-
-  # Trimming based on X (can later be changed to index-based trimming if desired)
-  if (!is.null(trim) && trim < 1) {
-    Xabs <- abs(X)
-    # column-wise trim quantiles
-    bounds <- apply(Xabs, 2, stats::quantile, probs = trim, na.rm = TRUE)
-    # compare each row to bounds
-    within_bounds <- sweep(Xabs, 2, bounds, FUN = "<=")
-    valid <- apply(within_bounds, 1, all)
-    pr <- pr[valid]
+  # Probability of being in specific category
+  # P(Y=k) = P(Y<=k) - P(Y<=k-1)
+  prob_cat <- numeric(n)
+  for (i in 1:n) {
+    curr_y <- Y[i]
+    p_upper <- if (curr_y == (J + 1)) 1 else P_est_mat[curr_y, i]
+    p_lower <- if (curr_y == 1) 0 else P_est_mat[curr_y - 1, i]
+    prob_cat[i] <- p_upper - p_lower
   }
 
-  # Likelihood penalty on invalid values
-  if (length(pr) == 0L || any(!is.finite(pr)) || any(pr <= 0)) {
-    return(1e100)
-  }
-
-  -sum(log(pr))
+  prob_cat[prob_cat <= 0 | !is.finite(prob_cat)] <- 1e-10
+  return(-sum(log(prob_cat)))
 }
 
 fit_ks_once <- function(Y, X, J, h_p, h, delta, trim, control,
@@ -361,6 +367,37 @@ fit_ks_once <- function(Y, X, J, h_p, h, delta, trim, control,
 }
 
 # -------------------------------------------------------------------
+# Rescaling Function
+# -------------------------------------------------------------------
+ks_rescale <- function(object) {
+  if (!inherits(object, "ks_ordinal")) stop("Input must be a ks_ordinal object.")
+  
+  # 1. Recover index and settings
+  V_hat <- as.numeric(object$X %*% object$coefficients)
+  
+  # 2. Estimate Variance
+  # Note: You'll need to store lambdas during fit or recalculate here
+  # For brevity, we recalculate variance using final coefficients
+  var_res <- calculate_ks_variance(V_hat, object$Y, object$J, 
+                                   object$lambda_list, object$bandwidth$h)
+  
+  sigma_ks <- sqrt(var_res$var)
+  
+  # 3. Rescale coefficients
+  new_coefs <- object$coefficients / sigma_ks
+  new_se <- object$bootstrap_se / sigma_ks
+  
+  object$coefficients_rescaled <- new_coefs
+  object$se_rescaled <- new_se
+  object$error_sigma <- sigma_ks
+  object$error_dist <- var_res # contains grid and pdf for plotting
+  
+  return(object)
+}
+
+
+
+# -------------------------------------------------------------------
 # Main KS estimator (S3)
 # -------------------------------------------------------------------
 
@@ -374,147 +411,112 @@ ks_estimator <- function(formula,
                          bandwidth_const = list(c_p = 1, c = 1),
                          n_starts = 3L,
                          start_method = c("ordered_logit", "lm")) {
+  
   if (!requireNamespace("boot", quietly = TRUE)) {
-    stop("Package 'boot' is required. Please install it.")
+    stop("Package 'boot' is required.")
   }
 
-  if (!inherits(formula, "formula")) {
-    stop("'formula' must be a formula.")
-  }
-
-  start_method <- match.arg(start_method)
-
+  # 1. Data Preparation
   data <- as.data.frame(data)
   mf <- stats::model.frame(formula, data = data, na.action = stats::na.omit)
   terms_obj <- attr(mf, "terms")
   y_raw <- stats::model.response(mf)
   X <- stats::model.matrix(terms_obj, data = mf)
 
-  # Remove intercept column if present
   if ("(Intercept)" %in% colnames(X)) {
     X <- X[, colnames(X) != "(Intercept)", drop = FALSE]
   }
 
-  if (ncol(X) == 0L) {
-    stop("No predictors in the model matrix after removing intercept.")
-  }
-
-  # Handle ordinal response
-  if (is.factor(y_raw) || is.ordered(y_raw)) {
-    y_factor <- factor(y_raw, ordered = TRUE)
-  } else {
-    y_factor <- factor(y_raw, ordered = TRUE)
-  }
-
-  Y <- as.integer(y_factor)
+  y_factor <- factor(y_raw, ordered = TRUE)
+  Y <- as.integer(y_factor) # Categories 1, 2, ..., J
   levels_Y <- levels(y_factor)
-  J <- length(levels_Y)
+  J_categories <- length(levels_Y)
+  J_thresholds <- J_categories - 1 # We estimate J-1 boundaries
   n <- length(Y)
 
-  if (J < 2L) {
-    stop("The response must have at least 2 distinct categories.")
-  }
-
-  # Bandwidths with tunable constants c_p and c
+  # 2. Bandwidth Setup
   delta <- 1/15
-  a <- (1/10 + (3 + delta)/3) / 5    # exponent for pilot bandwidth
-  b <- 3 * ((3 + delta)/20 + 1/6) / 10  # exponent for final bandwidth
-
+  a <- (1/10 + (3 + delta)/3) / 5    
+  b <- 3 * ((3 + delta)/20 + 1/6) / 10  
   c_p <- if (!is.null(bandwidth_const$c_p)) bandwidth_const$c_p else 1
   c_h <- if (!is.null(bandwidth_const$c)) bandwidth_const$c else 1
-
   h_p <- c_p * n^(-a)
   h   <- c_h * n^(-b)
 
-  # Full-sample fit
+  # 3. Full-sample fit (Initial Normalization: ||beta||=1)
   full_fit <- fit_ks_once(
-    Y = Y,
-    X = X,
-    J = J,
-    h_p = h_p,
-    h = h,
-    delta = delta,
-    trim = trim,
-    control = control,
-    verbose = verbose,
-    n_starts = n_starts,
-    start_method = start_method
+    Y = Y, X = X, J = J_thresholds, h_p = h_p, h = h, 
+    delta = delta, trim = trim, control = control,
+    verbose = verbose, n_starts = n_starts, start_method = start_method
   )
 
   coef_hat <- as.numeric(full_fit$coef)
   names(coef_hat) <- colnames(X)
 
-  # Bootstrap
-  B <- as.integer(B)
-  if (is.na(B) || B < 0L) stop("'B' must be a non-negative integer.")
+  # -----------------------------------------------------------------
+  # NEW: Extract Final bandwidths (lambdas) for Post-Estimation
+  # -----------------------------------------------------------------
+  # We re-run the final KDE step once with the best beta to save the state
+  V_final <- as.numeric(X %*% coef_hat)
+  final_lambda_list <- list()
 
+  for (j in 1:J_thresholds) {
+    V1 <- V_final[Y <= j]; V0 <- V_final[Y > j]
+    n1 <- length(V1); n0 <- length(V0)
+    
+    if (n1 > 1 && n0 > 1) {
+      s1 <- max(stats::sd(V1), n1^(-0.5))
+      s0 <- max(stats::sd(V0), n0^(-0.5))
+      
+      # Re-calculate final pilot densities for this threshold
+      g1_p <- pilot_kde_loo_cpp(V1, h_p, s1)
+      g0_p <- pilot_kde_loo_cpp(V0, h_p, s0)
+      
+      # Compute final local bandwidth multipliers (lambdas)
+      l1 <- compute_local_bandwidth(g1_p, s1, n1, delta)
+      l0 <- compute_local_bandwidth(g0_p, s0, n0, delta)
+      
+      final_lambda_list[[j]] <- list(l1 = l1, l0 = l0)
+    } else {
+      final_lambda_list[[j]] <- list(l1 = NULL, l0 = NULL)
+    }
+  }
+
+  # 4. Bootstrap (Standard errors)
   if (B > 0L) {
     boot_stat <- function(dummy_data, indices) {
-      Yb <- Y[indices]
-      Xb <- X[indices, , drop = FALSE]
-      fit_b <- fit_ks_once(
-        Y = Yb,
-        X = Xb,
-        J = J,
-        h_p = h_p,
-        h = h,
-        delta = delta,
-        trim = trim,
-        control = control,
-        verbose = FALSE,
-        n_starts = n_starts,
-        start_method = start_method
-      )
+      Yb <- Y[indices]; Xb <- X[indices, , drop = FALSE]
+      fit_b <- fit_ks_once(Yb, Xb, J_thresholds, h_p, h, delta, trim, control, n_starts = 1)
       as.numeric(fit_b$coef)
     }
-
-    dummy <- matrix(0, nrow = n, ncol = 1)  # 'data' argument required by boot, but not used
-    boot_obj <- boot::boot(
-      data = dummy,
-      statistic = boot_stat,
-      R = B,
-      sim = "ordinary"
-    )
-
-    boot_coefs <- boot_obj$t
-    bootstrap_se <- apply(boot_coefs, 2, stats::sd)
-    bootstrap_mean <- apply(boot_coefs, 2, mean)
+    boot_obj <- boot::boot(data = matrix(0, n, 1), statistic = boot_stat, R = B)
+    bootstrap_se <- apply(boot_obj$t, 2, stats::sd)
   } else {
     boot_obj <- NULL
     bootstrap_se <- rep(NA_real_, length(coef_hat))
-    bootstrap_mean <- rep(NA_real_, length(coef_hat))
   }
 
+  # 5. Return Object (Now includes X, Y, and lambdas)
   res <- list(
     call = match.call(),
     formula = formula,
-    data_name = deparse(substitute(data)),
     coefficients = coef_hat,
     bootstrap_se = bootstrap_se,
-    bootstrap_mean = bootstrap_mean,
-    B = B,
-    J = J,
+    # Data stored for post-estimation
+    X = X,
+    Y = Y,
+    lambda_list = final_lambda_list,
+    # Metadata
+    J = J_thresholds,
     n = n,
     levels = levels_Y,
-    optim = list(
-      value = full_fit$value,
-      convergence = full_fit$convergence,
-      counts = full_fit$counts,
-      message = full_fit$message
-    ),
-    bandwidth = list(
-      h_p = h_p,
-      h = h,
-      delta = delta,
-      c_p = c_p,
-      c = c_h
-    ),
-    boot = if (B > 0L && keep_boot) boot_obj else NULL,
-    x_names = colnames(X)
+    bandwidth = list(h_p = h_p, h = h, delta = delta),
+    optim = full_fit,
+    boot = if (B > 0L && keep_boot) boot_obj else NULL
   )
 
   class(res) <- "ks_ordinal"
-  res
+  return(res)
 }
 
 # -------------------------------------------------------------------
