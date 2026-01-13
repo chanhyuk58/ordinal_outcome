@@ -62,10 +62,6 @@ def log_diff_normal_cdfs(zl, zu):
     return out
 # }}}
 
-# ----------------------------------------------------------------------
-# Other Functions
-# ----------------------------------------------------------------------
-
 # ============ Global 1D RQS transform ============
 class GlobalRQS1D(nn.Module): # {{{
     def __init__(self, K=16, bounds=8.0, min_bin_width=1e-3, min_bin_height=1e-3, min_derivative=1e-3):
@@ -309,9 +305,10 @@ class OrderedFlowModel(nn.Module): # {{{
         eps = self.a() * eps_base + self.b
         m = eps.mean()
         s = eps.std(unbiased=False)
-        s = torch.clamp(s, min=1e-8)
+        s = torch.clamp(s, min=1e-4)
         # update flow scalars
         a_new = self.a() / s
+        a_new = torch.clamp(a_new - 1e-4, min=1e-9)
         b_new = (self.b - m) / s
         self.a_raw.data = softplus_inv(a_new).detach()
         self.b.data = b_new.detach()
@@ -460,9 +457,9 @@ def get_true_error(spec: str): # {{{
         label = f"Student-t(ν={nu}) standardized"
     
     elif spec == "mixture_gaussian":
-        weights = torch.tensor([0.7, 0.3], device=device)
-        mus = torch.tensor([-2.5, 2.5], device=device)
-        sigmas = torch.tensor([0.7, 1.3], device=device)
+        weights = torch.tensor([0.6, 0.4], device=device)
+        mus = torch.tensor([-1.0, 3.0], device=device)
+        sigmas = torch.tensor([1.5, 0.5], device=device)
         m = (weights * mus).sum().item()
         v = (weights * (sigmas**2 + mus**2)).sum().item() - m**2
         s = math.sqrt(v)
@@ -485,7 +482,7 @@ def get_true_error(spec: str): # {{{
         label = "Mixture Gaussian standardized"
     
     elif spec == "lognormal":
-        mu, sigma = 0.0, 2.0
+        mu, sigma = 0.0, 1.0
         m = math.exp(mu + 0.5 * sigma**2)
         v = (math.exp(sigma**2) - 1.0) * math.exp(2 * mu + sigma**2)
         s = math.sqrt(v)
@@ -628,172 +625,257 @@ def fit_ordered_sm(y, X, link='probit', normalize=True, norm_criterion='variance
 # }}}
 
 # ======== Training routine for flow model ========
-# {{{
+# # Adam {{{
+# def train_ordered_flow(
+#     X, y, Z=None,
+#     flow_bins=16, bounds=10.0,
+#     epochs=1000,
+#     lr=1e-3,              # base learning rate for all parameters
+#     init_probit=True,
+#     verbose=False,
+#     monitor_nll=True,
+#     check_every=10,
+#     burn_in_checks=5,
+#     neg_patience=10,
+#     delta_eps=1e-5,       # treat delta < -delta_eps as effectively negative
+#     use_lr_scheduler=False,
+#     lr_step_size=10,      # decay LR every this many epochs (if scheduler is used)
+#     lr_gamma=0.5          # multiply LR by this factor when stepping the scheduler
+# ):
+#     """
+#     Train OrderedFlowModel with:
+#     - Probit initialization: ordered probit is used to initialize parameters
+#       and its NLL is treated as the first "best" model.
+#     - Best model tracking: at each monitoring checkpoint, if the current flow
+#       model achieves a lower NLL than the best-so-far, we update the best
+#       (baseline) NLL and store the current state_dict as the new best model.
+#     - Early stopping based on relative NLL changes Δ.
+#     - Final returned model = best-so-far flow state (starting from probit),
+#       followed by identification normalization via project_identification().
+#     """
+#     X = X.to(device)
+#     y = y.to(device)
+#     J = int(torch.max(y))
+#     if Z is not None:
+#         Z = Z.to(device)
+#         q = Z.shape[1]
+#     else:
+#         q = 0
+#
+#     model = OrderedFlowModel(
+#         p=X.shape[1], J=J, q=q,
+#         flow_bins=flow_bins, bounds=bounds
+#     ).to(device)
+#
+#     # 1. Initialize from ordered probit
+#     if init_probit:
+#         try:
+#             model.init_from_ordered_probit(
+#                 X.cpu(), y.cpu(), Z.cpu() if Z is not None else None, verbose
+#             )
+#         except Exception as e:
+#             print("init_from_ordered_probit failed; using zeros", e)
+#             model._probit_nll = None
+#     else:
+#         model._probit_nll = None
+#
+#     # 2. Set initial "best" model as probit-initialized state if available
+#     if getattr(model, "_probit_nll", None) is not None:
+#         baseline_nll = float(model._probit_nll)  # probit NLL as initial best
+#         baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
+#         if verbose:
+#             print(f"Initial best model: ordered probit (NLL_probit={baseline_nll:.4f})")
+#     else:
+#         # If probit failed, baseline will be set at first monitoring checkpoint
+#         baseline_nll = None
+#         baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
+#         if verbose:
+#             print("No probit NLL available; best model will be set from first check.")
+#
+#     # 3. Optimizer and optional LR scheduler
+#     opt = optim.Adam(model.parameters(), lr=lr)
+#
+#     scheduler = None
+#     if use_lr_scheduler:
+#         scheduler = torch.optim.lr_scheduler.StepLR(
+#             opt, step_size=lr_step_size, gamma=lr_gamma
+#         )
+#
+#     # Monitoring and early stopping state
+#     nll_history = []
+#     delta_history = []
+#     neg_streak = 0
+#     early_stopped = False
+#     n_checks = 0
+#
+#     for ep in range(1, epochs + 1):
+#         opt.zero_grad()
+#         nll = model.neg_loglik(X, y, Z)
+#         nll.backward()
+#         opt.step()
+#
+#         # Step the LR scheduler at the end of the epoch
+#         if scheduler is not None:
+#             scheduler.step()
+#
+#         if verbose and (ep % 50 == 0 or ep == 1):
+#             current_lr = opt.param_groups[0]["lr"]
+#             print(f"Epoch {ep:4d} | NLL {nll.item():.4f} | lr={current_lr:.2e}")
+#
+#         # 4. Monitoring + early stopping based on Δ
+#         if monitor_nll and (ep % check_every == 0 or ep == 1):
+#             with torch.no_grad():
+#                 cur_nll = model.neg_loglik(X, y, Z).item()
+#             nll_history.append((ep, cur_nll))
+#             n_checks += 1
+#
+#             # If baseline_nll not set (e.g., probit failed), set from first check
+#             if baseline_nll is None:
+#                 baseline_nll = cur_nll
+#                 baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
+#                 delta = 0.0
+#             else:
+#                 denom = max(1.0, abs(baseline_nll))
+#                 delta = (baseline_nll - cur_nll) / denom
+#
+#             delta_history.append((ep, delta))
+#
+#             if verbose:
+#                 print(
+#                     f"  [Monitor] Epoch {ep}: NLL={cur_nll:.4f}, "
+#                     f"Delta_over_best={delta:.3e} "
+#                     f"(best_nll={baseline_nll:.4f})"
+#                 )
+#
+#             # If Δ > 0, current model is better than best-so-far
+#             if delta > 0:
+#                 baseline_nll = cur_nll
+#                 baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
+#                 neg_streak = 0
+#                 if verbose:
+#                     print("    [Best] New best NLL found; updating baseline model.")
+#
+#             # Early stopping based on consecutive negative Δ after burn-in
+#             if n_checks > burn_in_checks:
+#                 if delta < -delta_eps:
+#                     neg_streak += 1
+#                 else:
+#                     neg_streak = 0
+#
+#                 if verbose and neg_streak > 0:
+#                     print(f"    [Δ-check] neg_streak={neg_streak}, "
+#                           f"delta={delta:.3e}")
+#
+#                 if neg_streak >= neg_patience:
+#                     if verbose:
+#                         print(
+#                             f"Early stopping at epoch {ep}: "
+#                             f"{neg_patience} consecutive Δ < -{delta_eps}."
+#                         )
+#                     early_stopped = True
+#                     break
+#
+#     # Attach histories for diagnostics
+#     if monitor_nll:
+#         model.nll_history = nll_history
+#         model.delta_history = delta_history
+#     model.nll_probit = getattr(model, "_probit_nll", None)
+#
+#     # 5. Load the best-so-far state (starting from probit, then updated)
+#     if baseline_state is not None and baseline_nll is not None:
+#         if verbose:
+#             print(f"Loading best model state (best_nll={baseline_nll:.4f}).")
+#         model.load_state_dict(baseline_state)
+#     else:
+#         if verbose:
+#             print("No monitoring-based best state recorded; using final epoch state.")
+#
+#     # 6. Final identification normalization
+#     model.project_identification(mc_samples=32768)
+#     return model
+# # }}}
+
+# BFGS {{{
 def train_ordered_flow(
     X, y, Z=None,
     flow_bins=16, bounds=10.0,
-    epochs=1000,
-    lr=1e-3,              # base learning rate for all parameters
+    epochs=200,           
+    lr=1e-3,              
+    use_lbfgs=True,       
+    lbfgs_steps=50,      
     init_probit=True,
     verbose=False,
-    monitor_nll=True,
-    check_every=10,
-    burn_in_checks=5,
-    neg_patience=10,
-    delta_eps=1e-5,       # treat delta < -delta_eps as effectively negative
-    use_lr_scheduler=False,
-    lr_step_size=10,      # decay LR every this many epochs (if scheduler is used)
-    lr_gamma=0.5          # multiply LR by this factor when stepping the scheduler
+    monitor_nll=False,
+    **kwargs # Captures old args like delta_eps, neg_patience so they don't break calls
 ):
-    """
-    Train OrderedFlowModel with:
-    - Probit initialization: ordered probit is used to initialize parameters
-      and its NLL is treated as the first "best" model.
-    - Best model tracking: at each monitoring checkpoint, if the current flow
-      model achieves a lower NLL than the best-so-far, we update the best
-      (baseline) NLL and store the current state_dict as the new best model.
-    - Early stopping based on relative NLL changes Δ.
-    - Final returned model = best-so-far flow state (starting from probit),
-      followed by identification normalization via project_identification().
-    """
     X = X.to(device)
     y = y.to(device)
     J = int(torch.max(y))
-    if Z is not None:
-        Z = Z.to(device)
-        q = Z.shape[1]
-    else:
-        q = 0
+    q = Z.shape[1] if Z is not None else 0
+    if Z is not None: Z = Z.to(device)
 
     model = OrderedFlowModel(
         p=X.shape[1], J=J, q=q,
         flow_bins=flow_bins, bounds=bounds
     ).to(device)
 
-    # 1. Initialize from ordered probit
+    # 1. Probit Init
+    baseline_nll = None
+    baseline_state = None
     if init_probit:
         try:
-            model.init_from_ordered_probit(
-                X.cpu(), y.cpu(), Z.cpu() if Z is not None else None, verbose
-            )
-        except Exception as e:
-            print("init_from_ordered_probit failed; using zeros", e)
-            model._probit_nll = None
-    else:
-        model._probit_nll = None
-
-    # 2. Set initial "best" model as probit-initialized state if available
-    if getattr(model, "_probit_nll", None) is not None:
-        baseline_nll = float(model._probit_nll)  # probit NLL as initial best
-        baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
-        if verbose:
-            print(f"Initial best model: ordered probit (NLL_probit={baseline_nll:.4f})")
-    else:
-        # If probit failed, baseline will be set at first monitoring checkpoint
-        baseline_nll = None
-        baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
-        if verbose:
-            print("No probit NLL available; best model will be set from first check.")
-
-    # 3. Optimizer and optional LR scheduler
-    opt = optim.Adam(model.parameters(), lr=lr)
-
-    scheduler = None
-    if use_lr_scheduler:
-        scheduler = torch.optim.lr_scheduler.StepLR(
-            opt, step_size=lr_step_size, gamma=lr_gamma
-        )
-
-    # Monitoring and early stopping state
-    nll_history = []
-    delta_history = []
-    neg_streak = 0
-    early_stopped = False
-    n_checks = 0
-
+            model.init_from_ordered_probit(X.cpu(), y.cpu(), Z.cpu() if Z is not None else None, verbose)
+            baseline_nll = float(model._probit_nll)
+            baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
+        except Exception:
+            pass
+    
+    # 2. Adam Warm-up
+    adam_opt = torch.optim.Adam(model.parameters(), lr=lr)
     for ep in range(1, epochs + 1):
-        opt.zero_grad()
-        nll = model.neg_loglik(X, y, Z)
-        nll.backward()
-        opt.step()
+        adam_opt.zero_grad()
+        loss = model.neg_loglik(X, y, Z)
+        if torch.isnan(loss): break
+        loss.backward()
+        adam_opt.step()
 
-        # Step the LR scheduler at the end of the epoch
-        if scheduler is not None:
-            scheduler.step()
+    # 3. L-BFGS Polish
+    if use_lbfgs:
+        lbfgs_opt = torch.optim.LBFGS(
+            model.parameters(), 
+            lr=1.0, 
+            max_iter=20, 
+            history_size=20, 
+            line_search_fn='strong_wolfe'
+        )
+        def closure():
+            lbfgs_opt.zero_grad()
+            loss = model.neg_loglik(X, y, Z)
+            if torch.isnan(loss):
+                return loss
+            loss.backward()
+            # CLIP GRADIENTS: Prevent parameters from jumping to 10^16
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            return loss
 
-        if verbose and (ep % 50 == 0 or ep == 1):
-            current_lr = opt.param_groups[0]["lr"]
-            print(f"Epoch {ep:4d} | NLL {nll.item():.4f} | lr={current_lr:.2e}")
+        for i in range(1, lbfgs_steps + 1):
+            try:
+                loss = lbfgs_opt.step(closure)
+                cur_nll = float(loss.detach())
+                
+                if baseline_nll is None or cur_nll < baseline_nll:
+                    baseline_nll = cur_nll
+                    baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
+                
+                if torch.isnan(loss): break
+            except Exception:
+                # If the line search or matrix inversion fails, stop L-BFGS and move on
+                break
 
-        # 4. Monitoring + early stopping based on Δ
-        if monitor_nll and (ep % check_every == 0 or ep == 1):
-            with torch.no_grad():
-                cur_nll = model.neg_loglik(X, y, Z).item()
-            nll_history.append((ep, cur_nll))
-            n_checks += 1
-
-            # If baseline_nll not set (e.g., probit failed), set from first check
-            if baseline_nll is None:
-                baseline_nll = cur_nll
-                baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
-                delta = 0.0
-            else:
-                denom = max(1.0, abs(baseline_nll))
-                delta = (baseline_nll - cur_nll) / denom
-
-            delta_history.append((ep, delta))
-
-            if verbose:
-                print(
-                    f"  [Monitor] Epoch {ep}: NLL={cur_nll:.4f}, "
-                    f"Delta_over_best={delta:.3e} "
-                    f"(best_nll={baseline_nll:.4f})"
-                )
-
-            # If Δ > 0, current model is better than best-so-far
-            if delta > 0:
-                baseline_nll = cur_nll
-                baseline_state = {k: v.clone() for k, v in model.state_dict().items()}
-                neg_streak = 0
-                if verbose:
-                    print("    [Best] New best NLL found; updating baseline model.")
-
-            # Early stopping based on consecutive negative Δ after burn-in
-            if n_checks > burn_in_checks:
-                if delta < -delta_eps:
-                    neg_streak += 1
-                else:
-                    neg_streak = 0
-
-                if verbose and neg_streak > 0:
-                    print(f"    [Δ-check] neg_streak={neg_streak}, "
-                          f"delta={delta:.3e}")
-
-                if neg_streak >= neg_patience:
-                    if verbose:
-                        print(
-                            f"Early stopping at epoch {ep}: "
-                            f"{neg_patience} consecutive Δ < -{delta_eps}."
-                        )
-                    early_stopped = True
-                    break
-
-    # Attach histories for diagnostics
-    if monitor_nll:
-        model.nll_history = nll_history
-        model.delta_history = delta_history
-    model.nll_probit = getattr(model, "_probit_nll", None)
-
-    # 5. Load the best-so-far state (starting from probit, then updated)
-    if baseline_state is not None and baseline_nll is not None:
-        if verbose:
-            print(f"Loading best model state (best_nll={baseline_nll:.4f}).")
+    # 4. Identification
+    if baseline_state is not None:
         model.load_state_dict(baseline_state)
-    else:
-        if verbose:
-            print("No monitoring-based best state recorded; using final epoch state.")
-
-    # 6. Final identification normalization
+    
     model.project_identification(mc_samples=32768)
     return model
 # }}}

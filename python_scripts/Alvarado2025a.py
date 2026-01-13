@@ -10,24 +10,21 @@ from ordinal_flow_core import (
 
 torch.set_default_dtype(torch.float64)
 
-# Load and prepare data
 #{{{
 # Load data
-tomz = pd.read_stata("../replications/Tomz2020a/TomzWeeks-HumanRights-JOP-Files/2012-10-01-Main-YouGov/output/2012-10-01-Main-prepped.dta")
-tomz.columns
+df = pd.read_csv("../r_scripts/Alvarado2025a_cleaned.csv")
 
 # recode variables
-tomz["f_strike5"] = pd.factorize(tomz["strike5"], sort=True)[0] + 1
-tomz["hrtsdemoc"] = tomz["hrts"] * tomz["democ"]
+df["f_index_all"] = pd.factorize(df["index_all"], sort=True)[0] + 1
 
 # subset
-var_list = ["f_strike5", "hrts", "democ", "hrtsdemoc", "h1", "i1", "p1", "e1", "r1", "male", "white", "age", "ed4"]
-tomz_cleand = tomz.loc[:, var_list]
+var_list = (["f_index_all", "treat", "male", "age", "ideology", "hhinc"]  +
+    [col for col in df.columns if "dumreg_" in col])
+df_cleand = df.loc[:, var_list]
 
 # Select columns for X and y from the DataFrame
-y_pd = tomz["f_strike5"]
-X_pd = tomz[["hrts", "democ", "h1", "i1", "p1", "e1", "r1", "male", "white", "age", "ed4"]]
-Z_pd = tomz[["h1", "i1", "p1", "e1", "r1", "male", "white", "age", "ed4"]]
+y_pd = df["f_index_all"]
+X_pd = df[[x for x in var_list if x != "f_index_all"]]
 
 # Case A: y is already integers like 1,...,J
 # (Check and, if needed, convert type)
@@ -41,27 +38,23 @@ else:
     y_np = y_codes + 1             # 1,...,J
 
 # Convert X and y to torch tensors with correct dtypes
-y = torch.tensor(
-    y_np,
-    dtype=torch.long
-)
 X = torch.tensor(
     X_pd.to_numpy(),
     dtype=torch.get_default_dtype()
 )
-Z = torch.tensor(
-    Z_pd.to_numpy(),
-    dtype=torch.get_default_dtype()
+y = torch.tensor(
+    y_np,
+    dtype=torch.long
 )
 
-y = y.to(device)
 X = X.to(device)
-Z = Z.to(device)
+y = y.to(device)
 # }}}
+
 
 # Run the model
 model = train_ordered_flow(
-    X, y, Z=Z,
+    X, y, Z=None,
     flow_bins=32,
     bounds=12,
     epochs=1000,
@@ -86,7 +79,7 @@ coef_names = [f"beta_{j}" for j in range(p)]  # or replace with your own names
 # 6. Bootstrap standard errors for beta
 # ----------------------------------------------------------------------
 # B is the number of bootstrap replications; adjust for precision vs. time.
-B = 0
+B = 100
 
 # Use the dedicated bootstrap function that only bootstraps beta coefficients.
 # Note: this will internally re-fit the model on the full sample, independent

@@ -13,21 +13,21 @@ torch.set_default_dtype(torch.float64)
 # Load and prepare data
 #{{{
 # Load data
-tomz = pd.read_stata("../replications/Tomz2020a/TomzWeeks-HumanRights-JOP-Files/2012-10-01-Main-YouGov/output/2012-10-01-Main-prepped.dta")
-tomz.columns
+df = pd.read_csv("../data/Reshon2023a_Israel_II_cleaned.csv")
+df.columns
 
 # recode variables
-tomz["f_strike5"] = pd.factorize(tomz["strike5"], sort=True)[0] + 1
-tomz["hrtsdemoc"] = tomz["hrts"] * tomz["democ"]
+df["f_followThrough"] = pd.factorize(df["followThrough"], sort=True)[0] + 1
 
 # subset
-var_list = ["f_strike5", "hrts", "democ", "hrtsdemoc", "h1", "i1", "p1", "e1", "r1", "male", "white", "age", "ed4"]
-tomz_cleand = tomz.loc[:, var_list]
+var_list = ["f_followThrough", "A", "Male", "age", "educ1", "know1", "combat", "milAssert1", "ideo1", "hawk", "isrlBrn"]
+df_cleaned = df.loc[:, var_list]
+df_cleaned = df_cleaned.dropna()
 
 # Select columns for X and y from the DataFrame
-y_pd = tomz["f_strike5"]
-X_pd = tomz[["hrts", "democ", "h1", "i1", "p1", "e1", "r1", "male", "white", "age", "ed4"]]
-Z_pd = tomz[["h1", "i1", "p1", "e1", "r1", "male", "white", "age", "ed4"]]
+y_pd = df_cleaned["f_followThrough"]
+X_pd = df_cleaned[[x for x in var_list if x != "f_followThrough"]]
+Z_pd = df_cleaned[[x for x in var_list if (x != "f_followThrough" and x != "A")]]
 
 # Case A: y is already integers like 1,...,J
 # (Check and, if needed, convert type)
@@ -130,4 +130,4 @@ summary = pd.DataFrame({
 
 print(summary.to_string(index=False))
 
-summary.to_csv("../data/tomz_nf_bfgs.csv", index=False, encoding="utf-8-sig")
+summary.to_csv("../data/df_nf_bfgs.csv", index=False, encoding="utf-8-sig")

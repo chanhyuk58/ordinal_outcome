@@ -13,21 +13,42 @@ torch.set_default_dtype(torch.float64)
 # Load and prepare data
 #{{{
 # Load data
-tomz = pd.read_stata("../replications/Tomz2020a/TomzWeeks-HumanRights-JOP-Files/2012-10-01-Main-YouGov/output/2012-10-01-Main-prepped.dta")
-tomz.columns
+df = pd.read_csv("../data/Mattingly2023a.csv")
 
 # recode variables
-tomz["f_strike5"] = pd.factorize(tomz["strike5"], sort=True)[0] + 1
-tomz["hrtsdemoc"] = tomz["hrts"] * tomz["democ"]
+df["f_political_model"] = pd.factorize(df["political_model"], sort=True)[0] + 1
+df["f_econ_model"] = pd.factorize(df["econ_model"], sort=True)[0] + 1
+df["f_world_leader"] = pd.factorize(df["world_leader"], sort=True)[0] + 1
+
+df = pd.concat([df, pd.get_dummies(df.treatment, prefix="treatment")], axis=1)
+df = pd.concat([df, pd.get_dummies(df.country, prefix="country")], axis=1)
+df = pd.concat([df, pd.get_dummies(df.gender, prefix="gender")], axis=1)
+df.columns
 
 # subset
-var_list = ["f_strike5", "hrts", "democ", "hrtsdemoc", "h1", "i1", "p1", "e1", "r1", "male", "white", "age", "ed4"]
-tomz_cleand = tomz.loc[:, var_list]
+var_list = (["f_political_model", "f_econ_model", "f_world_leader", "age", "education", "national_pride", "leftright"] +
+            [col for col in df if col.startswith("treatment")] + 
+            [col for col in df if col.startswith("country")] + 
+            [col for col in df if col.startswith("gender")]
+            )
+cov_list = (["age", "education", "national_pride", "leftright"] +
+            [col for col in df if col.startswith("treatment")] + 
+            [col for col in df if col.startswith("country")] + 
+            [col for col in df if col.startswith("gender")]
+            )
+cov_list2 = (["age", "education", "national_pride", "leftright"] +
+            [col for col in df if col.startswith("country")] + 
+            [col for col in df if col.startswith("gender")]
+            )
+df_cleaned = df.loc[:, var_list]
+df_cleaned = df_cleaned.dropna()
+
 
 # Select columns for X and y from the DataFrame
-y_pd = tomz["f_strike5"]
-X_pd = tomz[["hrts", "democ", "h1", "i1", "p1", "e1", "r1", "male", "white", "age", "ed4"]]
-Z_pd = tomz[["h1", "i1", "p1", "e1", "r1", "male", "white", "age", "ed4"]]
+y_pd = df_cleaned["f_political_model"]
+X_pd = df_cleaned[cov_list].drop(["treatment", "treatment_Control", "country", "country_3", "gender", "gender_0"], axis=1)
+Z_pd = df_cleaned[cov_list2].drop(["country", "country_3", "gender", "gender_0"], axis=1)
+Z_pd.columns
 
 # Case A: y is already integers like 1,...,J
 # (Check and, if needed, convert type)
@@ -46,11 +67,11 @@ y = torch.tensor(
     dtype=torch.long
 )
 X = torch.tensor(
-    X_pd.to_numpy(),
+    X_pd.to_numpy(dtype="float32"),
     dtype=torch.get_default_dtype()
 )
 Z = torch.tensor(
-    Z_pd.to_numpy(),
+    Z_pd.to_numpy(dtype="float32"),
     dtype=torch.get_default_dtype()
 )
 
@@ -78,15 +99,20 @@ model = train_ordered_flow(
 # Exclude flow parameters from reported coefficients: only beta.
 coef_vec = model.beta.detach().cpu().numpy()
 
+# # DF of coef and their names
+# result = pd.DataFrame({"names": X_pd.columns, "coef": coef_vec})
+# result.to_csv("../data/Mattingly2023a_world_leader_results.csv")
+
 p = coef_vec.shape[0]
-coef_names = [f"beta_{j}" for j in range(p)]  # or replace with your own names
+# coef_names = [f"beta_{j}" for j in range(p)]  # or replace with your own names
+coef_names = X_pd.columns
 
 
 # ----------------------------------------------------------------------
 # 6. Bootstrap standard errors for beta
 # ----------------------------------------------------------------------
 # B is the number of bootstrap replications; adjust for precision vs. time.
-B = 0
+B = 100
 
 # Use the dedicated bootstrap function that only bootstraps beta coefficients.
 # Note: this will internally re-fit the model on the full sample, independent
@@ -98,16 +124,12 @@ full_model_boot, beta_hat_boot, se_boot = bootstrap_beta_se_flow(
     y=y.cpu(),
     Z=None,
     B=B,
-    flow_bins=16,
-    bounds=10.0,
-    epochs=5000,
+    flow_bins=32,
+    bounds=12.0,
+    epochs=1000,
     lr=1e-3,
     init_probit=True,
     verbose=True,
-    train_kwargs={
-        "monitor_nll": True,  # usually turn off monitoring inside bootstrap
-        "neg_patience": 5      # optional: slightly more aggressive stopping
-    },
     return_bootstrap_betas=False
 )
 
@@ -130,4 +152,4 @@ summary = pd.DataFrame({
 
 print(summary.to_string(index=False))
 
-summary.to_csv("../data/tomz_nf_bfgs.csv", index=False, encoding="utf-8-sig")
+summary.to_csv("../data/Mattingly2023a_econ_results_full.csv", index=False, encoding="utf-8-sig")

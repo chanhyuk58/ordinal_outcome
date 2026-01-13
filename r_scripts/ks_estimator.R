@@ -146,50 +146,42 @@ compute_local_bandwidth <- function(pilot_density, sigma, n_group, delta) {
 # -------------------------------------------------------------------
 # Extract Link Function and Calculate Variance
 # -------------------------------------------------------------------
-calculate_ks_variance <- function(V_hat, Y, J, lambda_list, h, n_grid = 1000) {
-  # We define a grid over the possible values of the latent error.
-  # The 'support' is roughly the range of the thresholds - index.
-  grid_range <- range(V_hat)
-  grid <- seq(grid_range[1] - 3 * stats::sd(V_hat), 
-              grid_range[2] + 3 * stats::sd(V_hat), 
+calculate_ks_variance <- function(V_hat, Y, J, lambda_list, h, n_grid = 30000) {
+  # SIGNIFICANTLY expand the grid to capture Log-normal tails
+  # Instead of 3 SDs, use 10 SDs or use the min/max of the potential gaps
+  v_sd <- stats::sd(V_hat)
+  grid <- seq(min(V_hat) - 10 * v_sd, 
+              max(V_hat) + 10 * v_sd, 
               length.out = n_grid)
   
-  # In KS, the link function F is estimated per threshold.
-  # We take the average density across thresholds to get the 'global' error density.
   pdf_accum <- numeric(n_grid)
+  valid_thresholds <- 0
   
   for (j in 1:J) {
-    # Data for the j-th boundary
-    V_j1 <- V_hat[Y <= j]
-    V_j0 <- V_hat[Y > j]
+    V1 <- V_hat[Y <= j]; V0 <- V_hat[Y > j]
+    if (length(V1) < 5 || length(V0) < 5) next
     
-    if (length(V_j1) < 2 || length(V_j0) < 2) next
+    # Evaluate density using the SAME local bandwidths found at optimum
+    g1 <- ks_kde_eval_cpp(grid, V1, lambda_list[[j]]$l1, h)
+    g0 <- ks_kde_eval_cpp(grid, V0, lambda_list[[j]]$l0, h)
     
-    p1 <- length(V_j1) / length(V_hat)
-    p0 <- length(V_j0) / length(V_hat)
-    
-    # Calculate density on the grid for both groups
-    g1 <- ks_kde_eval_cpp(grid, V_j1, lambda_list[[j]]$l1, h)
-    g0 <- ks_kde_eval_cpp(grid, V_j0, lambda_list[[j]]$l0, h)
-    
-    # The weighted density at this threshold
+    p1 <- length(V1)/length(V_hat); p0 <- length(V0)/length(V_hat)
     pdf_accum <- pdf_accum + (p1 * g1 + p0 * g0)
+    valid_thresholds <- valid_thresholds + 1
   }
   
-  # Average PDF across J thresholds
-  pdf_avg <- pdf_accum / J
-  
-  # Numerical integration (Trapezoidal rule)
+  pdf_avg <- pdf_accum / valid_thresholds
   dx <- grid[2] - grid[1]
   
-  # Normalize PDF (ensure it integrates to 1)
-  pdf_avg <- pdf_avg / (sum(pdf_avg) * dx)
+  # Normalize to ensure it is a valid probability distribution
+  area <- sum(pdf_avg) * dx
+  pdf_avg <- pdf_avg / area
   
-  # Mean and Variance
-  mean_eps <- sum(grid * pdf_avg) * dx
-  var_eps  <- sum(((grid - mean_eps)^2) * pdf_avg) * dx
+  # Numerical Integration
+  mu  <- sum(grid * pdf_avg) * dx
+  var <- sum(((grid - mu)^2) * pdf_avg) * dx
   
-  return(list(var = var_eps, pdf = pdf_avg, grid = grid))
+  return(list(var = var, pdf = pdf_avg, grid = grid, mu = mu))
 }
 
 # -------------------------------------------------------------------

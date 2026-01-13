@@ -16,9 +16,8 @@ import torch
 import matplotlib.pyplot as plt
 
 from ordinal_flow_core import (
-    get_true_error
+    get_true_error,
 )
-
 # ======== Simulation with generalized thresholds ========
 
 def simulate_X_with_two_binary(n, p, bin_idx=(0, 1), bin_prob=(0.5, 0.5), seed=None): # {{{
@@ -142,18 +141,15 @@ def main():
     p = 5                 # number of covariates
     J = 5                 # number of ordinal categories
     true_error_spec = "lognormal"  # or 'mixture_gaussian', 'lognormal', 'normal'
-    # true_error_spec = "mixture_gaussian"  # or 'mixture_gaussian', 'lognormal', 'normal'
-    seed = 76532
+    seed = 23048
 
     # True beta (latent index coefficients)
-    beta_true = torch.tensor([2.0, 0.8, -1.2, 1.0, -0.7], dtype=torch.get_default_dtype())
-    beta_true = torch.tensor([1.6, 0.7, -1.2, 1.0, -0.8], dtype=torch.get_default_dtype())
+    beta_true = torch.tensor([1.0, 0.8, -0.8, 0.5, -0.5], dtype=torch.get_default_dtype())
 
-    # Thresholds: here constant across observations: 
-    alpha1 = -1.0
-    # alpha1 = -1.8
-    gaps = np.array([0.8, 1.4, 3.0], dtype=float)  # J-2 = 3 gaps for J=5
-    # gaps = np.array([1.6, 0.6, 1.5], dtype=float)  # J-2 = 3 gaps for J=5
+    # Thresholds: here constant across observations: [-2.0, -0.5, 0.5, 2.0]
+    alpha1 = -2.0
+    gaps = np.array([1.5, 1.0, 1.5], dtype=float)  # J-2 = 3 gaps for J=5
+    # gaps = np.array([1.5, 2.0, 1.5], dtype=float)  # J-2 = 3 gaps for J=5
     thr_true = {
         "alpha1_intercept": alpha1,
         "alpha1_gamma": None,
@@ -226,33 +222,33 @@ def main():
     df_idx.to_csv(idx_csv, index=False)
     print(f"Saved MC indices to: {idx_csv}")
 
-    # # -------------------- Step 3: Plot latent y_star and thresholds --------------------
-    # # For plotting, we may subsample if N is very large
-    # max_plot = 200000
-    # if N > max_plot:
-    #     samp_idx = np.random.choice(N, size=max_plot, replace=False)
-    #     y_star_plot = y_star_pop[samp_idx].cpu().numpy()
-    # else:
-    #     y_star_plot = y_star_pop.cpu().numpy()
-    #
-    # plt.figure(figsize=(8, 5))
-    # # Density via histogram or KDE
-    # plt.hist(y_star_plot, bins=200, density=True, alpha=0.4, color="steelblue", label="Latent y* density")
-    #
-    # # Add vertical lines for thresholds (one example vector)
-    # for t in thr_example:
-    #     plt.axvline(t, color="red", linestyle="--", linewidth=1)
-    #
-    # plt.xlabel("y*")
-    # plt.ylabel("Density")
-    # plt.title(f"Latent space: {true_error_spec}, thresholds shown")
-    # plt.legend()
-    #
-    # plot_path = os.path.join(f"../figures/latent_space_{true_error_spec}_N{N}.png")
-    # plt.tight_layout()
-    # plt.savefig(plot_path, dpi=200)
-    # plt.close()
-    # print(f"Saved latent space plot to: {plot_path}")
+    # -------------------- Step 3: Plot latent y_star and thresholds --------------------
+    # For plotting, we may subsample if N is very large
+    max_plot = 200000
+    if N > max_plot:
+        samp_idx = np.random.choice(N, size=max_plot, replace=False)
+        y_star_plot = y_star_pop[samp_idx].cpu().numpy()
+    else:
+        y_star_plot = y_star_pop.cpu().numpy()
+
+    plt.figure(figsize=(8, 5))
+    # Density via histogram or KDE
+    plt.hist(y_star_plot, bins=200, density=True, alpha=0.4, color="steelblue", label="Latent y* density")
+
+    # Add vertical lines for thresholds (one example vector)
+    for t in thr_example:
+        plt.axvline(t, color="red", linestyle="--", linewidth=1)
+
+    plt.xlabel("y*")
+    plt.ylabel("Density")
+    plt.title(f"Latent space: {true_error_spec}, thresholds shown")
+    plt.legend()
+
+    plot_path = os.path.join(f"../figures/latent_space_{true_error_spec}_N{N}.png")
+    plt.tight_layout()
+    plt.savefig(plot_path, dpi=200)
+    plt.close()
+    print(f"Saved latent space plot to: {plot_path}")
 
 if __name__ == "__main__":
     main()
