@@ -623,7 +623,7 @@ The density of $h$ is then given by the change-of-variables formula:
 $$
 f_\theta(h)
 = f_Z\bigl(T_\theta^{-1}(h)\bigr)
-\left|\det \diff T_\theta^{-1}(h)\right|,
+\left|\det \left(  \frac{\partial T_\theta^{-1}(h)}{\partial h} \right) \right|,
 $$
 where $f_Z$ is the base density and $\diff T_\theta^{-1}$ is the Jacobian of the inverse transformation. The corresponding CDF $F_\theta$ can be obtained by integrating $f_\theta$. By choosing a sufficiently rich family for $T_\theta$, normalizing flows can approximate a wide range of error distributions while preserving tractable likelihoods and gradients.
 

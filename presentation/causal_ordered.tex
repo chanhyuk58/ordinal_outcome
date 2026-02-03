@@ -1,4 +1,4 @@
-\documentclass[xcolor=dvipsnames, handout]{beamer}
+\documentclass[]{beamer}
 \usetheme{presentation}
 \usepackage[round]{natbib}
 \usepackage{bibentry}
@@ -51,7 +51,7 @@
                 \draw[very thick, black] (0,0) -- (10,0); 
                 \foreach \x in {0, 10} \draw (\x, 0.2) -- (\x, -0.2);
                 % Axis Label
-                \node[above, yshift=5pt] at (5, 0) {\textbf{The True Outcome}};
+                \node[above, yshift=5pt] at (5, 0) {\scriptsize\textbf{The True Outcome}};
             \end{scope}
 
             % --- Step 3: First Arbitrary Bracketing ---
@@ -77,11 +77,11 @@
                     \draw (10,-0.2) to [out=-90, in=30] (9.25, -1.2);
 
                     % Bottom Labels
-                    \node at (1, -1.5) {\scriptsize\itshape Strongly Agree};
-                    \node at (3.25, -1.5) {\scriptsize\itshape Agree};
+                    \node at (1, -1.5) {\scriptsize\itshape Strongly Disagree};
+                    \node at (3.25, -1.5) {\scriptsize\itshape Disagree};
                     \node at (5.25, -1.5) {\scriptsize\itshape Neither};
-                    \node at (7.25, -1.5) {\scriptsize\itshape Disagree};
-                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Disagree};
+                    \node at (7.25, -1.5) {\scriptsize\itshape Agree};
+                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Agree};
                 \end{scope}
             }
 
@@ -108,11 +108,11 @@
                     \draw (10,-0.2) to [out=-90, in=30] (9.5, -1.2);
 
                     % Bottom Labels
-                    \node at (1.5, -1.5) {\scriptsize\itshape Strongly Agree};
-                    \node at (3.5, -1.5) {\scriptsize\itshape Agree};
+                    \node at (1.5, -1.5) {\scriptsize\itshape Strongly Disagree};
+                    \node at (3.5, -1.5) {\scriptsize\itshape Disagree};
                     \node at (4.5, -1.5) {\scriptsize\itshape Neither};
-                    \node at (7, -1.5) {\scriptsize\itshape Disagree};
-                    \node at (9.5, -1.5) {\scriptsize\itshape Strongly Disagree};
+                    \node at (7, -1.5) {\scriptsize\itshape Agree};
+                    \node at (9.5, -1.5) {\scriptsize\itshape Strongly Agree};
                 \end{scope}
             }
         \end{tikzpicture}
@@ -128,11 +128,11 @@
                 $\implies$ \textcolor{purple}{Normalized Latent Treatment Effect}
             }
             \vspace{0.5cm}
-        \item<1-> \textit{\color<3->{orange}Estimation} \\
+        \item<1-> \textit{\color<3->{Orange}Estimation} \\
             \only<3->{
                 Standard parametric regression is rigid \\
                 \vspace{0.2cm}
-                $\implies$ \textcolor{orange}{Flexible, density estimation} based estimators
+                $\implies$ \textcolor{Orange}{Flexible, density estimation} based estimators
             }
     \end{itemize}
 \end{frame}
@@ -146,9 +146,8 @@
                 % Removed '->' to get rid of the arrow
                 \draw[very thick, black] (0,0) -- (10,0); 
                 \foreach \x in {0, 10} \draw (\x, 0.1) -- (\x, -0.1);
-                \foreach \x in {2, 4.5, 6, 8.5} \draw (\x, 0.1) -- (\x, -0.1);
                 % Axis Label
-                \node[above, yshift=5pt] at (5, 0.5) {\textbf{The True Outcome ($\boldsymbol{Y^{\ast}}$)}};
+                \node[above, yshift=5pt] at (5, 0.5) {\scriptsize\textbf{Preference over Political System ($\boldsymbol{Y^{\ast}}$)}};
                 % Top Labels
                 \node at (0, 0.3) {\scriptsize\itshape 0};
                 \node at (10, 0.3) {\scriptsize\itshape 10};
@@ -187,7 +186,8 @@
             % }
 
             % --- Introduce Reporting Function ---
-            \only<3->{
+            \only<3>{
+                \foreach \x in {2, 4.5, 6, 8.5} \draw (\x, 0.1) -- (\x, -0.1);
                 \begin{scope}[purple]
                     % Partition A Cut-Points
 
@@ -208,11 +208,11 @@
                     \draw (10,-0.2) to [out=-90, in=30] (9.25, -1.2);
 
                     % Bottom Labels
-                    \node at (1, -1.5) {\scriptsize\itshape Strongly Agree};
-                    \node at (3.25, -1.5) {\scriptsize\itshape Agree};
-                    \node at (5.25, -1.5) {\scriptsize\itshape Neither};
-                    \node at (7.25, -1.5) {\scriptsize\itshape Disagree};
-                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Disagree};
+                    \node at (1, -1.5) {\scriptsize\itshape Strongly Not Prefer};
+                    \node at (3.25, -1.5) {\scriptsize\itshape Not Prefer};
+                    \node at (5.25, -1.5) {\scriptsize\itshape Neutral};
+                    \node at (7.25, -1.5) {\scriptsize\itshape Prefer};
+                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Prefer};
                 \end{scope}
             }
             % --- Common Index / Cardinalization ---
@@ -233,32 +233,54 @@
                     \node at (5, 0.4) {\footnotesize\itshape 5};
 
                     % Bottom Labels
-                    \node at (1, -1.5) {\scriptsize\itshape Strongly Agree};
-                    \node at (3.25, -1.5) {\scriptsize\itshape Agree};
-                    \node at (5.25, -1.5) {\scriptsize\itshape Neither};
-                    \node at (7.25, -1.5) {\scriptsize\itshape Disagree};
-                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Disagree};
+                    \node at (1, -1.5) {\scriptsize\itshape Strongly Not Prefer};
+                    \node at (3.25, -1.5) {\scriptsize\itshape Not Prefer};
+                    \node at (5.25, -1.5) {\scriptsize\itshape Neutral};
+                    \node at (7.25, -1.5) {\scriptsize\itshape Prefer};
+                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Prefer};
+                \end{scope}
+            }
+            \only<5>{
+                \foreach \x in {2, 4.5, 6, 8.5} \draw (\x, 0.1) -- (\x, -0.1);
+                \begin{scope}[purple]
+                    % Partition A Cut-Points
+
+                    % Brackets (Hanging Arches)
+                    \draw (0,-0.2) to [out=-90, in=150] (1, -1.2);
+                    \draw (2,-0.2) to [out=-90, in=30] (1, -1.2);
+                    
+                    \draw (2,-0.2) to [out=-90, in=150] (3.25, -1.2);
+                    \draw (4.5,-0.2) to [out=-90, in=30] (3.25, -1.2);
+
+                    \draw (4.5,-0.2) to [out=-90, in=150] (5.25, -1.2);
+                    \draw (6,-0.2) to [out=-90, in=30] (5.25, -1.2);
+                    
+                    \draw (6,-0.2) to [out=-90, in=150] (7.25, -1.2);
+                    \draw (8.5,-0.2) to [out=-90, in=30] (7.25, -1.2);
+                    
+                    \draw (8.5,-0.2) to [out=-90, in=150] (9.25, -1.2);
+                    \draw (10,-0.2) to [out=-90, in=30] (9.25, -1.2);
                 \end{scope}
             }
         \end{tikzpicture}
     \vspace{0.5cm}
     \pause
-    \begin{itemize}[<+->]
-        \item The treatment effect we want: $\E{Y^{\ast}(1)} - \E{Y^{\ast}(0)}$
-        \item \textit{\color{purple} Unknown Reporting Function $g$}
-        \item \textit{\color{blue} Arbitrary index $f$}
-        \item The treatment effect we get: $\E{{\color{blue}f}({\color{purple}{g}}(Y^{\ast}(1)))} - \E{{\color{blue}f}({\color{purple}{g}}(Y^{\ast}(0)))}$
+    \begin{itemize}
+        \item The treatment effect we want: $\E{Y^{\ast}(1)} - \E{Y^{\ast}(0)} = \tau^{\ast}$
+        \item<3, 5> \textit{\color{purple} Unknown Reporting Function $g$}
+        \item<4-> \textit{\color{blue} Arbitrary Numerical Index $f$}
+        \item<5-> What we get: $\E{{\color{blue}f}({\color{purple}{g}}(Y^{\ast}(1)))} - \E{{\color{blue}f}({\color{purple}{g}}(Y^{\ast}(0)))} \neq \tau^{\ast}$
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Normalization}
+\begin{frame}{New Estimands: Normalized Treatment Effect}
     \begin{itemize}[<+->]
-        \item Unobserved $Y^{\ast}$ and Unknown $g$ \\ 
-            $\implies$ identify LTE up to scale \\ 
+        \item Nonparametrically identified probability distribution of each answers \\
+            $\implies$ identify the Treatment Effect up to scale \\ 
             $\implies$ treatment effect $\tau^{\ast}$ cannot be distinguished form $C\tau^{\ast}$
             \vspace{0.4cm}
         \item Normalization to cancel out $C$
-        \begin{itemize}
+        \begin{enumerate}
             \item {\color<6->{blue} Scale to fix $\sigma_{\varepsilon_{i}} = 1$} \\
                 \only<6->{\color{blue}
                     \vspace{0.2cm}
@@ -267,7 +289,7 @@
                 }
             \item<4-5> If there are multiple treatments, fixing $\tau_{a} = 1$
             \item<5-5> Pure probability scale
-        \end{itemize}   
+        \end{enumerate}   
     \end{itemize}
 \end{frame}
 
@@ -279,12 +301,12 @@
         \item Distributional Assumptions can be violated
             \begin{itemize}
                 \item Pure misspecification
-                \item Unobserved confounder
+                \item Unaccounted confounder
             \end{itemize} \pause
             \vspace{0.2cm}
         \item Become \textit{inconsistent} \pause
             \vspace{0.3cm}
-        \item \textcolor{blue}{Two Flexible Estimators} without rigid Distributional Assumptions
+        \item \textcolor{Green}{Two Flexible Estimators} without rigid Distributional Assumptions
     \end{itemize}
 \end{frame}
 
@@ -301,14 +323,14 @@
                 \end{itemize}
             }
             \vspace{0.6cm}
-        \item<1-> Parametric Generative Model: \textcolor{orange}{Normalizing Flows}
+        \item<1-> Parametric Generative Model: \textcolor{Orange}{Normalizing Flows}
             \only<3->{
                 \begin{itemize}
                     \item Use the change-of-variable formula
                         $$
-                        f_\theta(h)
-                        = f_Z\bigl(T_\theta^{-1}(h)\bigr)
-                        \left|\det \diff T_\theta^{-1}(h)\right|,
+                        f_\theta(\varepsilon)
+                        = f_Z\bigl(T_\theta^{-1}(\varepsilon)\bigr)
+                        \left|\det \left( \frac{\partial T_\theta^{-1}(\varepsilon)}{\partial \varepsilon} \right) \right|,
                         $$
                     \item $T_{\theta}$ is a set of \textit{invertible} transformation
                 \end{itemize}
@@ -334,11 +356,13 @@
 \end{frame}
 
 \begin{frame}{Replication -- \citet{Mattingly2025a}}
+    \begin{itemize}
+        \item Effect of promotion videos on preference over political system
+        \item \textit{Strongly Prefer the US} to \textit{Strongly Prefer China}
+    \end{itemize}
 \begin{table}[!htb]\scriptsize
     \begin{center}
         \begin{tabular}{l c | c c c c }
-            \\ [-1.8ex]\hline\\ [-1.8ex]
-            \multicolumn{6}{l}{Outcome: Preference over Political System} \\ 
             \\ [-1.8ex] \hline\\ [-1.8ex]
             & ATE & \multicolumn{4}{c}{NLTE} \\
             \\ [-1.8ex]\cline{2-6} \\ [-1.8ex]
@@ -351,6 +375,7 @@
             Competition & $0.36^{\ast\ast\ast}$ & $0.21^{\ast\ast\ast}$ & $0.25^{\ast\ast\ast}$ & $0.13^{\ast}$ & $0.11^{\ast\ast}$ \\
             & $(0.05)$ & $(0.04)$ & $(0.04)$ & $(0.06)$ & $(0.04)$ \\
             \\ [-1.8ex] \hline\\ [-1.8ex]
+            \multicolumn{6}{l}{\hfill\scriptsize{$^{***}p<0.001$; $^{**}p<0.01$; $^{*}p<0.05$}}
         \end{tabular}
     \end{center}
 \end{table}
@@ -360,16 +385,16 @@
     \begin{itemize}
         \item<1-> \textit{\color<2->{purple}Identification} \\
             \only<2->{
-                Naive use of ordinal "index" may mislead \\
+                Naive use of ordinal "index" is not what we want \\
                 \vspace{0.2cm}
                 $\implies$ \textcolor{purple}{Normalized Latent Treatment Effect}
             }
             \vspace{0.5cm}
-        \item<1-> \textit{\color<3->{orange}Estimation} \\
+        \item<1-> \textit{\color<3->{Orange}Estimation} \\
             \only<3->{
-                Standard Ordinal regression approaches risk inconsistent  \\
+                Standard ordinal regressions risk inconsistency \\
                 \vspace{0.2cm}
-                $\implies$ \textcolor{orange}{KDE} or \textcolor{orange}{NF} based estimators
+                $\implies$ \textcolor{Orange}{KDE} or \textcolor{Orange}{NF} based estimators
             }
     \end{itemize}
 \end{frame}
