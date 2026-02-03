@@ -1,4 +1,4 @@
-\documentclass[xcolor=dvipsnames]{beamer}
+\documentclass[xcolor=dvipsnames, handout]{beamer}
 \usetheme{presentation}
 \usepackage[round]{natbib}
 \usepackage{bibentry}
@@ -120,271 +120,257 @@
 \end{frame}
 
 \begin{frame}{The Goal}
-    \begin{itemize}[<+->]
-        \item \textbf{Identification}: \\ 
-            Naive causal identification with these "index" may fail \\
-            $\implies$ Normalized Latent Treatment Effect (NLTE)
-        \item \textbf{Estimation}: \\
-            Standard parametric regression is rigid \\
-            $\implies$ Flexible, density estimation based estimators
+    \begin{itemize}
+        \item<1-> \textit{\color<2->{purple}Identification} \\
+            \only<2->{
+                Naive causal identification with these "index" may fail \\
+                \vspace{0.2cm}
+                $\implies$ \textcolor{purple}{Normalized Latent Treatment Effect}
+            }
+            \vspace{0.5cm}
+        \item<1-> \textit{\color<3->{orange}Estimation} \\
+            \only<3->{
+                Standard parametric regression is rigid \\
+                \vspace{0.2cm}
+                $\implies$ \textcolor{orange}{Flexible, density estimation} based estimators
+            }
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Up To Scale Identification}
+\begin{frame}{Why Naive Identification Fails}
+    \vspace{0.5cm}
+    \centering
+        \begin{tikzpicture}[font=\sffamily, thick]
+            % --- Main Axis (Always Black and No Arrow) ---
+            \begin{scope} 
+                % Removed '->' to get rid of the arrow
+                \draw[very thick, black] (0,0) -- (10,0); 
+                \foreach \x in {0, 10} \draw (\x, 0.1) -- (\x, -0.1);
+                \foreach \x in {2, 4.5, 6, 8.5} \draw (\x, 0.1) -- (\x, -0.1);
+                % Axis Label
+                \node[above, yshift=5pt] at (5, 0.5) {\textbf{The True Outcome ($\boldsymbol{Y^{\ast}}$)}};
+                % Top Labels
+                \node at (0, 0.3) {\scriptsize\itshape 0};
+                \node at (10, 0.3) {\scriptsize\itshape 10};
+            \end{scope}
+
+            % --- DGP ---
+            % \only<2->{
+            %     \begin{scope} 
+            %         % Partition A Cut-Points
+            %
+            %         % Brackets (Hanging Arches)
+            %         \draw (0,-0.2) to [out=-90, in=150] (1, -1.2);
+            %         \draw (2,-0.2) to [out=-90, in=30] (1, -1.2);
+            %
+            %         \draw (2,-0.2) to [out=-90, in=150] (3.25, -1.2);
+            %         \draw (4.5,-0.2) to [out=-90, in=30] (3.25, -1.2);
+            %
+            %         \draw (4.5,-0.2) to [out=-90, in=150] (5.25, -1.2);
+            %         \draw (6,-0.2) to [out=-90, in=30] (5.25, -1.2);
+            %
+            %         \draw (6,-0.2) to [out=-90, in=150] (7.25, -1.2);
+            %         \draw (8.5,-0.2) to [out=-90, in=30] (7.25, -1.2);
+            %
+            %         \draw (8.5,-0.2) to [out=-90, in=150] (9.25, -1.2);
+            %         \draw (10,-0.2) to [out=-90, in=30] (9.25, -1.2);
+            %
+            %         % Bottom Labels
+            %         \node at (1, -1.5) {\scriptsize\itshape Strongly Agree};
+            %         \node at (3.25, -1.5) {\scriptsize\itshape Agree};
+            %         \node at (5.25, -1.5) {\scriptsize\itshape Neither};
+            %         \node at (7.25, -1.5) {\scriptsize\itshape Disagree};
+            %         \node at (9.25, -1.5) {\scriptsize\itshape Strongly Disagree};
+            %
+            %
+            %     \end{scope}
+            % }
+
+            % --- Introduce Reporting Function ---
+            \only<3->{
+                \begin{scope}[purple]
+                    % Partition A Cut-Points
+
+                    % Brackets (Hanging Arches)
+                    \draw (0,-0.2) to [out=-90, in=150] (1, -1.2);
+                    \draw (2,-0.2) to [out=-90, in=30] (1, -1.2);
+                    
+                    \draw (2,-0.2) to [out=-90, in=150] (3.25, -1.2);
+                    \draw (4.5,-0.2) to [out=-90, in=30] (3.25, -1.2);
+
+                    \draw (4.5,-0.2) to [out=-90, in=150] (5.25, -1.2);
+                    \draw (6,-0.2) to [out=-90, in=30] (5.25, -1.2);
+                    
+                    \draw (6,-0.2) to [out=-90, in=150] (7.25, -1.2);
+                    \draw (8.5,-0.2) to [out=-90, in=30] (7.25, -1.2);
+                    
+                    \draw (8.5,-0.2) to [out=-90, in=150] (9.25, -1.2);
+                    \draw (10,-0.2) to [out=-90, in=30] (9.25, -1.2);
+
+                    % Bottom Labels
+                    \node at (1, -1.5) {\scriptsize\itshape Strongly Agree};
+                    \node at (3.25, -1.5) {\scriptsize\itshape Agree};
+                    \node at (5.25, -1.5) {\scriptsize\itshape Neither};
+                    \node at (7.25, -1.5) {\scriptsize\itshape Disagree};
+                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Disagree};
+                \end{scope}
+            }
+            % --- Common Index / Cardinalization ---
+            \only<4->{
+                \begin{scope}[blue]
+                    % Arrows to top
+                    \draw[->] (1,-1) to (1, -0.2);
+                    \draw[->] (3.25,-1) to (2, -0.2);
+                    \draw[->] (5.25,-1) to (3, -0.2);
+                    \draw[->] (7.25,-1) to (4, -0.2);
+                    \draw[->] (9.25,-1) to (5, -0.2);
+
+                    % Top Labels
+                    \node at (1, 0.4) {\footnotesize\itshape 1};
+                    \node at (2, 0.4) {\footnotesize\itshape 2};
+                    \node at (3, 0.4) {\footnotesize\itshape 3};
+                    \node at (4, 0.4) {\footnotesize\itshape 4};
+                    \node at (5, 0.4) {\footnotesize\itshape 5};
+
+                    % Bottom Labels
+                    \node at (1, -1.5) {\scriptsize\itshape Strongly Agree};
+                    \node at (3.25, -1.5) {\scriptsize\itshape Agree};
+                    \node at (5.25, -1.5) {\scriptsize\itshape Neither};
+                    \node at (7.25, -1.5) {\scriptsize\itshape Disagree};
+                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Disagree};
+                \end{scope}
+            }
+        \end{tikzpicture}
+    \vspace{0.5cm}
+    \pause
     \begin{itemize}[<+->]
-        \item We can identify LTE up to scale (Theorem 1)
-        \item From the model and data we know:
-            $$
-            \begin{aligned}
-                \mathbb{P}\left(Y(D) \le j\right) &= \mathbb{P}\left(Y^{\ast} \le \alpha_j \right) \\
-            \end{aligned}
-            $$  
-        \item We can construct MLE with using this probability.
-        \item However, if we scale $Y^{\ast}$ side by a constant, $c > 0$, we still get the same probability
-            $$
-            \begin{aligned}
-                \mathbb{P}\left(Y(D) \le j\right) &= \mathbb{P}\left(Y^{\ast} \le \alpha_j \right) \\
-                &= \mathbb{P}\left(c Y^{\ast} \le c \alpha_j\right) \\
-            \end{aligned}
-            $$  
+        \item The treatment effect we want: $\E{Y^{\ast}(1)} - \E{Y^{\ast}(0)}$
+        \item \textit{\color{purple} Unknown Reporting Function $g$}
+        \item \textit{\color{blue} Arbitrary index $f$}
+        \item The treatment effect we get: $\E{{\color{blue}f}({\color{purple}{g}}(Y^{\ast}(1)))} - \E{{\color{blue}f}({\color{purple}{g}}(Y^{\ast}(0)))}$
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Normalization}
     \begin{itemize}[<+->]
-        \item Up to scale identification is disappointing
-        \item Proper normalization helps interpretation and comparison across models and across samples
-        \item Fixing $Var(\varepsilon_{i}) = 1$ is one way
-        \item This works as mapping $Y_{i}^{\ast}$ to the space where the variance of the error is a unit / probit space
+        \item Unobserved $Y^{\ast}$ and Unknown $g$ \\ 
+            $\implies$ identify LTE up to scale \\ 
+            $\implies$ treatment effect $\tau^{\ast}$ cannot be distinguished form $C\tau^{\ast}$
+            \vspace{0.4cm}
+        \item Normalization to cancel out $C$
+        \begin{itemize}
+            \item {\color<6->{blue} Scale to fix $\sigma_{\varepsilon_{i}} = 1$} \\
+                \only<6->{\color{blue}
+                    \vspace{0.2cm}
+                    $\implies \frac{\tau^{\ast}}{\sigma_{\varepsilon_{i}}}$ is identified
+                    \vspace{0.2cm}
+                }
+            \item<4-5> If there are multiple treatments, fixing $\tau_{a} = 1$
+            \item<5-5> Pure probability scale
+        \end{itemize}   
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Common Transformation: Cardinalization and Binarization}
+\begin{frame}{How Can We Estimate?}
     \begin{itemize}
-        \item Cardinalization
+        \item Ordered Probit, Ordered Logit, and most IRT models \\
+            $\implies$ Assume that $\varepsilon_i$ follows specific distributions \pause
+            \vspace{0.3cm}
+        \item Distributional Assumptions can be violated
             \begin{itemize}
-                \item Relies on luck
-            \end{itemize}
-        \item Binarization
-            \begin{itemize}
-                \item Lose significant efficiency
-                \item Estimate may be sensitive to how you group the ordinal outcomes
-            \end{itemize}
+                \item Pure misspecification
+                \item Unobserved confounder
+            \end{itemize} \pause
+            \vspace{0.2cm}
+        \item Become \textit{inconsistent} \pause
+            \vspace{0.3cm}
+        \item \textcolor{blue}{Two Flexible Estimators} without rigid Distributional Assumptions
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Small Example}
-    \begin{table}[ht]
-        \centering
-        \begin{tabular}{c|cc}
-            \hline
-             & $Y_i^\ast(0)$ & $Y_i^\ast(1)$ \\
-            \hline
-            A &  1.37 & 0.09 \\
-            B & -0.56 & 1.71 \\
-            C &  0.36 & 0.11 \\
-            D &  0.63 & 2.22 \\
-            E &  0.40 & 0.14 \\
-            \hline
-        \end{tabular}
-        \label{tab:latent_example}
-    \end{table}
+\begin{frame}{Alternative: Estimate the Distribution}
     \begin{itemize}
-        \item The LTE in the latent preference space is: $0.41$
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Small Example -- Cardinalization}
-    \begin{itemize}
-        \item Suppose two transformation functions: $g_{a}$ and $g_{b}$
-        \item Both are monotone, but with different thresholds ($\alpha_{j}$)
-    \end{itemize}
-    \begin{table}[ht]
-        \centering
-        \begin{tabular}{c|cc|cc}
-            \hline
-            & \multicolumn{2}{c|}{$g_a$} & \multicolumn{2}{c}{$g_b$} \\
-            & $Y_{i,g_a}(0)$ & $Y_{i,g_a}(1)$ & $Y_{i,g_b}(0)$ & $Y_{i,g_b}(1)$ \\
-            \hline
-            A & Agree          & Agree          & Agree          & Disagree \\
-            B & Neither        & Agree          & Disagree       & Agree    \\
-            C & Agree          & Agree          & Neither        & Disagree \\
-            D & Agree          & Strongly Agree & Neither        & Agree    \\
-            E & Agree          & Agree          & Neither        & Disagree \\
-            \hline
-        \end{tabular}
-        \label{tab:g_example}
-    \end{table}
-\end{frame}
-
-\begin{frame}{Small Example -- Cardinalization}
-    \begin{itemize}
-        \item A researcher impose common cardinalization of 1 to 5,
-        \item In case the true transformation is $g_{a}$, the estimate is $-0.4$
-        \item In case the true transformation is $g_{b}$, the estimate is $0.2$
-        \item Without compelling reason to impose such numeric labels, cardinalization relies on pure luck
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Estimation}
-    \begin{itemize}
-        \item There has been tools for ordinal outcomes
-        \item Standard parametric approaches such as Ordered Probit and Ordered Logit
-        \item Two estimators based on density estimation techniques
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Ordered Logit and Probit}
-    \begin{itemize}
-        \item Assume that the error term follows a specific distribution (Logistic and Standard Normal)
-        \item And use maximum likelihood to estimate the coefficients
-        \item Identify coefficients up to scale
-        \item Once distributional assumption is violated, inconsistent
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Ordered Logit and Probit}
-\begin{itemize}
-    \item The true log-likelihood is:
-
-    \[
-    \begin{aligned}
-    \ell(\alpha,\beta,\tau)
-    =\;
-    &\sum_{i=1}^n \sum_{j=0}^J  
-        1_{\{Y_i = j\}}
-        \Bigg\{
-            \log F\!\left(
-                \alpha_j 
-                - f(X_i,\beta)
-                + D_i^\top \tau
-            \right)
-    \\
-    &\qquad\qquad\qquad
-            -\;
-            \log F\!\left(
-                \alpha_{j-1}
-                - f(X_i,\beta)
-                + D_i^\top \tau
-            \right)
-        \Bigg\}
-    \end{aligned}
-    \]
-
-    \item $F$ is the CDF of the true error.
-    \item If $F$ is not standard normal or standard logistic, MLE is inconsistent.
-    \item The error is never known, and omitted or unobserved confounder may also distort the error
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Alternative: Estimate the $F$}
-    \begin{itemize}
-        \item Instead of assuming a specific $F$, we can estimate as $\hat{F}$
-        \item Then the log-likelihood becomes:
-            \[
-            \begin{aligned}
-                \hat{\ell}(\alpha,\beta,\tau)
-            =\;
-            &\sum_{i=1}^n \sum_{j=0}^J  
-                1_{\{Y_i = j\}}
-                \Bigg\{
-                    \log \hat{F}\!\left(
-                        \alpha_j 
-                        - f(X_i,\beta)
-                        + D_i^\top \tau
-                    \right)
-            \\
-            &\qquad\qquad\qquad
-                    -\;
-                    \log \hat{F}\!\left(
-                        \alpha_{j-1}
-                        - f(X_i,\beta)
-                        + D_i^\top \tau
-                    \right)
-                \Bigg\}
-            \end{aligned}
-            \]
-        \item I propose to use two density estimation methods: KDE and Normalizing Flows
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Kernel Density Estimation}
-    \begin{itemize}
-        \item Nonparametric method
-        \item Smooth each observation using a kernel (usually Gaussian)
-            $$
-                \hat f(x)
-= \frac{1}{n h} \sum_{i=1}^n K\!\left( \frac{x - X_i}{h} \right)
-            $$ 
-        \item Generally, the moderate bandwidth ensures enough convergence rate for $\sqrt{n}$ consistency for the main estimator (semiparametric efficiency)
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Normalizing Flows}
-    \begin{itemize}
-        \item A flexible class of models that transform complex continuous density to simple base density (usually Gaussian)
-        \item Use the change-of-variable formula
-            $$
-                f_\theta(h)
-                = f_Z\bigl(T_\theta^{-1}(h)\bigr)
-                \left|\det \diff T_\theta^{-1}(h)\right|,
-            $$
-        \item $T_{\theta}$ is a set of \textit{invertible} transformation
-        \item Rational Quadratic Spline Flow
-        \item Since this is fully parametric, for finite $\theta$, MLE ensures $\sqrt{n}$ consistency
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{Simulation}
-    \begin{itemize}
-        \item Ordered Probit Ordered Logit and NF based only
-        \item Errors: Standard Normal and Log Normal distribution
-        \item A binary treatment randomized 
-        \item Covariates: One binary and three continuous (following normal distribution)
-        \item Thresholds: $-2, -1, 1, 2.5$ $\rightarrow$ 5 categories
-        \item Sample sizes: 200, 500, 1000, 2000
-        \item 200 Replications
+        \item<1-> Nonparametric method: \textcolor{purple}{Kernel Density Estimation}
+            \only<2->{
+                \begin{itemize}
+                    \item Smooth each observation using a kernel (usually Gaussian)
+                        $$
+                        \hat f(x)
+                        = \frac{1}{n h} \sum_{i=1}^n K\!\left( \frac{x - X_i}{h} \right)
+                        $$ 
+                \end{itemize}
+            }
+            \vspace{0.6cm}
+        \item<1-> Parametric Generative Model: \textcolor{orange}{Normalizing Flows}
+            \only<3->{
+                \begin{itemize}
+                    \item Use the change-of-variable formula
+                        $$
+                        f_\theta(h)
+                        = f_Z\bigl(T_\theta^{-1}(h)\bigr)
+                        \left|\det \diff T_\theta^{-1}(h)\right|,
+                        $$
+                    \item $T_{\theta}$ is a set of \textit{invertible} transformation
+                \end{itemize}
+            }
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Simulation}
 \begin{figure}
     \begin{tabular}{cc}
-        \includegraphics[width=0.45\textwidth]{../figures/latent_space_normal_N1000000.png} & \includegraphics[width=0.45\textwidth]{../figures/latent_space_lognormal_N1000000.png}\\
-    \end{tabular}
-\end{figure}
-\end{frame}
-
-\begin{frame}{Simulation -- Normal Case}
-    \begin{itemize}
-        \item True treatment size: 1.0
-    \end{itemize}
-\begin{figure}
-    \begin{tabular}{cc}
-        \includegraphics[width=0.45\textwidth]{../figures/expect_bias_oprobit_ologit_flow_normal_OLS.pdf} & \includegraphics[width=0.45\textwidth]{../figures/expect_rmse_oprobit_ologit_flow_normal_OLS.pdf}\\
+        \includegraphics[width=0.9\textwidth]{../figures/latent_space_lognormal_N1000000.png}\\
     \end{tabular}
 \end{figure}
 \end{frame}
 
 \begin{frame}{Simulation -- Lognormal Case}
-    \begin{itemize}
-        \item True treatment size: 0.46
-    \end{itemize}
 \begin{figure}
     \begin{tabular}{cc}
         \includegraphics[width=0.45\textwidth]{../figures/expect_bias_oprobit_ologit_flow_lognormal_OLS.pdf} & \includegraphics[width=0.45\textwidth]{../figures/expect_rmse_oprobit_ologit_flow_lognormal_OLS.pdf}\\
     \end{tabular}
+    \caption{\scriptsize True treatment size: 0.46}
 \end{figure}
+\end{frame}
+
+\begin{frame}{Replication -- \citet{Mattingly2025a}}
+\begin{table}[!htb]\scriptsize
+    \begin{center}
+        \begin{tabular}{l c | c c c c }
+            \\ [-1.8ex]\hline\\ [-1.8ex]
+            \multicolumn{6}{l}{Outcome: Preference over Political System} \\ 
+            \\ [-1.8ex] \hline\\ [-1.8ex]
+            & ATE & \multicolumn{4}{c}{NLTE} \\
+            \\ [-1.8ex]\cline{2-6} \\ [-1.8ex]
+            & Original -- OLS & Ordered Logit & Ordered Probit & KDE-based & NF-based \\
+            \\ [-1.8ex] \hline\\ [-1.8ex]
+            China & $1.04^{\ast\ast\ast}$ & $0.73^{\ast\ast\ast}$ & $0.76^{\ast\ast\ast}$ & $0.36^{\ast\ast\ast}$ & $0.37^{\ast\ast\ast}$ \\
+            & $(0.05)$ & $(0.04)$ & $(0.04)$ & $(0.07)$ & $(0.04)$ \\
+            USA & $-0.43^{\ast\ast\ast}$ & $-0.35^{\ast\ast\ast}$ & $-0.38^{\ast\ast\ast}$ & $-0.18^{\ast\ast\ast}$ & $-0.17^{\ast\ast\ast}$ \\
+            & $(0.04)$ & $(0.04)$ & $(0.04)$ & $(0.05)$ & $(0.03)$ \\
+            Competition & $0.36^{\ast\ast\ast}$ & $0.21^{\ast\ast\ast}$ & $0.25^{\ast\ast\ast}$ & $0.13^{\ast}$ & $0.11^{\ast\ast}$ \\
+            & $(0.05)$ & $(0.04)$ & $(0.04)$ & $(0.06)$ & $(0.04)$ \\
+            \\ [-1.8ex] \hline\\ [-1.8ex]
+        \end{tabular}
+    \end{center}
+\end{table}
 \end{frame}
 
 \begin{frame}{Conclusion}
     \begin{itemize}
-        \item With ordinal outcomes, treatment effects can only be identified up to scale
-        \item Cardinalization and Binarization have its pitfalls
-        \item Standard parametric approaches relies on strong distributional assumption
-        \item KDE and NF based approaches may provide flexible ways to estimate the true effects
-        \item For KDE, the normalization of coefficients is an issue...
-        \item For NF, Hyperparameter selection is an issue, trying to automatically adjust it while traing
+        \item<1-> \textit{\color<2->{purple}Identification} \\
+            \only<2->{
+                Naive use of ordinal "index" may mislead \\
+                \vspace{0.2cm}
+                $\implies$ \textcolor{purple}{Normalized Latent Treatment Effect}
+            }
+            \vspace{0.5cm}
+        \item<1-> \textit{\color<3->{orange}Estimation} \\
+            \only<3->{
+                Standard Ordinal regression approaches risk inconsistent  \\
+                \vspace{0.2cm}
+                $\implies$ \textcolor{orange}{KDE} or \textcolor{orange}{NF} based estimators
+            }
     \end{itemize}
 \end{frame}
 
