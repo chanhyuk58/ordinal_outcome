@@ -1,16 +1,12 @@
 ---
 title: "identification outline"
 created: 2025-12-14 10:23:51
-modified: 2025-12-26 14:38:57
+modified: 2026-01-25 13:18:20
 tags: 
   - 
 fontsize: 10pt
 header-includes:
-  - \usepackage{setspace}
-  - \doublespacing
-  - \usepackage[margin=1in]{geometry}
-  - \let\maketitle\relax
-  - \newtheorem{theorem}{Theorem}
+  - \usepackage{paper}
 ---
 
 

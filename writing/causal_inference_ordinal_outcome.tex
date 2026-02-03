@@ -1,43 +1,14 @@
 %vim:foldmethod=marker
-%{{{
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Define Article %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \documentclass{article}
-%\usepackage{paper}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Using Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{natbib}
-\usepackage{geometry}
-\geometry{
-    letterpaper,
-    % landscape,
-    % margin=1in
-}
-\usepackage{graphicx}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amsfonts}
-\newtheorem{assumption}{Assumption}
-\newtheorem{theorem}{Theorem}
-\newtheorem{definition}{Definition}
-% \usepackage[cjk]{kotex}
-
-\usepackage{listings}
-\lstset{language=R,keywordstyle={\bfseries}}
-% \usepackage{tikz}
-\usepackage{multirow}
-
+\usepackage{paper}
 \usepackage{xcolor}
 
-\usepackage{setspace}
-\doublespacing
-
-\DeclareMathOperator{\D}{D}
-% }}}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Title & Author %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ----------------------------- Title & Author ------------------------------ %
 \title{Causal Inference with Ordinal Outcomes: Two Approaches Using Density Estimation Techniques}
 \author{Chanhyuk Park}
 \date{}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------------------------- %
 
 \begin{document}
     \maketitle
@@ -50,7 +21,7 @@
 \section{Introduction}
 \label{sec:introduction}
 
-With the growing emphasis on causal inference, political science has increasingly focused on identifying the effects of policies, institutions, and information. Experimental and quasi-experimental designs, such as survey experiments, difference-in-differences, and regression discontinuity designs, have become standard empirical strategies across subfields. Survey experiments are especially prominent because random assignment promises clean identification; indeed, from 2021 to 2024, roughly 20% of articles in the top three general political science journals (\textit{American Political Science Review, American Journal of Political Science, and Journal of Politics}) included a survey experiment as part of their empirical strategy.
+With the growing emphasis on causal inference, political science has increasingly focused on identifying the effects of policies, institutions, and information. Experimental and quasi-experimental designs, such as survey experiments, difference-in-differences, and regression discontinuity designs, have become standard empirical strategies across subfields. Survey experiments are especially prominent because random assignment promises clean identification; indeed, from 2021 to 2024, roughly 20\% of articles in the top three general political science journals (\textit{American Political Science Review, American Journal of Political Science, and Journal of Politics}) included a survey experiment as part of their empirical strategy.
 
 Much of this research studies outcomes that are inherently latent and subjective, such as attitudes toward redistribution \citep{Alt2017a, Magni2021a}, approval of political leaders \citep{Canes-Wrone2002a, Kriner2009a}, or foreign policy preferences \citep{Tomz2020a}. These concepts are typically assumed to lie on a unidimensional latent continuum but are observed through ordinal response categories. Likert-type items, ranging from \textit{strongly disagree} to \textit{strongly agree}, are the most common example. Although such scales are intended to capture gradations of an underlying attitude, they encode only order, not the distances between categories.
 
@@ -652,9 +623,9 @@ The density of $h$ is then given by the change-of-variables formula:
 $$
 f_\theta(h)
 = f_Z\bigl(T_\theta^{-1}(h)\bigr)
-\left|\det \D T_\theta^{-1}(h)\right|,
+\left|\det \diff T_\theta^{-1}(h)\right|,
 $$
-where $f_Z$ is the base density and $\D T_\theta^{-1}$ is the Jacobian of the inverse transformation. The corresponding CDF $F_\theta$ can be obtained by integrating $f_\theta$. By choosing a sufficiently rich family for $T_\theta$, normalizing flows can approximate a wide range of error distributions while preserving tractable likelihoods and gradients.
+where $f_Z$ is the base density and $\diff T_\theta^{-1}$ is the Jacobian of the inverse transformation. The corresponding CDF $F_\theta$ can be obtained by integrating $f_\theta$. By choosing a sufficiently rich family for $T_\theta$, normalizing flows can approximate a wide range of error distributions while preserving tractable likelihoods and gradients.
 
 Again, instead of assuming a specific $F$, we model the error term as
 $$
@@ -904,6 +875,9 @@ The empirical applications further underscore the substantive importance of thes
 
 Several directions for future work follow from these results. First, while we focused on single-item ordinal outcomes, extending density-estimation-based methods to multi-item settings and integrating them more tightly with IRT-style measurement models would be valuable. Second, developing practical diagnostic tools for assessing error distribution misspecification in ordinal models, building on surrogate residuals or related techniques, would complement the estimators proposed here. Third, applications with clustered, panel, or hierarchical data structures pose additional challenges for both identification and estimation that merit further study. More broadly, the analysis reinforces the importance of taking the ordinal nature of many political science outcomes seriously and of being explicit about the assumptions and normalizations that underlie estimates of causal effects on latent attitudes.
 
+
+\bibliographystyle{apsr}
+\bibliography{/Users/chanhyuk/Documents/MyLibrary}
 
 \newpage
 \section{Appendix}
@@ -1162,7 +1136,4 @@ $$
 $$
 so that all treatment effects are expressed on the same unit-error-variance latent scale as in the main text.
 
-
-\bibliographystyle{apsr}
-\bibliography{/Users/chanhyuk/Documents/MyLibrary}
 \end{document}
