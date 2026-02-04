@@ -313,7 +313,7 @@
 \begin{frame}{Alternative: Estimate the Distribution}
     \begin{itemize}
         \item<1-> Nonparametric method: \textcolor{purple}{Kernel Density Estimation}
-            \only<2->{
+            \only<2-3>{
                 \begin{itemize}
                     \item Smooth each observation using a kernel (usually Gaussian)
                         $$
@@ -322,9 +322,9 @@
                         $$ 
                 \end{itemize}
             }
-            \vspace{0.6cm}
+            \vspace{0.5cm}
         \item<1-> Parametric Generative Model: \textcolor{Orange}{Normalizing Flows}
-            \only<3->{
+            \only<3>{
                 \begin{itemize}
                     \item Use the change-of-variable formula
                         $$
@@ -335,6 +335,13 @@
                     \item $T_{\theta}$ is a set of \textit{invertible} transformation
                 \end{itemize}
             }
+            \vspace{0.5cm}
+        \item<1, 4-> Plug into MLE
+            $$ 
+                \ell(\alpha,\beta,\tau) = \sum_{i=1}^n \sum_{j=0}^J 1_{{Y_i=j}} \log\left[ \hat{F}_{\varepsilon_i}\bigl( D_i, \tau_i \bigr)
+                \hat{F}_{\varepsilon_i}\bigl( D_i, \tau_i \bigr) \right] 
+            $$ 
+            
     \end{itemize}
 \end{frame}
 
