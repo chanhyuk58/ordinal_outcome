@@ -571,8 +571,12 @@ Under either specification, the probability of observing category $j$ conditiona
 $$
 \mathbb{P}(Y_i = j \mid X_i,D_i)
 = F\bigl( \alpha_j - f(X_i,\beta) - D_i^\top\tau \bigr) - F\bigl( \alpha_{j-1} - f(X_i,\beta) - D_i^\top\tau \bigr) 
-$$, where $F$ is the assumed CDF (normal for ordered probit, logistic for ordered logit). The log-likelihood for a sample of size $n$ is $$ \ell(\alpha,\beta,\tau) = \sum_{i=1}^n \sum_{j=0}^J 1_{{Y_i=j}} \log\left[ F\bigl( \alpha_j - f(X_i,\beta) - D_i^\top\tau \bigr)
-F\bigl( \alpha_{j-1} - f(X_i,\beta) - D_i^\top\tau \bigr) \right], $$ and maximum likelihood estimation yields $\hat{\alpha}$, $\hat{\beta}$, and $\hat{\tau}$.
+$$, where $F$ is the assumed CDF (normal for ordered probit, logistic for ordered logit). The log-likelihood for a sample of size $n$ is 
+$$ 
+\ell(\alpha,\beta,\tau) = \sum_{i=1}^n \sum_{j=0}^J 1_{{Y_i=j}} \log\left[ F\bigl( \alpha_j - f(X_i,\beta) - D_i^\top\tau \bigr)
+F\bigl( \alpha_{j-1} - f(X_i,\beta) - D_i^\top\tau \bigr) \right], 
+$$ 
+and maximum likelihood estimation yields $\hat{\alpha}$, $\hat{\beta}$, and $\hat{\tau}$.
 % These models estimate $\tau$ up to the scale implied by the error distribution. In ordered probit, $\mathrm{Var}(\varepsilon_i)=1$ is imposed by construction, aligning with our error-variance normalization. In ordered logit, the latent scale differs by the factor $\sqrt{\mathrm{Var}(\varepsilon_i)} = \pi/\sqrt{3}$.
 
 If multiple items measure the same latent construct, item response theory (IRT) models provide an alternative framework. Standard IRT models treat each respondent as having a latent trait $\theta_i$ and each item $k$ as having discrimination and difficulty parameters. Ordered responses are modeled using item-specific thresholds and an assumed error distribution, typically normal or logistic. Treatment effects can then be estimated either in a second stage, by regressing estimated $\theta_i$ on $D_i$ and $X_i$, or jointly in hierarchical IRT models that combine measurement and causal components \citep{Zhou2019a, Stoetzer2025a}.

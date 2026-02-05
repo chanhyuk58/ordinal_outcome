@@ -223,6 +223,7 @@ def main():
     print(f"Saved MC indices to: {idx_csv}")
 
     # -------------------- Step 3: Plot latent y_star and thresholds --------------------
+
     # For plotting, we may subsample if N is very large
     max_plot = 200000
     if N > max_plot:
@@ -239,16 +240,54 @@ def main():
     for t in thr_example:
         plt.axvline(t, color="red", linestyle="--", linewidth=1)
 
-    plt.xlabel("y*")
+    x_min, x_max = plt.gca().get_xlim()
+    plt.axhline(0, color='black', linewidth=1)
+    plt.axvline(x_min, color='black', linewidth=1)
+    plt.xlabel("Y*")
     plt.ylabel("Density")
-    plt.title(f"Latent space: {true_error_spec}, thresholds shown")
-    plt.legend()
 
-    plot_path = os.path.join(f"../figures/latent_space_{true_error_spec}_N{N}.png")
+    plot_path = os.path.join(f"../figures/latent_space_{true_error_spec}_N{N}.pdf")
     plt.tight_layout()
-    plt.savefig(plot_path, dpi=200)
+    plt.box(False)
+    plt.savefig(plot_path)
     plt.close()
     print(f"Saved latent space plot to: {plot_path}")
+
+    # -------------------- Step 4: Generate Zoomed Figure --------------------
+    plt.figure(figsize=(8, 5))
+    
+    # Use the same histogram data but restrict the range
+    # Range is set to slightly outside your min/max thresholds
+    zoom_range = (min(thr_example) - 2, max(thr_example) + 3)
+    
+    plt.hist(y_star_plot, bins=200, range=zoom_range, density=True, 
+             alpha=0.4, color="steelblue", label="Latent y*")
+
+    # Thresholds and Category Labels
+    # We add -infinity and +infinity to the thresholds to find midpoints for all categories
+    extended_thrs = np.concatenate([[-5], thr_example, [5]]) 
+    
+    for i in range(len(extended_thrs) - 1):
+        # Calculate midpoint for the label
+        mid = (extended_thrs[i] + extended_thrs[i+1]) / 2
+        plt.text(mid, 0.02, f"Cat {i+1}", ha='center', fontweight='bold', color='darkred')
+        
+    # Draw the actual threshold lines
+    for t in thr_example:
+        plt.axvline(t, color="red", linestyle="--", linewidth=1.5)
+
+    plt.axhline(0, color='black', linewidth=1)
+    plt.axvline(zoom_range[0], color='black', linewidth=1)
+    plt.xlim(zoom_range)
+    plt.xlabel("Y*")
+    plt.ylabel("Density")
+
+    zoom_plot_path = os.path.join(f"../figures/latent_zoom_{true_error_spec}_N{N}.pdf")
+    plt.tight_layout()
+    plt.box(False)
+    plt.savefig(zoom_plot_path)
+    plt.close()
+    print(f"Saved zoomed plot to: {zoom_plot_path}")
 
 if __name__ == "__main__":
     main()

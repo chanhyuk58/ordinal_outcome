@@ -43,76 +43,49 @@
 
     \centering
     % The Latent Axis Line and its label appear on Step 2 and persist.
-    \only<3->{
-        \begin{tikzpicture}[font=\sffamily, thick]
-            % --- Main Axis (Always Black and No Arrow) ---
+    \only<3->{ 
+        \begin{tikzpicture}[font=\sffamily, thick, scale=1.1]
+            % --- Main Axis (Always Present in this block) ---
             \begin{scope} 
-                % Removed '->' to get rid of the arrow
                 \draw[very thick, black] (0,0) -- (10,0); 
-                \foreach \x in {0, 10} \draw (\x, 0.2) -- (\x, -0.2);
-                % Axis Label
-                \node[above, yshift=5pt] at (5, 0) {\scriptsize\textbf{The True Outcome}};
+                \foreach \x in {0, 10} \draw (\x, 0.1) -- (\x, -0.1);
+                \node[above, yshift=5pt] at (5, 0.2) {\scriptsize\textbf{The True Outcome ($\boldsymbol{Y^{\ast}}$)}};
             \end{scope}
 
-            % --- Step 3: First Arbitrary Bracketing ---
+            % --- Step 2: Index g_a (Naive/Positive ATE) ---
             \only<4>{
-                \begin{scope} 
-                    % Partition A Cut-Points
-                    \foreach \x in {2, 4.5, 6, 8.5} \draw (\x, 0.2) -- (\x, -0.2);
-
-                    % Brackets (Hanging Arches)
-                    \draw (0,-0.2) to [out=-90, in=150] (1, -1.2);
-                    \draw (2,-0.2) to [out=-90, in=30] (1, -1.2);
-                    
-                    \draw (2,-0.2) to [out=-90, in=150] (3.25, -1.2);
-                    \draw (4.5,-0.2) to [out=-90, in=30] (3.25, -1.2);
-
-                    \draw (4.5,-0.2) to [out=-90, in=150] (5.25, -1.2);
-                    \draw (6,-0.2) to [out=-90, in=30] (5.25, -1.2);
-                    
-                    \draw (6,-0.2) to [out=-90, in=150] (7.25, -1.2);
-                    \draw (8.5,-0.2) to [out=-90, in=30] (7.25, -1.2);
-                    
-                    \draw (8.5,-0.2) to [out=-90, in=150] (9.25, -1.2);
-                    \draw (10,-0.2) to [out=-90, in=30] (9.25, -1.2);
-
-                    % Bottom Labels
-                    \node at (1, -1.5) {\scriptsize\itshape Strongly Disagree};
-                    \node at (3.25, -1.5) {\scriptsize\itshape Disagree};
-                    \node at (5.25, -1.5) {\scriptsize\itshape Neither};
-                    \node at (7.25, -1.5) {\scriptsize\itshape Agree};
-                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Agree};
+                \begin{scope}
+                    \foreach \x [count=\i] in {2, 4, 6, 8}{ 
+                        \draw (\x, 0.1) -- (\x, -0.1);
+                        % \node[above] at (\x, 0.1) {\scriptsize $\alpha_{\i}$};
+                    }
+                    \draw (0,-0.2) to [out=-90, in=150] (1, -0.6); \draw (2,-0.2) to [out=-90, in=30] (1, -0.6); 
+                    \draw (2,-0.2) to [out=-90, in=150] (3, -0.6); \draw (4,-0.2) to [out=-90, in=30] (3, -0.6); 
+                    \draw (4,-0.2) to [out=-90, in=150] (5, -0.6); \draw (6,-0.2) to [out=-90, in=30] (5, -0.6); 
+                    \draw (6,-0.2) to [out=-90, in=150] (7, -0.6); \draw (8,-0.2) to [out=-90, in=30] (7, -0.6); 
+                    \draw (8,-0.2) to [out=-90, in=150] (9, -0.6); \draw (10,-0.2) to [out=-90, in=30] (9, -0.6); 
+                    \node at (1, -0.8) {\tiny\itshape Strongly Disagree}; \node at (3, -0.8) {\tiny\itshape Disagree}; \node at (5, -0.8) {\tiny\itshape Neither}; \node at (7, -0.8) {\tiny\itshape Agree}; \node at (9, -0.8) {\tiny\itshape Strongly Agree};
                 \end{scope}
             }
 
-            % --- Step 4: Second Arbitrary Bracketing ---
+            % --- Step 3: Index g_b (Arbitrary/Flipped ATE) ---
             \only<5>{
-                \begin{scope} 
-                    % Partition B Cut-Points
-                    \foreach \x in {3, 4, 5, 9} \draw (\x, 0.2) -- (\x, -0.2);
-
-                    % Brackets
-                    \draw (0,-0.2) to [out=-90, in=150] (1.5, -1.2);
-                    \draw (3,-0.2) to [out=-90, in=30] (1.5, -1.2);
-                    
-                    \draw (3,-0.2) to [out=-90, in=150] (3.5, -1.2);
-                    \draw (4,-0.2) to [out=-90, in=30] (3.5, -1.2);
-
-                    \draw (4,-0.2) to [out=-90, in=150] (4.5, -1.2);
-                    \draw (5,-0.2) to [out=-90, in=30] (4.5, -1.2);
-                    
-                    \draw (5,-0.2) to [out=-90, in=150] (7, -1.2);
-                    \draw (9,-0.2) to [out=-90, in=30] (7, -1.2);
-                    
-                    \draw (9,-0.2) to [out=-90, in=150] (9.5, -1.2);
-                    \draw (10,-0.2) to [out=-90, in=30] (9.5, -1.2);
-
-                    % Bottom Labels
-                    \node at (1.5, -1.5) {\scriptsize\itshape Strongly Disagree};
-                    \node at (3.5, -1.5) {\scriptsize\itshape Disagree};
-                    \node at (4.5, -1.5) {\scriptsize\itshape Neither};
-                    \node at (7, -1.5) {\scriptsize\itshape Agree};
-                    \node at (9.5, -1.5) {\scriptsize\itshape Strongly Agree};
+                \begin{scope}
+                    \draw[very thick] (0,0) -- (10,0); 
+                    \foreach \x [count=\i] in {1.5, 4.5, 7.5, 9.5} {
+                        \draw (\x, 0.1) -- (\x, -0.1);
+                        % \node[above] at (\x, 0.1) {\scriptsize $\alpha_{\i}$};
+                    }
+                    \draw (0,-0.2) to [out=-90, in=150] (0.75, -0.6); \draw (1.5,-0.2) to [out=-90, in=30] (0.75, -0.6);
+                    \draw (1.5,-0.2) to [out=-90, in=150] (3.0, -0.6); \draw (4.5,-0.2) to [out=-90, in=30] (3.0, -0.6);
+                    \draw (4.5,-0.2) to [out=-90, in=150] (6.0, -0.6); \draw (7.5,-0.2) to [out=-90, in=30] (6.0, -0.6);
+                    \draw (7.5,-0.2) to [out=-90, in=150] (8.5, -0.6); \draw (9.5,-0.2) to [out=-90, in=30] (8.5, -0.6);
+                    \draw (9.5,-0.2) to [out=-90, in=150] (9.75, -0.6); \draw (10,-0.2) to [out=-90, in=30] (9.75, -0.6);
+                    \node at (0.75, -0.8) {\tiny\itshape Strongly Disagree}; 
+                    \node at (3.0, -0.8) {\tiny\itshape Disagree}; 
+                    \node at (6.0, -0.8) {\tiny\itshape Neither}; 
+                    \node at (8.5, -0.8) {\tiny\itshape Agree}; 
+                    \node at (9.75, -0.8) {\tiny\itshape Strongly Agree};
                 \end{scope}
             }
         \end{tikzpicture}
@@ -125,267 +98,313 @@
             \only<2->{
                 Naive causal identification with these "index" may fail \\
                 \vspace{0.2cm}
-                $\implies$ \textcolor{purple}{Normalized Latent Treatment Effect}
+                $\implies$ Alternative estimand: \textcolor{purple}{Normalized Latent Treatment Effect}
             }
             \vspace{0.5cm}
         \item<1-> \textit{\color<3->{Orange}Estimation} \\
             \only<3->{
-                Standard parametric regression is rigid \\
+                Parametric ordered probit and logit require strong distributional assumptions \\
                 \vspace{0.2cm}
                 $\implies$ \textcolor{Orange}{Flexible, density estimation} based estimators
             }
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Why Naive Identification Fails}
-    \vspace{0.5cm}
+\begin{frame}[label=main_cardinal]{Why Naive Identification Fails}
     \centering
-        \begin{tikzpicture}[font=\sffamily, thick]
-            % --- Main Axis (Always Black and No Arrow) ---
+    % --- Visualization Block (Appears from Click 2) ---
+    \only<1->{ 
+        \begin{tikzpicture}[font=\sffamily, thick, scale=1.1]
+            % --- Main Axis (Always Present in this block) ---
             \begin{scope} 
-                % Removed '->' to get rid of the arrow
                 \draw[very thick, black] (0,0) -- (10,0); 
-                \foreach \x in {0, 10} \draw (\x, 0.1) -- (\x, -0.1);
-                % Axis Label
-                \node[above, yshift=5pt] at (5, 0.5) {\scriptsize\textbf{Preference over Political System ($\boldsymbol{Y^{\ast}}$)}};
-                % Top Labels
-                \node at (0, 0.3) {\scriptsize\itshape 0};
-                \node at (10, 0.3) {\scriptsize\itshape 10};
+                \foreach \x in {0, 10} {
+                    \draw (\x, 0.1) -- (\x, -0.1);
+                }
+                \node[above, yshift=5pt] at (5, 0.2) {\scriptsize\textbf{The True Outcome ($\boldsymbol{Y^{\ast}_{i} = \tau D_{i} + \varepsilon_i}$)}};
             \end{scope}
 
-            % --- DGP ---
-            % \only<2->{
-            %     \begin{scope} 
-            %         % Partition A Cut-Points
-            %
-            %         % Brackets (Hanging Arches)
-            %         \draw (0,-0.2) to [out=-90, in=150] (1, -1.2);
-            %         \draw (2,-0.2) to [out=-90, in=30] (1, -1.2);
-            %
-            %         \draw (2,-0.2) to [out=-90, in=150] (3.25, -1.2);
-            %         \draw (4.5,-0.2) to [out=-90, in=30] (3.25, -1.2);
-            %
-            %         \draw (4.5,-0.2) to [out=-90, in=150] (5.25, -1.2);
-            %         \draw (6,-0.2) to [out=-90, in=30] (5.25, -1.2);
-            %
-            %         \draw (6,-0.2) to [out=-90, in=150] (7.25, -1.2);
-            %         \draw (8.5,-0.2) to [out=-90, in=30] (7.25, -1.2);
-            %
-            %         \draw (8.5,-0.2) to [out=-90, in=150] (9.25, -1.2);
-            %         \draw (10,-0.2) to [out=-90, in=30] (9.25, -1.2);
-            %
-            %         % Bottom Labels
-            %         \node at (1, -1.5) {\scriptsize\itshape Strongly Agree};
-            %         \node at (3.25, -1.5) {\scriptsize\itshape Agree};
-            %         \node at (5.25, -1.5) {\scriptsize\itshape Neither};
-            %         \node at (7.25, -1.5) {\scriptsize\itshape Disagree};
-            %         \node at (9.25, -1.5) {\scriptsize\itshape Strongly Disagree};
-            %
-            %
-            %     \end{scope}
-            % }
-
-            % --- Introduce Reporting Function ---
-            \only<3>{
-                \foreach \x in {2, 4.5, 6, 8.5} \draw (\x, 0.1) -- (\x, -0.1);
-                \begin{scope}[purple]
-                    % Partition A Cut-Points
-
-                    % Brackets (Hanging Arches)
-                    \draw (0,-0.2) to [out=-90, in=150] (1, -1.2);
-                    \draw (2,-0.2) to [out=-90, in=30] (1, -1.2);
-                    
-                    \draw (2,-0.2) to [out=-90, in=150] (3.25, -1.2);
-                    \draw (4.5,-0.2) to [out=-90, in=30] (3.25, -1.2);
-
-                    \draw (4.5,-0.2) to [out=-90, in=150] (5.25, -1.2);
-                    \draw (6,-0.2) to [out=-90, in=30] (5.25, -1.2);
-                    
-                    \draw (6,-0.2) to [out=-90, in=150] (7.25, -1.2);
-                    \draw (8.5,-0.2) to [out=-90, in=30] (7.25, -1.2);
-                    
-                    \draw (8.5,-0.2) to [out=-90, in=150] (9.25, -1.2);
-                    \draw (10,-0.2) to [out=-90, in=30] (9.25, -1.2);
-
-                    % Bottom Labels
-                    \node at (1, -1.5) {\scriptsize\itshape Strongly Not Prefer};
-                    \node at (3.25, -1.5) {\scriptsize\itshape Not Prefer};
-                    \node at (5.25, -1.5) {\scriptsize\itshape Neutral};
-                    \node at (7.25, -1.5) {\scriptsize\itshape Prefer};
-                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Prefer};
+            % --- Step 2: Index g_a (Naive/Positive ATE) ---
+            \only<2-3>{
+                \begin{scope}
+                    \draw[very thick] (0,0) -- (10,0); 
+                    \foreach \x [count=\i, evaluate=\i as \idx using int(\i-1)] in {0, 2, 4, 6, 8, 10} {
+                        \draw (\x, 0.1) -- (\x, -0.1);
+                        \node[above] at (\x, 0.1) {\scriptsize $\alpha_{\idx}$};
+                    }
+                    \draw (0,-0.2) to [out=-90, in=150] (1, -0.6); \draw (2,-0.2) to [out=-90, in=30] (1, -0.6); 
+                    \draw (2,-0.2) to [out=-90, in=150] (3, -0.6); \draw (4,-0.2) to [out=-90, in=30] (3, -0.6); 
+                    \draw (4,-0.2) to [out=-90, in=150] (5, -0.6); \draw (6,-0.2) to [out=-90, in=30] (5, -0.6); 
+                    \draw (6,-0.2) to [out=-90, in=150] (7, -0.6); \draw (8,-0.2) to [out=-90, in=30] (7, -0.6); 
+                    \draw (8,-0.2) to [out=-90, in=150] (9, -0.6); \draw (10,-0.2) to [out=-90, in=30] (9, -0.6); 
+                    \node at (1, -0.8) {\tiny\itshape Strongly Disagree}; \node at (3, -0.8) {\tiny\itshape Disagree}; \node at (5, -0.8) {\tiny\itshape Neither}; \node at (7, -0.8) {\tiny\itshape Agree}; \node at (9, -0.8) {\tiny\itshape Strongly Agree};
                 \end{scope}
             }
-            % --- Common Index / Cardinalization ---
-            \only<4->{
-                \begin{scope}[blue]
-                    % Arrows to top
-                    \draw[->] (1,-1) to (1, -0.2);
-                    \draw[->] (3.25,-1) to (2, -0.2);
-                    \draw[->] (5.25,-1) to (3, -0.2);
-                    \draw[->] (7.25,-1) to (4, -0.2);
-                    \draw[->] (9.25,-1) to (5, -0.2);
 
-                    % Top Labels
-                    \node at (1, 0.4) {\footnotesize\itshape 1};
-                    \node at (2, 0.4) {\footnotesize\itshape 2};
-                    \node at (3, 0.4) {\footnotesize\itshape 3};
-                    \node at (4, 0.4) {\footnotesize\itshape 4};
-                    \node at (5, 0.4) {\footnotesize\itshape 5};
-
-                    % Bottom Labels
-                    \node at (1, -1.5) {\scriptsize\itshape Strongly Not Prefer};
-                    \node at (3.25, -1.5) {\scriptsize\itshape Not Prefer};
-                    \node at (5.25, -1.5) {\scriptsize\itshape Neutral};
-                    \node at (7.25, -1.5) {\scriptsize\itshape Prefer};
-                    \node at (9.25, -1.5) {\scriptsize\itshape Strongly Prefer};
-                \end{scope}
-            }
-            \only<5>{
-                \foreach \x in {2, 4.5, 6, 8.5} \draw (\x, 0.1) -- (\x, -0.1);
-                \begin{scope}[purple]
-                    % Partition A Cut-Points
-
-                    % Brackets (Hanging Arches)
-                    \draw (0,-0.2) to [out=-90, in=150] (1, -1.2);
-                    \draw (2,-0.2) to [out=-90, in=30] (1, -1.2);
-                    
-                    \draw (2,-0.2) to [out=-90, in=150] (3.25, -1.2);
-                    \draw (4.5,-0.2) to [out=-90, in=30] (3.25, -1.2);
-
-                    \draw (4.5,-0.2) to [out=-90, in=150] (5.25, -1.2);
-                    \draw (6,-0.2) to [out=-90, in=30] (5.25, -1.2);
-                    
-                    \draw (6,-0.2) to [out=-90, in=150] (7.25, -1.2);
-                    \draw (8.5,-0.2) to [out=-90, in=30] (7.25, -1.2);
-                    
-                    \draw (8.5,-0.2) to [out=-90, in=150] (9.25, -1.2);
-                    \draw (10,-0.2) to [out=-90, in=30] (9.25, -1.2);
+            % --- Step 3: Index g_b (Arbitrary/Flipped ATE) ---
+            \only<4-5>{
+                \begin{scope}
+                    \draw[very thick] (0,0) -- (10,0); 
+                    \foreach \x [count=\i, evaluate=\i as \idx using int(\i-1)] in {0, 1.5, 4.5, 7.5, 9.5, 10} {
+                        \draw (\x, 0.1) -- (\x, -0.1);
+                        \node[above] at (\x, 0.1) {\scriptsize $\alpha_{\idx}$};
+                    }
+                    \draw (0,-0.2) to [out=-90, in=150] (0.75, -0.6); \draw (1.5,-0.2) to [out=-90, in=30] (0.75, -0.6);
+                    \draw (1.5,-0.2) to [out=-90, in=150] (3.0, -0.6); \draw (4.5,-0.2) to [out=-90, in=30] (3.0, -0.6);
+                    \draw (4.5,-0.2) to [out=-90, in=150] (6.0, -0.6); \draw (7.5,-0.2) to [out=-90, in=30] (6.0, -0.6);
+                    \draw (7.5,-0.2) to [out=-90, in=150] (8.5, -0.6); \draw (9.5,-0.2) to [out=-90, in=30] (8.5, -0.6);
+                    \draw (9.5,-0.2) to [out=-90, in=150] (9.75, -0.6); \draw (10,-0.2) to [out=-90, in=30] (9.75, -0.6);
+                    \node at (0.75, -0.8) {\tiny\itshape Strongly Disagree}; 
+                    \node at (3.0, -0.8) {\tiny\itshape Disagree}; 
+                    \node at (6.0, -0.8) {\tiny\itshape Neither}; 
+                    \node at (8.5, -0.8) {\tiny\itshape Agree}; 
+                    \node at (9.75, -0.8) {\tiny\itshape Strongly Agree};
                 \end{scope}
             }
         \end{tikzpicture}
-    \vspace{0.5cm}
-    \pause
+    }
+    
+    \vspace{0.2cm} % Space between visualization and table
+
+    % --- TABLE 1: Click 1 (Only True Latent) ---
+    \only<1>{
+        \begin{tabular}{c|cc}
+            \hline
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ \\
+            \hline
+            A & 0.8 & 1.2 \\
+            B & 0.4 & 0.6 \\
+            C & 1.9 & 2.2 \\
+            D & 1.5 & 1.7 \\
+            E & 2.5 & 2.4 \\
+            \hline
+        \end{tabular}
+    }
+
+    % --- TABLE 2: Click 2 (Latent + Index a) ---
+    \only<2>{
+        \begin{tabular}{c|cc|cc}
+            \hline
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{a}(0)$ & $Y_{a}(1)$ \\
+            \hline
+            A & 0.8 & 1.2 & Disagree & Neither \\
+            B & 0.4 & 0.6 & Disagree & Disagree \\
+            C & 1.9 & 2.2 & Neither & Agree \\
+            D & 1.5 & 1.7 & Neither & Neither \\
+            E & 2.5 & 2.4 & Agree & Agree \\
+            \hline
+        \end{tabular}
+    }
+    \only<3>{
+        \begin{tabular}{c|cc|cc}
+            \hline
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{a}(0)$ & $Y_{a}(1)$ \\
+            \hline
+            A & 0.8 & 1.2 & 2 & 3 \\
+            B & 0.4 & 0.6 & 2 & 2 \\
+            C & 1.9 & 2.2 & 3 & 4 \\
+            D & 1.5 & 1.7 & 3 & 3 \\
+            E & 2.5 & 2.4 & 4 & 4 \\
+            \hline
+        \end{tabular}
+    }
+
+    % --- TABLE 3: Click 3 (Latent + Index b) ---
+    \only<4>{
+        \begin{tabular}{c|cc|cc}
+            \hline
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{b}(0)$ & $Y_{b}(1)$ \\
+            \hline
+            A & 0.8 & 1.2 & Disagree & Disagree \\
+            B & 0.4 & 0.6 & Disagree & Disagree \\
+            C & 1.9 & 2.2 & Neither & Neither \\
+            D & 1.5 & 1.7 & Neither & Neither \\
+            E & 2.5 & 2.4 & Agree & Neither \\
+            \hline
+        \end{tabular}
+    }
+    \only<5>{
+        \begin{tabular}{c|cc|cc}
+            \hline
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{b}(0)$ & $Y_{b}(1)$ \\
+            \hline
+            A & 0.8 & 1.2 & 2 & 2 \\
+            B & 0.4 & 0.6 & 2 & 2 \\
+            C & 1.9 & 2.2 & 3 & 3 \\
+            D & 1.5 & 1.7 & 3 & 3 \\
+            E & 2.5 & 2.4 & 4 & 3 \\
+            \hline
+        \end{tabular}
+    }
+
+    \vspace{0.2cm}
     \begin{itemize}
-        \item The treatment effect we want: $\E{Y^{\ast}(1)} - \E{Y^{\ast}(0)} = \tau^{\ast}$
-        \item<3, 5> \textit{\color{purple} Unknown Reporting Function $g$}
-        \item<4-> \textit{\color{blue} Arbitrary Numerical Index $f$}
-        \item<5-> What we get: $\E{{\color{blue}f}({\color{purple}{g}}(Y^{\ast}(1)))} - \E{{\color{blue}f}({\color{purple}{g}}(Y^{\ast}(0)))} \neq \tau^{\ast}$
+        \item<1-> $\tau = \E{Y^{\ast}(1)} - \E{Y^{\ast}(0)} \approx \textbf{+0.2}$ 
+        \only<3>{
+            \item $\tau_{a} = \E{Y_{a}(1)} - \E{Y_{a}(0)} \approx \textbf{+0.4}$
+        }
+        \only<5>{
+            \item $\tau_{b} = \E{Y_{b}(1)} - \E{Y_{b}(0)} \approx \textbf{-0.2}$
+        }
     \end{itemize}
+    \only<5>{
+    \hfill\hyperlink{appx_binary}{\beamergotobutton{Binarization}}
+    }
+\end{frame}
+
+\begin{frame}{Identification Through Link Function}
+    \begin{itemize}[<+->]
+        \item $Y^{\ast}_{i} = \tau D_{i} + \varepsilon_i$
+        \item Cumulative probabilities such as \textcolor{orange}{$\P{Y \le \text{Agree}}$}
+        \item If we can \textit{map} this probability to the $Y^{\ast}$ space $\rightarrow$ Identify $\tau$!
+        \item \textcolor{Green}{Link Function = CDF of $\varepsilon_i$ ($F_{\varepsilon_{i}}$)} does this:
+            $$
+                F_{\varepsilon_{i}}^{-1}\bigl(\textcolor{orange}{\P{Y_{i} \le \text{Agree}}}\bigl) = \underbrace{\alpha_{4} - \tau D_{i}}_{\text{Defined in $Y^*$ space}}
+            $$
+        \item Then we can identify
+            $$ 
+                \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(0) \le \text{Agree}})}_{\text{Control}} - \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(1) \le \text{Agree}})}_{\text{Treated}} = \tau 
+            $$
+    \end{itemize}
+    \only<5>{
+        \hfill\hyperlink{appx_id}{\beamergotobutton{More on Identification}}
+    }
 \end{frame}
 
 \begin{frame}{New Estimands: Normalized Treatment Effect}
     \begin{itemize}[<+->]
-        \item Nonparametrically identified probability distribution of each answers \\
-            $\implies$ identify the Treatment Effect up to scale \\ 
-            $\implies$ treatment effect $\tau^{\ast}$ cannot be distinguished form $C\tau^{\ast}$
-            \vspace{0.4cm}
+        \item Problem is, for a positive constant $C$,
+            $$
+            \begin{aligned}
+                \P{Y^{\ast}_{i} \le \alpha_{4}}
+                &= \P{C\cdot Y^{\ast}_{i} \le C \cdot \alpha_{4}} \\
+            \end{aligned}
+            $$ 
+        \item Thus $\tau$ becomes indistinguishable from $C \cdot \tau$
         \item Normalization to cancel out $C$
         \begin{enumerate}
             \item {\color<6->{blue} Scale to fix $\sigma_{\varepsilon_{i}} = 1$} \\
                 \only<6->{\color{blue}
                     \vspace{0.2cm}
-                    $\implies \frac{\tau^{\ast}}{\sigma_{\varepsilon_{i}}}$ is identified
+                    $\implies \frac{C \cdot \tau}{C \cdot \sigma_{ \varepsilon_{i}}} = \frac{\tau}{\sigma_{\varepsilon_{i}}}$ is identified
                     \vspace{0.2cm}
                 }
             \item<4-5> If there are multiple treatments, fixing $\tau_{a} = 1$
-            \item<5-5> Pure probability scale
         \end{enumerate}   
     \end{itemize}
 \end{frame}
 
 \begin{frame}{How Can We Estimate?}
     \begin{itemize}
+        \item The key is \textcolor{Green}{Link Function ($F_{\epsilon_{i}}$)}
         \item Ordered Probit, Ordered Logit, and most IRT models \\
-            $\implies$ Assume that $\varepsilon_i$ follows specific distributions \pause
-            \vspace{0.3cm}
+        \item Assume $F_{\varepsilon_i}$ is a specific distribution $\rightarrow$ MLE \pause
         \item Distributional Assumptions can be violated
             \begin{itemize}
                 \item Pure misspecification
-                \item Unaccounted confounder
+                \item Unaccounted covariate
             \end{itemize} \pause
-            \vspace{0.2cm}
-        \item Become \textit{inconsistent} \pause
+            $\implies$ Become \textit{\textcolor{red}{inconsistent}} \pause
             \vspace{0.3cm}
-        \item \textcolor{Green}{Two Flexible Estimators} without rigid Distributional Assumptions
+        \item \textcolor{blue}{Two Flexible Estimators} without rigid Distributional Assumptions
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Alternative: Estimate the Distribution}
+\begin{frame}[label=main_density]{Alternative: Estimate the Distribution}
     \begin{itemize}
-        \item<1-> Nonparametric method: \textcolor{purple}{Kernel Density Estimation}
-            \only<2-3>{
-                \begin{itemize}
-                    \item Smooth each observation using a kernel (usually Gaussian)
-                        $$
-                        \hat f(x)
-                        = \frac{1}{n h} \sum_{i=1}^n K\!\left( \frac{x - X_i}{h} \right)
-                        $$ 
-                \end{itemize}
-            }
+        \item<1-> Estimated $\hat{F}_{\varepsilon_{i}}$ from the Data
+        \item<2-> Nonparametric method: \textcolor{purple}{Kernel Density Estimation}
+            \begin{itemize}
+                \item Use Kernels to smooth each observations
+            \end{itemize}
             \vspace{0.5cm}
-        \item<1-> Parametric Generative Model: \textcolor{Orange}{Normalizing Flows}
-            \only<3>{
-                \begin{itemize}
-                    \item Use the change-of-variable formula
-                        $$
-                        f_\theta(\varepsilon)
-                        = f_Z\bigl(T_\theta^{-1}(\varepsilon)\bigr)
-                        \left|\det \left( \frac{\partial T_\theta^{-1}(\varepsilon)}{\partial \varepsilon} \right) \right|,
-                        $$
-                    \item $T_{\theta}$ is a set of \textit{invertible} transformation
-                \end{itemize}
-            }
-            \vspace{0.5cm}
-        \item<1, 4-> Plug into MLE
-            $$ 
-                \ell(\alpha,\beta,\tau) = \sum_{i=1}^n \sum_{j=0}^J 1_{{Y_i=j}} \log\left[ \hat{F}_{\varepsilon_i}\bigl( D_i, \tau_i \bigr)
-                \hat{F}_{\varepsilon_i}\bigl( D_i, \tau_i \bigr) \right] 
-            $$ 
             
+        \item<3-> Parametric Generative Model: \textcolor{Orange}{Normalizing Flows} 
+            \begin{itemize}
+                \item Transform complex distributions to simple one
+            \end{itemize}
+            \vspace{0.5cm}
+        \item<4-> Same MLE
     \end{itemize}
+    \only<4>{
+        \hfill\hyperlink{appx_density}{\beamergotobutton{Little More on Density Estimation}}
+    }
 \end{frame}
 
-\begin{frame}{Simulation}
-\begin{figure}
-    \begin{tabular}{cc}
-        \includegraphics[width=0.9\textwidth]{../figures/latent_space_lognormal_N1000000.png}\\
-    \end{tabular}
-\end{figure}
+\begin{frame}{Simulation Setting}
+    \begin{figure}
+        \only<1>{
+            \includegraphics[width=0.95\textwidth]{../figures/latent_zoom_lognormal_N1000000.pdf}
+        }
+        \only<2>{
+            \includegraphics[width=0.95\textwidth]{../figures/latent_space_lognormal_N1000000.pdf}
+        }
+    \end{figure}
 \end{frame}
 
-\begin{frame}{Simulation -- Lognormal Case}
-\begin{figure}
-    \begin{tabular}{cc}
-        \includegraphics[width=0.45\textwidth]{../figures/expect_bias_oprobit_ologit_flow_lognormal_OLS.pdf} & \includegraphics[width=0.45\textwidth]{../figures/expect_rmse_oprobit_ologit_flow_lognormal_OLS.pdf}\\
-    \end{tabular}
-    \caption{\scriptsize True treatment size: 0.46}
-\end{figure}
+\begin{frame}{Simulation Results: Bias and MC SD}
+    \centering
+    
+    % --- Plot Area ---
+    \begin{figure}
+        % Click 1: OLS only
+        \only<1>{
+            \includegraphics[width=0.9\textwidth]{../figures/bias_lognormal1.pdf}
+        }
+        % Click 2: OLS + Parametric
+        \only<2>{
+            \includegraphics[width=0.9\textwidth]{../figures/bias_lognormal2.pdf}
+        }
+        % Click 3: OLS + Parametric + Density
+        \only<3>{
+            \includegraphics[width=0.9\textwidth]{../figures/bias_lognormal3.pdf}
+        }
+    \end{figure}
 \end{frame}
 
 \begin{frame}{Replication -- \citet{Mattingly2025a}}
-    \begin{itemize}
-        \item Effect of promotion videos on preference over political system
-        \item \textit{Strongly Prefer the US} to \textit{Strongly Prefer China}
+    \begin{itemize}[<+->]
+        \item State-produced promotional media $\rightarrow$ preference on political system
+        \item 19 different countries with $n = 6,000$
+        \item Three treatments:
+            \begin{enumerate}
+                \item China: Two CCP produced videos
+                \item USA: Two US produced videos
+                \item Competition: One from CCP and the other from US
+            \end{enumerate}
+        \item Outcome: Preference on Political System \\
+            \hspace{1.25cm}\textit{Strongly Prefer the US} to \textit{Strongly Prefer China}
     \end{itemize}
-\begin{table}[!htb]\scriptsize
-    \begin{center}
-        \begin{tabular}{l c | c c c c }
-            \\ [-1.8ex] \hline\\ [-1.8ex]
-            & ATE & \multicolumn{4}{c}{NLTE} \\
-            \\ [-1.8ex]\cline{2-6} \\ [-1.8ex]
-            & Original -- OLS & Ordered Logit & Ordered Probit & KDE-based & NF-based \\
-            \\ [-1.8ex] \hline\\ [-1.8ex]
-            China & $1.04^{\ast\ast\ast}$ & $0.73^{\ast\ast\ast}$ & $0.76^{\ast\ast\ast}$ & $0.36^{\ast\ast\ast}$ & $0.37^{\ast\ast\ast}$ \\
-            & $(0.05)$ & $(0.04)$ & $(0.04)$ & $(0.07)$ & $(0.04)$ \\
-            USA & $-0.43^{\ast\ast\ast}$ & $-0.35^{\ast\ast\ast}$ & $-0.38^{\ast\ast\ast}$ & $-0.18^{\ast\ast\ast}$ & $-0.17^{\ast\ast\ast}$ \\
-            & $(0.04)$ & $(0.04)$ & $(0.04)$ & $(0.05)$ & $(0.03)$ \\
-            Competition & $0.36^{\ast\ast\ast}$ & $0.21^{\ast\ast\ast}$ & $0.25^{\ast\ast\ast}$ & $0.13^{\ast}$ & $0.11^{\ast\ast}$ \\
-            & $(0.05)$ & $(0.04)$ & $(0.04)$ & $(0.06)$ & $(0.04)$ \\
-            \\ [-1.8ex] \hline\\ [-1.8ex]
-            \multicolumn{6}{l}{\hfill\scriptsize{$^{***}p<0.001$; $^{**}p<0.01$; $^{*}p<0.05$}}
-        \end{tabular}
-    \end{center}
-\end{table}
+\end{frame}
+
+\begin{frame}{Replication Results}
+    \begin{table}[!htb]\scriptsize
+        \begin{center}
+            % Use a fixed 6-column spec: l c c c c c
+            \begin{tabular}{l c | c c c c }
+                \\ [-1.8ex] \hline\\ [-1.8ex]
+                & ATE & \multicolumn{4}{c}{\uncover<2->{NLTE}} \\
+                \\ [-1.8ex]\cline{2-6} \\ [-1.8ex]
+                & Original -- OLS & \uncover<2->{Ordered Logit} & \uncover<2->{Ordered Probit} & \uncover<3->{KDE-based} & \uncover<3->{NF-based} \\
+                \\ [-1.8ex] \hline\\ [-1.8ex]
+
+                % China Row
+                China & $1.04^{\ast\ast\ast}$ & \uncover<2->{$0.73^{\ast\ast\ast}$} & \uncover<2->{$0.76^{\ast\ast\ast}$} & \uncover<3->{$0.36^{\ast\ast\ast}$} & \uncover<3->{$0.37^{\ast\ast\ast}$} \\
+                & $(0.05)$ & \uncover<2->{$(0.04)$} & \uncover<2->{$(0.04)$} & \uncover<3->{$(0.07)$} & \uncover<3->{$(0.04)$} \\
+
+                % USA Row
+                USA & $-0.43^{\ast\ast\ast}$ & \uncover<2->{$-0.35^{\ast\ast\ast}$} & \uncover<2->{$-0.38^{\ast\ast\ast}$} & \uncover<3->{$-0.18^{\ast\ast\ast}$} & \uncover<3->{$-0.17^{\ast\ast\ast}$} \\
+                & $(0.04)$ & \uncover<2->{$(0.04)$} & \uncover<2->{$(0.04)$} & \uncover<3->{$(0.05)$} & \uncover<3->{$(0.03)$} \\
+
+                % Competition Row
+                Competition & $0.36^{\ast\ast\ast}$ & \uncover<2->{$0.21^{\ast\ast\ast}$} & \uncover<2->{$0.25^{\ast\ast\ast}$} & \uncover<3->{$0.13^{\ast}$} & \uncover<3->{$0.11^{\ast\ast}$} \\
+                & $(0.05)$ & \uncover<2->{$(0.04)$} & \uncover<2->{$(0.04)$} & \uncover<3->{$(0.06)$} & \uncover<3->{$(0.04)$} \\
+
+                \\ [-1.8ex] \hline\\ [-1.8ex]
+                \multicolumn{6}{l}{\hfill\scriptsize{$^{***}p<0.001$; $^{**}p<0.01$; $^{*}p<0.05$}}
+            \end{tabular}
+        \end{center}
+    \end{table}
 \end{frame}
 
 \begin{frame}{Conclusion}
@@ -394,16 +413,163 @@
             \only<2->{
                 Naive use of ordinal "index" is not what we want \\
                 \vspace{0.2cm}
-                $\implies$ \textcolor{purple}{Normalized Latent Treatment Effect}
+                $\implies$ Alternative estimand: \textcolor{purple}{Normalized Latent Treatment Effect}
             }
             \vspace{0.5cm}
         \item<1-> \textit{\color<3->{Orange}Estimation} \\
             \only<3->{
-                Standard ordinal regressions risk inconsistency \\
+                Parametric ordinal regressions require strong assumptions \\
                 \vspace{0.2cm}
-                $\implies$ \textcolor{Orange}{KDE} or \textcolor{Orange}{NF} based estimators
+                $\implies$ \textcolor{Orange}{KDE} or \textcolor{Orange}{Normalizing Flows} based estimators
             }
     \end{itemize}
+\end{frame}
+
+\appendix
+
+\begin{frame}[label=appx_id]{More on Identification}
+    \begin{tikzpicture}[font=\sffamily, thick, scale=1.1]
+        \only<2-6>{
+            \centering
+            \begin{scope}
+                \draw[very thick] (0,0) -- (10,0); 
+
+                \node[above, yshift=5pt] at (5, 0.2) {\scriptsize\textbf{The True Outcome ($\boldsymbol{Y^{\ast}_{i} = \tau D_{i} + \varepsilon_i}$)}};
+                \only<3-6>{
+                    \node[above, yshift=5pt] at (5, 0.2) {\scriptsize\textbf{The True Outcome (\textcolor{orange}{$\boldsymbol{Y^{\ast}_{i} = \tau D_{i} + \varepsilon_i}$})}};
+                }
+                \foreach \x [count=\i, evaluate=\i as \idx using int(\i-1)] in {0, 2, 4, 6, 8, 10} {
+                    \draw (\x, 0.1) -- (\x, -0.1);
+                    \node[above] at (\x, 0.1) {\scriptsize $\alpha_{\idx}$};
+                } 
+                \only<2-6>{
+                    \node[above] at (8, 0.1) {\scriptsize \textcolor{red}{$\alpha_{4}$}};
+                }
+                % Brackets and Category Labels
+                \draw (0,-0.2) to [out=-90, in=150] (1, -0.6); \draw (2,-0.2) to [out=-90, in=30] (1, -0.6); 
+                \draw (2,-0.2) to [out=-90, in=150] (3, -0.6); \draw (4,-0.2) to [out=-90, in=30] (3, -0.6); 
+                \draw (4,-0.2) to [out=-90, in=150] (5, -0.6); \draw (6,-0.2) to [out=-90, in=30] (5, -0.6); 
+                \draw (6,-0.2) to [out=-90, in=150] (7, -0.6); \draw (8,-0.2) to [out=-90, in=30] (7, -0.6); 
+                \draw (8,-0.2) to [out=-90, in=150] (9, -0.6); \draw (10,-0.2) to [out=-90, in=30] (9, -0.6); 
+
+                \node at (1, -0.8) {\tiny\itshape Strongly Disagree}; 
+                \node at (3, -0.8) {\tiny\itshape Disagree}; 
+                \node at (5, -0.8) {\tiny\itshape Neither}; 
+                \node at (7, -0.8) {\tiny\itshape Agree}; 
+                \node at (9, -0.8) {\tiny\itshape Strongly Agree};
+            \end{scope}
+        }
+    \end{tikzpicture}
+    \begin{itemize}[<+->]
+        \only<1, 7->{
+            \item Cumulative probabilities such as $\P{Y \le \text{Agree}}$
+        }
+        % \item If we can \textit{link} this probability to the $Y^{\ast}$ space $\rightarrow$ Identify $\tau$!
+        \item \textcolor{Green}{Link function = CDF of the error term( $F_{\varepsilon_{i}}$ )}
+            $$
+            \begin{aligned}
+                \only<2-7>{
+                F_{\varepsilon_{i}}^{-1}\left(\P{Y_{i} \le \text{Agree}}\right) 
+                \only<2-6>{
+                &=  
+                    F_{\varepsilon_{i}}^{-1}\left(\P{Y^{\ast}_{i} \le \textcolor{red}{\alpha_{4}}}\right) \\
+                }
+                    \only<3-6>{
+                    &=  
+                    F_{\varepsilon_{i}}^{-1}\left(\P{\textcolor{orange}{\tau D_{i} + \varepsilon_i} \le \alpha_{4}}\right) \\
+                }
+                    \only<4-6>{
+                        &=  
+                        F_{\varepsilon_{i}}^{-1}\left(\P{\varepsilon_i \le \alpha_{4} - \tau D_{i}}\right) \\
+                    }
+                    \only<5-6>{
+                        &=  
+                        F_{\varepsilon_{i}}^{-1}\left(F_{\varepsilon_i} \left(\alpha_{4} - \tau D_{i}\right)\right) \\
+                    }
+                    \only<6-7>{
+                        &= \alpha_{4} - \tau D_i
+                    }
+                }
+            \end{aligned}
+            $$ 
+        \only<1, 7->{
+            \item<7-> Then we can identify
+                $$ \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(0) \le \text{Agree}})}_{\text{Control}} - \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(1) \le \text{Agree}})}_{\text{Treated}} = \tau $$
+        }
+    \end{itemize}
+    \hyperlink{main_id}{\beamerreturnbutton{Back}}
+\end{frame}
+
+
+\begin{frame}[label=appx_density]{Little More on Density Estimation}
+    \begin{itemize}
+        \item \textcolor{purple}{Kernel Density Estimation} \\
+        Let $V_i(\beta,\tau) = f(X_i,\beta) + D_i^\top\tau$ \\
+        By the Bayes' rule,
+        $$
+            \mathbb{P}(Y_i \le j \mid V_i = v)
+                = \frac{ \P{Y_{i} \le j}  g_1(v \mid Y \le j) }{
+                    \P{Y_{i} \le j}  g_1(v \mid Y \le j)
+                    + \P{Y_{i} > j}  g_0(v \mid Y > j)
+                }
+        $$ \\
+        Estimate $g_{i}$ using KDE
+
+        $$
+            \hat{g}_{1}(v \mid Y \le j)
+            = \frac{1}{n_1(j) h_{1j}} \sum_{i: Y_i \le j}
+            K\left( \frac{v - V_i}{h_{1j}} \right)
+        $$
+        $$
+            \hat{g}_{0}(v \mid Y > j)
+            = \frac{1}{n_0(j) h_{0j}} \sum_{i: Y_i > j}
+            K\left( \frac{v - V_i}{h_{0j}} \right)
+            $$
+    \end{itemize}
+    \hyperlink{main_density}{\beamerreturnbutton{Back}}
+\end{frame}
+            
+\begin{frame}[label=appx_density]{Little More on Density Estimation}
+    \begin{itemize}
+        \item \textcolor{Orange}{Normalizing Flows} 
+                \begin{itemize}
+                    \item Use the change-of-variable formula
+                        $$
+                        f_\theta(\varepsilon)
+                        = f_Z\bigl(T_\theta^{-1}(\varepsilon)\bigr)
+                        \left|\det \left( \frac{\partial T_\theta^{-1}(\varepsilon)}{\partial \varepsilon} \right) \right|,
+                        $$
+                    \item $\varepsilon_i = T_\theta(Z_i)$
+                    \item $T_{\theta}$ is a set of \textit{invertible} transformation
+                    \item Maps $\varepsilon_i$ to simple $Z$ (e.g. Standard Normal)
+                    \item Estimate based on $Z$ and then translate it back to $\varepsilon_i$
+                \end{itemize}
+    \end{itemize}
+    \hyperlink{main_density}{\beamerreturnbutton{Back}}
+\end{frame}
+
+\begin{frame}[label=appx_binary]{Why Not Just Use Binary Outcomes?}
+    \begin{itemize}
+        \item Loss of Power
+            \begin{itemize}
+                \item Collapsing categories wastes information
+                \item Require larger samples ($\approx 5\times$)
+            \end{itemize}
+        \vspace{0.4cm}
+        \item Aggregation Bias
+            \begin{itemize}
+                \item Arbitrary grouping may fail to identify effects or \textit{flip the sign} of the effect
+                \item Depends on shifts in middle categories
+            \end{itemize}
+        \vspace{0.4cm}
+        \item Example:
+            \begin{itemize}
+                \item Treatment moves "Strongly Disagree" $\rightarrow$ "Disagree"
+                \item Binary ("Positive" vs "Negative") sees \textit{zero} effect
+                \item Ordinal model captures the improvement
+            \end{itemize}
+    \end{itemize}
+    \hyperlink{main_cardinal}{\beamerreturnbutton{Back}}
 \end{frame}
 
 \bibliographystyle{plainnat}
