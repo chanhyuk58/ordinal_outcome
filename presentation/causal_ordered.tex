@@ -26,7 +26,7 @@
 
 \begin{document}
    \frame{\titlepage}
-\begin{frame}{Motivation: The Discretization Problem}
+\begin{frame}{Motivation}
     \begin{itemize}
         \item Experiments to identify causal effects of treatments
         \pause 
@@ -35,15 +35,13 @@
                 \item Approval ratings \citep{Canes-Wrone2002a, Kriner2009a}
                 \item Policy preferences \citep{Scheve2001r, Mayda2005a, Wu2022a}
             \end{itemize}
-        \pause
-        \item The Problem - How we measure it
     \end{itemize}
 
     \vspace{0.5cm}
 
     \centering
     % The Latent Axis Line and its label appear on Step 2 and persist.
-    \only<3->{ 
+    \only<2->{ 
         \begin{tikzpicture}[font=\sffamily, thick, scale=1.1]
             % --- Main Axis (Always Present in this block) ---
             \begin{scope} 
@@ -51,6 +49,9 @@
                 \foreach \x in {0, 10} \draw (\x, 0.1) -- (\x, -0.1);
                 \node[above, yshift=5pt] at (5, 0.2) {\scriptsize\textbf{The True Outcome ($\boldsymbol{Y^{\ast}}$)}};
             \end{scope}
+            \only<3>{
+                \node at (1, -0.8) {\tiny\itshape Strongly Disagree}; \node at (3, -0.8) {\tiny\itshape Disagree}; \node at (5, -0.8) {\tiny\itshape Neither}; \node at (7, -0.8) {\tiny\itshape Agree}; \node at (9, -0.8) {\tiny\itshape Strongly Agree};
+            }
 
             % --- Step 2: Index g_a (Naive/Positive ATE) ---
             \only<4>{
@@ -96,7 +97,7 @@
     \begin{itemize}
         \item<1-> \textit{\color<2->{purple}Identification} \\
             \only<2->{
-                Naive causal identification with these "index" may fail \\
+                Naive causal identification with ordinal outcome "index" fails \\
                 \vspace{0.2cm}
                 $\implies$ Alternative estimand: \textcolor{purple}{Normalized Latent Treatment Effect}
             }
@@ -125,9 +126,8 @@
             \end{scope}
 
             % --- Step 2: Index g_a (Naive/Positive ATE) ---
-            \only<2-3>{
-                \begin{scope}
-                    \draw[very thick] (0,0) -- (10,0); 
+            \only<5-7>{
+                \begin{scope}[color=orange]
                     \foreach \x [count=\i, evaluate=\i as \idx using int(\i-1)] in {0, 2, 4, 6, 8, 10} {
                         \draw (\x, 0.1) -- (\x, -0.1);
                         \node[above] at (\x, 0.1) {\scriptsize $\alpha_{\idx}$};
@@ -137,14 +137,13 @@
                     \draw (4,-0.2) to [out=-90, in=150] (5, -0.6); \draw (6,-0.2) to [out=-90, in=30] (5, -0.6); 
                     \draw (6,-0.2) to [out=-90, in=150] (7, -0.6); \draw (8,-0.2) to [out=-90, in=30] (7, -0.6); 
                     \draw (8,-0.2) to [out=-90, in=150] (9, -0.6); \draw (10,-0.2) to [out=-90, in=30] (9, -0.6); 
-                    \node at (1, -0.8) {\tiny\itshape Strongly Disagree}; \node at (3, -0.8) {\tiny\itshape Disagree}; \node at (5, -0.8) {\tiny\itshape Neither}; \node at (7, -0.8) {\tiny\itshape Agree}; \node at (9, -0.8) {\tiny\itshape Strongly Agree};
                 \end{scope}
+                    \node at (1, -0.8) {\tiny\itshape Strongly Disagree}; \node at (3, -0.8) {\tiny\itshape Disagree}; \node at (5, -0.8) {\tiny\itshape Neither}; \node at (7, -0.8) {\tiny\itshape Agree}; \node at (9, -0.8) {\tiny\itshape Strongly Agree};
             }
 
             % --- Step 3: Index g_b (Arbitrary/Flipped ATE) ---
-            \only<4-5>{
-                \begin{scope}
-                    \draw[very thick] (0,0) -- (10,0); 
+            \only<8-9>{
+                \begin{scope}[color=Green]
                     \foreach \x [count=\i, evaluate=\i as \idx using int(\i-1)] in {0, 1.5, 4.5, 7.5, 9.5, 10} {
                         \draw (\x, 0.1) -- (\x, -0.1);
                         \node[above] at (\x, 0.1) {\scriptsize $\alpha_{\idx}$};
@@ -154,12 +153,12 @@
                     \draw (4.5,-0.2) to [out=-90, in=150] (6.0, -0.6); \draw (7.5,-0.2) to [out=-90, in=30] (6.0, -0.6);
                     \draw (7.5,-0.2) to [out=-90, in=150] (8.5, -0.6); \draw (9.5,-0.2) to [out=-90, in=30] (8.5, -0.6);
                     \draw (9.5,-0.2) to [out=-90, in=150] (9.75, -0.6); \draw (10,-0.2) to [out=-90, in=30] (9.75, -0.6);
-                    \node at (0.75, -0.8) {\tiny\itshape Strongly Disagree}; 
-                    \node at (3.0, -0.8) {\tiny\itshape Disagree}; 
-                    \node at (6.0, -0.8) {\tiny\itshape Neither}; 
-                    \node at (8.5, -0.8) {\tiny\itshape Agree}; 
-                    \node at (9.75, -0.8) {\tiny\itshape Strongly Agree};
                 \end{scope}
+                \node at (0.75, -0.8) {\tiny\itshape Strongly Disagree}; 
+                \node at (3.0, -0.8) {\tiny\itshape Disagree}; 
+                \node at (6.0, -0.8) {\tiny\itshape Neither}; 
+                \node at (8.5, -0.8) {\tiny\itshape Agree}; 
+                \node at (9.75, -0.8) {\tiny\itshape Strongly Agree};
             }
         \end{tikzpicture}
     }
@@ -167,25 +166,25 @@
     \vspace{0.2cm} % Space between visualization and table
 
     % --- TABLE 1: Click 1 (Only True Latent) ---
-    \only<1>{
+    \only<2-4>{
         \begin{tabular}{c|cc}
             \hline
             & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ \\
             \hline
-            A & 0.8 & 1.2 \\
-            B & 0.4 & 0.6 \\
-            C & 1.9 & 2.2 \\
-            D & 1.5 & 1.7 \\
-            E & 2.5 & 2.4 \\
+            A &\uncover<3->{0.8 & 1.2} \\
+            B & \uncover<3->{0.4 & 0.6} \\
+            C & \uncover<3->{1.9 & 2.2} \\
+            D & \uncover<3->{1.5 & 1.7} \\
+            E & \uncover<3->{2.5 & 2.4} \\
             \hline
         \end{tabular}
     }
 
     % --- TABLE 2: Click 2 (Latent + Index a) ---
-    \only<2>{
+    \only<5>{
         \begin{tabular}{c|cc|cc}
             \hline
-            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{a}(0)$ & $Y_{a}(1)$ \\
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & \textcolor{orange}{$Y_{a}(0)$} & \textcolor{orange}{$Y_{a}(1)$} \\
             \hline
             A & 0.8 & 1.2 & Disagree & Neither \\
             B & 0.4 & 0.6 & Disagree & Disagree \\
@@ -195,10 +194,10 @@
             \hline
         \end{tabular}
     }
-    \only<3>{
+    \only<6-7>{
         \begin{tabular}{c|cc|cc}
             \hline
-            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{a}(0)$ & $Y_{a}(1)$ \\
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & \textcolor{orange}{$Y_{a}(0)$} & \textcolor{orange}{$Y_{a}(1)$} \\
             \hline
             A & 0.8 & 1.2 & 2 & 3 \\
             B & 0.4 & 0.6 & 2 & 2 \\
@@ -210,10 +209,10 @@
     }
 
     % --- TABLE 3: Click 3 (Latent + Index b) ---
-    \only<4>{
+    \only<8>{
         \begin{tabular}{c|cc|cc}
             \hline
-            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{b}(0)$ & $Y_{b}(1)$ \\
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & \textcolor{Green}{$Y_{b}(0)$} & \textcolor{Green}{$Y_{b}(1)$} \\
             \hline
             A & 0.8 & 1.2 & Disagree & Disagree \\
             B & 0.4 & 0.6 & Disagree & Disagree \\
@@ -223,10 +222,10 @@
             \hline
         \end{tabular}
     }
-    \only<5>{
+    \only<9>{
         \begin{tabular}{c|cc|cc}
             \hline
-            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & $Y_{b}(0)$ & $Y_{b}(1)$ \\
+            & $Y^{\ast}(0)$ & $Y^{\ast}(1)$ & \textcolor{Green}{$Y_{b}(0)$} & \textcolor{Green}{$Y_{b}(1)$} \\
             \hline
             A & 0.8 & 1.2 & 2 & 2 \\
             B & 0.4 & 0.6 & 2 & 2 \\
@@ -238,46 +237,48 @@
     }
 
     \vspace{0.2cm}
-    \begin{itemize}
-        \item<1-> $\tau = \E{Y^{\ast}(1)} - \E{Y^{\ast}(0)} \approx \textbf{+0.2}$ 
-        \only<3>{
-            \item $\tau_{a} = \E{Y_{a}(1)} - \E{Y_{a}(0)} \approx \textbf{+0.4}$
-        }
-        \only<5>{
-            \item $\tau_{b} = \E{Y_{b}(1)} - \E{Y_{b}(0)} \approx \textbf{-0.2}$
-        }
-    \end{itemize}
-    \only<5>{
+    \only<4-9>{
+        \begin{itemize}
+            \item $\tau = \E{Y^{\ast}(1)} - \E{Y^{\ast}(0)} \approx \textbf{+0.2}$ 
+                \only<7>{
+                \item $\tau_{a} = \E{\textcolor{orange}{Y_{a}(1)}} - \E{\textcolor{orange}{Y_{a}(0)}} \approx \textcolor{orange}{\textbf{+0.4}}$
+                }
+                \only<9>{
+                \item $\tau_{b} = \E{\textcolor{Green}{Y_{b}(1)}} - \E{\textcolor{Green}{Y_{b}(0)}} \approx \textcolor{Green}{\textbf{-0.2}}$
+                }
+        \end{itemize}
+    }
+    \only<9>{
     \hfill\hyperlink{appx_binary}{\beamergotobutton{Binarization}}
     }
 \end{frame}
 
 \begin{frame}{Identification Through Link Function}
     \begin{itemize}[<+->]
-        \item $Y^{\ast}_{i} = \tau D_{i} + \varepsilon_i$
-        \item Cumulative probabilities such as \textcolor{orange}{$\P{Y \le \text{Agree}}$}
-        \item If we can \textit{map} this probability to the $Y^{\ast}$ space $\rightarrow$ Identify $\tau$!
+        \item Cumulative probabilities such as \textcolor{orange}{$\P{Y \le j}$}
+        \item If we can \textit{map} this probability to the $Y^{\ast}$ space
         \item \textcolor{Green}{Link Function = CDF of $\varepsilon_i$ ($F_{\varepsilon_{i}}$)} does this:
             $$
-                F_{\varepsilon_{i}}^{-1}\bigl(\textcolor{orange}{\P{Y_{i} \le \text{Agree}}}\bigl) = \underbrace{\alpha_{4} - \tau D_{i}}_{\text{Defined in $Y^*$ space}}
+                F_{\varepsilon_{i}}^{-1}\bigl(\textcolor{orange}{\P{Y_{i} \le j}}\bigl) = \underbrace{\alpha_{j} - \tau D_{i}}_{\text{Defined in $Y^*$ space}}
             $$
-        \item Then we can identify
+        \item \textcolor{purple}{Key Assumption}: Distribution of $\varepsilon_i$ is \textit{known}
             $$ 
-                \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(0) \le \text{Agree}})}_{\text{Control}} - \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(1) \le \text{Agree}})}_{\text{Treated}} = \tau 
+                \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(0) \le j})}_{\text{Control}} - \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(1) \le j})}_{\text{Treated}} = \tau 
             $$
     \end{itemize}
     \only<5>{
-        \hfill\hyperlink{appx_id}{\beamergotobutton{More on Identification}}
+        \hfill\hyperlink{appx_id}{\beamergotobutton{Little More on Link Function}}
     }
 \end{frame}
 
 \begin{frame}{New Estimands: Normalized Treatment Effect}
     \begin{itemize}[<+->]
-        \item Problem is, for a positive constant $C$,
+        \item One caveat: for a positive constant $C$,
             $$
             \begin{aligned}
                 \P{Y^{\ast}_{i} \le \alpha_{4}}
                 &= \P{C\cdot Y^{\ast}_{i} \le C \cdot \alpha_{4}} \\
+                &= \P{C\cdot \tau D_{i} + C \cdot \varepsilon_i \le C \cdot \alpha_{4}} \\
             \end{aligned}
             $$ 
         \item Thus $\tau$ becomes indistinguishable from $C \cdot \tau$
@@ -295,16 +296,16 @@
 \end{frame}
 
 \begin{frame}{How Can We Estimate?}
-    \begin{itemize}
+    \begin{itemize}[<+->]
         \item The key is \textcolor{Green}{Link Function ($F_{\epsilon_{i}}$)}
-        \item Ordered Probit, Ordered Logit, and most IRT models \\
-        \item Assume $F_{\varepsilon_i}$ is a specific distribution $\rightarrow$ MLE \pause
-        \item Distributional Assumptions can be violated
+        \item Ordered Probit, Ordered Logit, and IRT \\
+        \item They assume $F_{\varepsilon_i}$ is a specific distribution $\rightarrow$ MLE
+        \item Distributional Assumption can be violated
             \begin{itemize}
                 \item Pure misspecification
-                \item Unaccounted covariate
-            \end{itemize} \pause
-            $\implies$ Become \textit{\textcolor{red}{inconsistent}} \pause
+                \item Unaccounted covariates
+                \item[] $\implies$ Become \textit{\textcolor{red}{inconsistent}} 
+            \end{itemize}
             \vspace{0.3cm}
         \item \textcolor{blue}{Two Flexible Estimators} without rigid Distributional Assumptions
     \end{itemize}
@@ -333,30 +334,30 @@
 
 \begin{frame}{Simulation Setting}
     \begin{figure}
-        \only<1>{
+        \only<2>{
             \includegraphics[width=0.95\textwidth]{../figures/latent_zoom_lognormal_N1000000.pdf}
         }
-        \only<2>{
+        \only<3>{
             \includegraphics[width=0.95\textwidth]{../figures/latent_space_lognormal_N1000000.pdf}
         }
     \end{figure}
 \end{frame}
 
-\begin{frame}{Simulation Results: Bias and MC SD}
+\begin{frame}{Simulation Results: Bias and Simulation SD}
     \centering
     
     % --- Plot Area ---
     \begin{figure}
         % Click 1: OLS only
-        \only<1>{
+        \only<2>{
             \includegraphics[width=0.9\textwidth]{../figures/bias_lognormal1.pdf}
         }
         % Click 2: OLS + Parametric
-        \only<2>{
+        \only<3>{
             \includegraphics[width=0.9\textwidth]{../figures/bias_lognormal2.pdf}
         }
         % Click 3: OLS + Parametric + Density
-        \only<3>{
+        \only<4>{
             \includegraphics[width=0.9\textwidth]{../figures/bias_lognormal3.pdf}
         }
     \end{figure}
@@ -411,9 +412,9 @@
     \begin{itemize}
         \item<1-> \textit{\color<2->{purple}Identification} \\
             \only<2->{
-                Naive use of ordinal "index" is not what we want \\
+                Naive use of ordinal "index" can not give us what we want \\
                 \vspace{0.2cm}
-                $\implies$ Alternative estimand: \textcolor{purple}{Normalized Latent Treatment Effect}
+                $\implies$ Alternative Estimand: \textcolor{purple}{Normalized Latent Treatment Effect}
             }
             \vspace{0.5cm}
         \item<1-> \textit{\color<3->{Orange}Estimation} \\
@@ -427,7 +428,7 @@
 
 \appendix
 
-\begin{frame}[label=appx_id]{More on Identification}
+\begin{frame}[label=appx_id]{More on Link Function}
     \begin{tikzpicture}[font=\sffamily, thick, scale=1.1]
         \only<2-6>{
             \centering
@@ -464,7 +465,6 @@
         \only<1, 7->{
             \item Cumulative probabilities such as $\P{Y \le \text{Agree}}$
         }
-        % \item If we can \textit{link} this probability to the $Y^{\ast}$ space $\rightarrow$ Identify $\tau$!
         \item \textcolor{Green}{Link function = CDF of the error term( $F_{\varepsilon_{i}}$ )}
             $$
             \begin{aligned}
@@ -493,7 +493,7 @@
             \end{aligned}
             $$ 
         \only<1, 7->{
-            \item<7-> Then we can identify
+            \item<7-> Suppose we know $F_{\varepsilon_i}$:
                 $$ \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(0) \le \text{Agree}})}_{\text{Control}} - \underbrace{F_{\varepsilon_{i}}^{-1}(\P{Y_{i}(1) \le \text{Agree}})}_{\text{Treated}} = \tau $$
         }
     \end{itemize}
@@ -529,7 +529,7 @@
     \hyperlink{main_density}{\beamerreturnbutton{Back}}
 \end{frame}
             
-\begin{frame}[label=appx_density]{Little More on Density Estimation}
+\begin{frame}{Little More on Density Estimation}
     \begin{itemize}
         \item \textcolor{Orange}{Normalizing Flows} 
                 \begin{itemize}
