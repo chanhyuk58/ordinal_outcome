@@ -97,14 +97,14 @@
     \begin{itemize}
         \item<1-> \textit{\color<2->{purple}Identification} \\
             \only<2->{
-                Naive causal identification with ordinal outcome "index" fails \\
+                Naive causal identification with ordinal "index" fails \\
                 \vspace{0.2cm}
-                $\implies$ Alternative estimand: \textcolor{purple}{Normalized Latent Treatment Effect}
+                $\implies$ Alternative Estimand: \textcolor{purple}{Normalized Latent Treatment Effect}
             }
             \vspace{0.5cm}
         \item<1-> \textit{\color<3->{Orange}Estimation} \\
             \only<3->{
-                Parametric ordered probit and logit require strong distributional assumptions \\
+                Parametric ordered probit and logit with distributional assumptions \\
                 \vspace{0.2cm}
                 $\implies$ \textcolor{Orange}{Flexible, density estimation} based estimators
             }
@@ -122,7 +122,7 @@
                 \foreach \x in {0, 10} {
                     \draw (\x, 0.1) -- (\x, -0.1);
                 }
-                \node[above, yshift=5pt] at (5, 0.2) {\scriptsize\textbf{The True Outcome ($\boldsymbol{Y^{\ast}_{i} = \tau D_{i} + \varepsilon_i}$)}};
+                \node[above, yshift=5pt] at (5, 0.2) {\scriptsize\textbf{Policy Preference ($\boldsymbol{Y^{\ast}_{i} = \tau D_{i} + \varepsilon_i}$)}};
             \end{scope}
 
             % --- Step 2: Index g_a (Naive/Positive ATE) ---
@@ -253,10 +253,10 @@
     }
 \end{frame}
 
-\begin{frame}{Identification Through Link Function}
+\begin{frame}[label=main_id]{Identification Through Link Function}
     \begin{itemize}[<+->]
-        \item Cumulative probabilities such as \textcolor{orange}{$\P{Y \le j}$}
-        \item If we can \textit{map} this probability to the $Y^{\ast}$ space
+        \item Cumulative probabilities \textcolor{orange}{$\P{Y \le j}$} (e.g. $\P{Y \le \text{Agree}}$
+        \item If we can \textit{map} these probabilities to the $Y^{\ast}$ space
         \item \textcolor{Green}{Link Function = CDF of $\varepsilon_i$ ($F_{\varepsilon_{i}}$)} does this:
             $$
                 F_{\varepsilon_{i}}^{-1}\bigl(\textcolor{orange}{\P{Y_{i} \le j}}\bigl) = \underbrace{\alpha_{j} - \tau D_{i}}_{\text{Defined in $Y^*$ space}}
@@ -276,12 +276,14 @@
         \item One caveat: for a positive constant $C$,
             $$
             \begin{aligned}
-                \P{Y^{\ast}_{i} \le \alpha_{4}}
-                &= \P{C\cdot Y^{\ast}_{i} \le C \cdot \alpha_{4}} \\
-                &= \P{C\cdot \tau D_{i} + C \cdot \varepsilon_i \le C \cdot \alpha_{4}} \\
+                \P{Y_{i} \le j}
+                % &= \P{Y^{\ast}_{i} \le \alpha_{j}} \\
+                % &= \P{C\cdot Y^{\ast}_{i} \le C \cdot \alpha_{j}} \\
+                &= \P{\tau D_{i} + \varepsilon_i \le \alpha_{j}} \\
+                &= \P{C\cdot \tau D_{i} + C \cdot \varepsilon_i \le C \cdot \alpha_{j}} \\
             \end{aligned}
             $$ 
-        \item Thus $\tau$ becomes indistinguishable from $C \cdot \tau$
+        \item $\tau$ becomes indistinguishable from $C \cdot \tau$
         \item Normalization to cancel out $C$
         \begin{enumerate}
             \item {\color<6->{blue} Scale to fix $\sigma_{\varepsilon_{i}} = 1$} \\
@@ -297,9 +299,9 @@
 
 \begin{frame}{How Can We Estimate?}
     \begin{itemize}[<+->]
-        \item The key is \textcolor{Green}{Link Function ($F_{\epsilon_{i}}$)}
+        \item The key is \textcolor{Green}{Distribution of $\varepsilon_{i}$}
         \item Ordered Probit, Ordered Logit, and IRT \\
-        \item They assume $F_{\varepsilon_i}$ is a specific distribution $\rightarrow$ MLE
+        \item They assume a specific the CDF $F_{\varepsilon_i}$ $\rightarrow$ MLE
         \item Distributional Assumption can be violated
             \begin{itemize}
                 \item Pure misspecification
